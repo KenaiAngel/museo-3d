@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { useDropzone } from "react-dropzone";
 import toast from "react-hot-toast";
 import { useAuth } from "../hooks/useAuth";
+import { useTheme } from "../../providers/ThemeProvider";
 import { 
   Plus, 
   Palette, 
@@ -27,6 +28,7 @@ import {
   ChevronDown
 } from "lucide-react";
 import { DatePicker } from "../components/ui/date-picker-new";
+import Stepper from "../../components/ui/Stepper";
 
 // Componentes de fondo animado
 function AnimatedBlobsBackground() {
@@ -202,64 +204,472 @@ function CanvasEditor({ isOpen, onClose, onSave, editingMural = null }) {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     const type = brushTypeRef.current;
-    const color = brushColorRef.current;
     ctx.lineCap = 'round';
-    if (type === 'brush') {
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.strokeStyle = color;
-      ctx.lineWidth = brushSize;
-      ctx.lineTo(x, y);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-    } else if (type === 'eraser') {
-      ctx.globalCompositeOperation = 'destination-out';
-      ctx.lineWidth = brushSize;
-      ctx.lineTo(x, y);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-    } else if (type === 'aerosol') {
-      ctx.globalCompositeOperation = 'source-over';
-      for (let i = 0; i < brushSize * 4; i++) {
-        const angle = Math.random() * 2 * Math.PI;
-        const radius = Math.random() * brushSize * 1.2;
-        const px = x + Math.cos(angle) * radius;
-        const py = y + Math.sin(angle) * radius;
-        ctx.fillStyle = color;
-        ctx.globalAlpha = 0.10 + Math.random() * 0.15;
-        ctx.beginPath();
-        ctx.arc(px, py, 0.8 + Math.random() * 1.8, 0, 2 * Math.PI);
-        ctx.fill();
-      }
-      ctx.globalAlpha = 1;
-    } else if (type === 'carboncillo') {
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.strokeStyle = color;
-      ctx.lineWidth = brushSize * (0.8 + Math.random() * 0.4);
-      ctx.globalAlpha = 0.18 + Math.random() * 0.18;
-      for (let i = 0; i < 2 + Math.floor(brushSize / 6); i++) {
-        ctx.beginPath();
-        ctx.moveTo(x + (Math.random() - 0.5) * brushSize * 0.3, y + (Math.random() - 0.5) * brushSize * 0.3);
-        ctx.lineTo(x + (Math.random() - 0.5) * brushSize * 0.3, y + (Math.random() - 0.5) * brushSize * 0.3);
+    switch (type) {
+      case 'brush':
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushSize * (0.9 + Math.random() * 0.2);
+        ctx.shadowColor = brushColor;
+        ctx.shadowBlur = brushSize * 0.4;
+        ctx.globalAlpha = 0.8 + Math.random() * 0.2;
+        ctx.lineTo(x, y);
         ctx.stroke();
-      }
-      ctx.globalAlpha = 1;
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-    } else if (type === 'acuarela') {
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.strokeStyle = color;
-      ctx.lineWidth = brushSize * 2.2;
-      ctx.globalAlpha = 0.09 + Math.random() * 0.09;
-      ctx.shadowColor = color;
-      ctx.shadowBlur = brushSize * 1.2;
-      ctx.lineTo(x, y);
-      ctx.stroke();
-      ctx.shadowBlur = 0;
-      ctx.globalAlpha = 1;
-      ctx.beginPath();
-      ctx.moveTo(x, y);
+        ctx.shadowBlur = 0;
+        ctx.globalAlpha = 1;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        break;
+      case 'eraser':
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.lineWidth = brushSize;
+        ctx.lineTo(x, y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.globalCompositeOperation = 'source-over';
+        break;
+      case 'carboncillo':
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushSize * (0.5 + Math.random() * 0.7);
+        ctx.globalAlpha = 0.09 + Math.random() * 0.15;
+        for (let i = 0; i < 3 + Math.floor(brushSize / 4); i++) {
+          ctx.beginPath();
+          ctx.moveTo(x + (Math.random() - 0.5) * brushSize * 0.6, y + (Math.random() - 0.5) * brushSize * 0.6);
+          ctx.lineTo(x + (Math.random() - 0.5) * brushSize * 0.6, y + (Math.random() - 0.5) * brushSize * 0.6);
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        break;
+      case 'acuarela':
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushSize * 2.8;
+        ctx.globalAlpha = 0.05 + Math.random() * 0.08;
+        ctx.shadowColor = brushColor;
+        ctx.shadowBlur = brushSize * 2.2;
+        ctx.lineTo(x, y);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushSize * (0.7 + Math.random() * 0.3);
+        ctx.globalAlpha = 0.18 + Math.random() * 0.18;
+        for (let i = 0; i < 2 + Math.floor(brushSize / 6); i++) {
+          ctx.beginPath();
+          ctx.moveTo(x + (Math.random() - 0.5) * brushSize * 0.5, y + (Math.random() - 0.5) * brushSize * 0.5);
+          ctx.lineTo(x + (Math.random() - 0.5) * brushSize * 0.5, y + (Math.random() - 0.5) * brushSize * 0.5);
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        break;
+      case 'tiza':
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushSize * (0.7 + Math.random() * 0.5);
+        ctx.globalAlpha = 0.13 + Math.random() * 0.18;
+        for (let i = 0; i < 2 + Math.floor(brushSize / 4); i++) {
+          ctx.beginPath();
+          ctx.moveTo(x + (Math.random() - 0.5) * brushSize * 0.7, y + (Math.random() - 0.5) * brushSize * 0.7);
+          ctx.lineTo(x + (Math.random() - 0.5) * brushSize * 0.7, y + (Math.random() - 0.5) * brushSize * 0.7);
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        break;
+      case 'marcador':
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushSize * 1.2;
+        ctx.globalAlpha = 0.7;
+        ctx.lineTo(x, y);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        break;
+      case 'oleo':
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushSize * (1.5 + Math.random() * 0.7);
+        ctx.globalAlpha = 0.5 + Math.random() * 0.2;
+        ctx.shadowColor = brushColor;
+        ctx.shadowBlur = brushSize * 0.8;
+        ctx.lineTo(x, y);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.globalAlpha = 1;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        break;
+      case 'pixel':
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.fillStyle = brushColor;
+        for (let i = 0; i < brushSize * 2; i++) {
+          ctx.globalAlpha = 0.7 + Math.random() * 0.3;
+          ctx.fillRect(x + Math.floor(Math.random() * 3), y + Math.floor(Math.random() * 3), 1, 1);
+        }
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushSize * 1.1;
+        ctx.shadowColor = brushColor;
+        ctx.shadowBlur = brushSize * 2.5;
+        ctx.globalAlpha = 0.8;
+        ctx.lineTo(x, y);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.globalAlpha = 1;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        break;
+      case 'neon':
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushSize * 1.2;
+        ctx.shadowColor = brushColor;
+        ctx.shadowBlur = brushSize * 2.5;
+        ctx.globalAlpha = 0.7;
+        ctx.beginPath();
+        ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
+        ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.globalAlpha = 1;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        break;
+      case 'puntos':
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.fillStyle = brushColor;
+        for (let i = 0; i < brushSize * 2; i++) {
+          ctx.globalAlpha = 0.5 + Math.random() * 0.5;
+          ctx.beginPath();
+          ctx.arc(x + Math.random() * 6 - 3, y + Math.random() * 6 - 3, 1 + Math.random() * 2, 0, 2 * Math.PI);
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        break;
+      case 'lineas':
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushSize * 0.5;
+        ctx.globalAlpha = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + Math.random() * 20 - 10, y + Math.random() * 20 - 10);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        break;
+      case 'fuego':
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushSize * (0.8 + Math.random() * 0.6);
+        ctx.shadowColor = 'orange';
+        ctx.shadowBlur = brushSize * 2.5;
+        ctx.globalAlpha = 0.3 + Math.random() * 0.3;
+        ctx.lineTo(x, y);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.globalAlpha = 1;
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.globalAlpha = 1;
+        ctx.lineCap = 'butt';
+        ctx.lineJoin = 'miter';
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushSize;
+        if (points.length > 1) {
+          ctx.beginPath();
+          ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
+          ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+          ctx.stroke();
+        }
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        break;
+      case 'pencil':
+        ctx.globalAlpha = 1;
+        ctx.lineCap = 'butt';
+        ctx.lineJoin = 'miter';
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushSize;
+        if (points.length > 1) {
+          ctx.beginPath();
+          ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
+          ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+          ctx.stroke();
+        }
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        break;
+      case 'classic_brush':
+        ctx.globalAlpha = 1;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = 10;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = 'rgb(0,0,0)';
+        if (points.length > 1) {
+          ctx.beginPath();
+          ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
+          ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+          ctx.stroke();
+        }
+        ctx.shadowBlur = 0;
+        ctx.shadowColor = 'transparent';
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        break;
+      case 'smooth':
+        ctx.globalAlpha = 1;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushSize;
+        if (points.length > 2) {
+          const prev = points[points.length - 2];
+          const curr = points[points.length - 1];
+          const midX = (prev.x + curr.x) / 2;
+          const midY = (prev.y + curr.y) / 2;
+          ctx.beginPath();
+          ctx.moveTo(prev.x, prev.y);
+          ctx.quadraticCurveTo(curr.x, curr.y, midX, midY);
+          ctx.stroke();
+        }
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        break;
+      case 'shadow':
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushSize;
+        ctx.shadowColor = brushColor;
+        ctx.shadowBlur = brushSize * 1.2;
+        if (points.length > 1) {
+          ctx.beginPath();
+          ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
+          ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+          ctx.stroke();
+        }
+        ctx.shadowBlur = 0;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        break;
+      case 'rainbow_dynamic':
+        {
+          let hue = (performance.now() / 5) % 360;
+          ctx.strokeStyle = `hsl(${hue}, 100%, 50%)`;
+          ctx.lineWidth = brushSize;
+          ctx.beginPath();
+          ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
+          ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+          ctx.stroke();
+        }
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        break;
+      case 'confetti':
+        for (let i = 0; i < brushSize; i++) {
+          const angle = Math.random() * 2 * Math.PI;
+          const radius = Math.random() * brushSize * 1.2;
+          const px = points[points.length - 1].x + Math.cos(angle) * radius;
+          const py = points[points.length - 1].y + Math.sin(angle) * radius;
+          ctx.beginPath();
+          ctx.arc(px, py, 2 + Math.random() * 2, 0, 2 * Math.PI);
+          ctx.fillStyle = `hsl(${Math.random() * 360}, 100%, 60%)`;
+          ctx.globalAlpha = 0.7 + Math.random() * 0.3;
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        break;
+      case 'shooting_star':
+        {
+          const grad = ctx.createLinearGradient(points[points.length - 2].x, points[points.length - 2].y, points[points.length - 1].x, points[points.length - 1].y);
+          grad.addColorStop(0, 'white');
+          grad.addColorStop(1, brushColor);
+          ctx.strokeStyle = grad;
+          ctx.lineWidth = brushSize * 1.2;
+          ctx.beginPath();
+          ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
+          ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+          ctx.stroke();
+          // Dibuja estrella al final
+          ctx.save();
+          ctx.translate(points[points.length - 1].x, points[points.length - 1].y);
+          ctx.rotate(Math.random() * 2 * Math.PI);
+          ctx.beginPath();
+          for (let i = 0; i < 5; i++) {
+            ctx.lineTo(Math.cos((18 + i * 72) / 180 * Math.PI) * brushSize, -Math.sin((18 + i * 72) / 180 * Math.PI) * brushSize);
+            ctx.lineTo(Math.cos((54 + i * 72) / 180 * Math.PI) * brushSize * 0.5, -Math.sin((54 + i * 72) / 180 * Math.PI) * brushSize * 0.5);
+          }
+          ctx.closePath();
+          ctx.fillStyle = 'yellow';
+          ctx.globalAlpha = 0.8;
+          ctx.fill();
+          ctx.restore();
+        }
+        ctx.globalAlpha = 1;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        break;
+      case 'glitch':
+        for (let i = 0; i < 3; i++) {
+          ctx.save();
+          ctx.strokeStyle = i === 0 ? brushColor : `hsl(${Math.random() * 360},100%,60%)`;
+          ctx.lineWidth = brushSize * (0.7 + Math.random() * 0.6);
+          ctx.translate((Math.random() - 0.5) * 8, (Math.random() - 0.5) * 8);
+          ctx.beginPath();
+          ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
+          ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+          ctx.stroke();
+          ctx.restore();
+        }
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        break;
+      case 'heart_spray':
+        for (let i = 0; i < brushSize; i++) {
+          const angle = Math.random() * 2 * Math.PI;
+          const radius = Math.random() * brushSize * 1.2;
+          const px = points[points.length - 1].x + Math.cos(angle) * radius;
+          const py = points[points.length - 1].y + Math.sin(angle) * radius;
+          ctx.save();
+          ctx.translate(px, py);
+          ctx.rotate(Math.random() * 2 * Math.PI);
+          ctx.scale(0.7 + Math.random() * 0.6, 0.7 + Math.random() * 0.6);
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.bezierCurveTo(0, -3, -3, -3, -3, 0);
+          ctx.bezierCurveTo(-3, 3, 0, 3, 0, 6);
+          ctx.bezierCurveTo(0, 3, 3, 3, 3, 0);
+          ctx.bezierCurveTo(3, -3, 0, -3, 0, 0);
+          ctx.closePath();
+          ctx.fillStyle = `hsl(${Math.random() * 360}, 80%, 60%)`;
+          ctx.globalAlpha = 0.7 + Math.random() * 0.3;
+          ctx.fill();
+          ctx.restore();
+        }
+        ctx.globalAlpha = 1;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        break;
+      case 'lightning':
+        ctx.save();
+        ctx.strokeStyle = 'yellow';
+        ctx.lineWidth = brushSize * 1.2;
+        ctx.shadowColor = 'white';
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
+        let x = points[points.length - 2].x;
+        let y = points[points.length - 2].y;
+        for (let i = 0; i < 5; i++) {
+          x += (points[points.length - 1].x - x) / (6 - i) + (Math.random() - 0.5) * brushSize * 2;
+          y += (points[points.length - 1].y - y) / (6 - i) + (Math.random() - 0.5) * brushSize * 2;
+          ctx.lineTo(x, y);
+        }
+        ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.restore();
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        break;
+      case 'bubble':
+        for (let i = 0; i < brushSize; i++) {
+          const angle = Math.random() * 2 * Math.PI;
+          const radius = Math.random() * brushSize * 1.2;
+          const px = points[points.length - 1].x + Math.cos(angle) * radius;
+          const py = points[points.length - 1].y + Math.sin(angle) * radius;
+          ctx.beginPath();
+          ctx.arc(px, py, 6 + Math.random() * 8, 0, 2 * Math.PI);
+          ctx.fillStyle = 'rgba(180,220,255,0.15)';
+          ctx.globalAlpha = 0.5 + Math.random() * 0.3;
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(180,220,255,0.4)';
+          ctx.lineWidth = 1.2;
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        break;
+      case 'ribbon':
+        ctx.save();
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushSize * 3;
+        ctx.globalAlpha = 0.3;
+        ctx.beginPath();
+        ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
+        ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        ctx.lineWidth = brushSize;
+        ctx.strokeStyle = brushColor;
+        ctx.beginPath();
+        ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
+        ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+        ctx.stroke();
+        ctx.restore();
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        break;
+      case 'fire_realistic':
+        for (let i = 0; i < brushSize * 2; i++) {
+          const angle = Math.random() * 2 * Math.PI;
+          const radius = Math.random() * brushSize * 1.2;
+          const px = points[points.length - 1].x + Math.cos(angle) * radius;
+          const py = points[points.length - 1].y + Math.sin(angle) * radius;
+          ctx.beginPath();
+          ctx.arc(px, py, 2 + Math.random() * 2, 0, 2 * Math.PI);
+          const grad = ctx.createRadialGradient(px, py, 0, px, py, 8);
+          grad.addColorStop(0, 'yellow');
+          grad.addColorStop(0.5, 'orange');
+          grad.addColorStop(1, 'red');
+          ctx.fillStyle = grad;
+          ctx.globalAlpha = 0.2 + Math.random() * 0.4;
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        break;
+      case 'particles':
+        for (let i = 0; i < brushSize * 2; i++) {
+          const angle = Math.random() * 2 * Math.PI;
+          const radius = Math.random() * brushSize * 1.5;
+          const px = points[points.length - 1].x + Math.cos(angle) * radius;
+          const py = points[points.length - 1].y + Math.sin(angle) * radius;
+          ctx.beginPath();
+          ctx.arc(px, py, 1 + Math.random() * 2, 0, 2 * Math.PI);
+          ctx.fillStyle = brushColor;
+          ctx.globalAlpha = 0.2 + Math.random() * 0.5;
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        break;
+      default:
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushSize;
+        ctx.lineTo(x, y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        break;
     }
     setLastPoint({ x, y });
   };
@@ -503,13 +913,35 @@ function CanvasEditor({ isOpen, onClose, onSave, editingMural = null }) {
                   ref={canvasRef}
                   width={800}
                   height={600}
-                  style={{ width: "100%", height: "100%", display: "block", background: "#fff", borderRadius: 12 }}
+                  style={{ width: "100%", height: "100%", display: "block", background: "#fff", borderRadius: 12, border: '2px solid #d1d5db', transform: `scale(${canvasZoom})`, transformOrigin: 'center center' }}
                   onMouseDown={handleMouseDown}
-                  onMouseMove={handleMouseMove}
+                  onMouseMove={e => {
+                    const rect = canvasRef.current.getBoundingClientRect();
+                    setCursorPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+                    handleMouseMove(e);
+                  }}
                   onMouseUp={handleMouseUp}
-                  onMouseLeave={handleMouseLeave}
+                  onMouseLeave={e => {
+                    setCursorPos(null);
+                    handleMouseLeave(e);
+                  }}
                 />
-                {cursorPos && null}
+                {brushType === 'eraser' && cursorPos && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      left: `calc(${cursorPos.x}px - ${brushSize / 2}px)`,
+                      top: `calc(${cursorPos.y}px - ${brushSize / 2}px)`,
+                      width: brushSize,
+                      height: brushSize,
+                      borderRadius: '50%',
+                      background: 'rgba(200,200,200,0.3)',
+                      border: '2px solid #888',
+                      pointerEvents: 'none',
+                      zIndex: 20,
+                    }}
+                  />
+                )}
               </div>
             </div>
           </div>
@@ -549,6 +981,7 @@ function CanvasEditor({ isOpen, onClose, onSave, editingMural = null }) {
 
 // 2. Modal stepper moderno y centrado para crear mural
 function CrearObraModal({ isOpen, onClose, onCreate, session }) {
+  const { theme } = useTheme();
   const [step, setStep] = useState(0);
   const [titulo, setTitulo] = useState("");
   const [tecnica, setTecnica] = useState("");
@@ -563,6 +996,20 @@ function CrearObraModal({ isOpen, onClose, onCreate, session }) {
   const [canvasBg, setCanvasBg] = useState(null);
   const fileInputRef = useRef();
   const canvasRef = useRef();
+  const pointsRef = useRef([]);
+  const sprayTimerRef = useRef(null);
+  const [canvasZoom, setCanvasZoom] = useState(1);
+  const [furReady, setFurReady] = useState(false);
+  const furBrushImgRef = useRef(null);
+
+  useEffect(() => {
+    const img = new window.Image();
+    img.src = '/assets/brush2.png';
+    img.onload = () => {
+      furBrushImgRef.current = img;
+      setFurReady(true);
+    };
+  }, []);
 
   // Función para obtener coordenadas escaladas en el canvas
   const getScaledCoords = (e) => {
@@ -657,93 +1104,708 @@ function CrearObraModal({ isOpen, onClose, onCreate, session }) {
 
   const [isDrawing, setIsDrawing] = useState(false);
   const [lastPoint, setLastPoint] = useState(null);
+  // 2. Función para agregar puntos con ancho aleatorio para 'pen'
+  const addPoint = (e) => {
+    const { x, y } = getScaledCoords(e);
+    pointsRef.current.push({
+      x,
+      y,
+      width: brushType === 'pen' ? getRandomInt(3, 5) : brushSize
+    });
+  };
+
+  // Función para dibujar en el canvas según el brushType (todos los pinceles de Perfection Kills)
+  const draw = (e) => {
+    const ctx = canvasRef.current.getContext('2d');
+    const points = pointsRef.current;
+    if (!ctx || points.length < 2) return;
+    ctx.save();
+    switch (brushType) {
+      // --- ACUARELA: trazo ancho, opacidad baja, blur y overlays ---
+      case 'acuarela':
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushSize * 2.8;
+        ctx.globalAlpha = 0.05 + Math.random() * 0.08;
+        ctx.shadowColor = brushColor;
+        ctx.shadowBlur = brushSize * 2.2;
+        ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushSize * (0.7 + Math.random() * 0.3);
+        ctx.globalAlpha = 0.18 + Math.random() * 0.18;
+        for (let i = 0; i < 2 + Math.floor(brushSize / 6); i++) {
+          ctx.beginPath();
+          ctx.moveTo(points[points.length - 1].x + (Math.random() - 0.5) * brushSize * 0.5, points[points.length - 1].y + (Math.random() - 0.5) * brushSize * 0.5);
+          ctx.lineTo(points[points.length - 1].x + (Math.random() - 0.5) * brushSize * 0.5, points[points.length - 1].y + (Math.random() - 0.5) * brushSize * 0.5);
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+        break;
+      // --- TIZA: líneas cortas, opacidad baja, offsets aleatorios ---
+      case 'tiza':
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushSize * (0.7 + Math.random() * 0.5);
+        ctx.globalAlpha = 0.13 + Math.random() * 0.18;
+        for (let i = 0; i < 2 + Math.floor(brushSize / 4); i++) {
+          ctx.beginPath();
+          ctx.moveTo(points[points.length - 1].x + (Math.random() - 0.5) * brushSize * 0.7, points[points.length - 1].y + (Math.random() - 0.5) * brushSize * 0.7);
+          ctx.lineTo(points[points.length - 1].x + (Math.random() - 0.5) * brushSize * 0.7, points[points.length - 1].y + (Math.random() - 0.5) * brushSize * 0.7);
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+        break;
+      // --- MARCADOR: línea ancha, opacidad media ---
+      case 'marcador':
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushSize * 1.2;
+        ctx.globalAlpha = 0.7;
+        ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        break;
+      // --- ÓLEO: línea ancha, opacidad media, blur, grosores aleatorios ---
+      case 'oleo':
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushSize * (1.5 + Math.random() * 0.7);
+        ctx.globalAlpha = 0.5 + Math.random() * 0.2;
+        ctx.shadowColor = brushColor;
+        ctx.shadowBlur = brushSize * 0.8;
+        ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.globalAlpha = 1;
+        break;
+      // --- PIXEL: píxeles sueltos, opacidad y posición aleatoria ---
+      case 'pixel':
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.fillStyle = brushColor;
+        for (let i = 0; i < brushSize * 2; i++) {
+          ctx.globalAlpha = 0.7 + Math.random() * 0.3;
+          ctx.fillRect(points[points.length - 1].x + Math.floor(Math.random() * 3), points[points.length - 1].y + Math.floor(Math.random() * 3), 1, 1);
+        }
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushSize * 1.1;
+        ctx.shadowColor = brushColor;
+        ctx.shadowBlur = brushSize * 2.5;
+        ctx.globalAlpha = 0.8;
+        ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.globalAlpha = 1;
+        break;
+      // --- NEÓN: modo 'lighter', blur fuerte, color brillante ---
+      case 'neon':
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushSize * 1.2;
+        ctx.shadowColor = brushColor;
+        ctx.shadowBlur = brushSize * 2.5;
+        ctx.globalAlpha = 0.7;
+        ctx.beginPath();
+        ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
+        ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.globalAlpha = 1;
+        break;
+      // --- PUNTOS: muchos círculos pequeños, opacidad y posición aleatoria ---
+      case 'puntos':
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.fillStyle = brushColor;
+        for (let i = 0; i < brushSize * 2; i++) {
+          ctx.globalAlpha = 0.5 + Math.random() * 0.5;
+          ctx.beginPath();
+          ctx.arc(points[points.length - 1].x + Math.random() * 6 - 3, points[points.length - 1].y + Math.random() * 6 - 3, 1 + Math.random() * 2, 0, 2 * Math.PI);
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+        break;
+      // --- LÍNEAS: líneas cortas en ángulos aleatorios ---
+      case 'lineas':
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushSize * 0.5;
+        ctx.globalAlpha = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(points[points.length - 1].x, points[points.length - 1].y);
+        ctx.lineTo(points[points.length - 1].x + Math.random() * 20 - 10, points[points.length - 1].y + Math.random() * 20 - 10);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        break;
+      // --- FUEGO: modo 'lighter', shadow naranja, líneas con opacidad baja ---
+      case 'fuego':
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushSize * (0.8 + Math.random() * 0.6);
+        ctx.shadowColor = 'orange';
+        ctx.shadowBlur = brushSize * 2.5;
+        ctx.globalAlpha = 0.3 + Math.random() * 0.3;
+        ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.globalAlpha = 1;
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.globalAlpha = 1;
+        ctx.lineCap = 'butt';
+        ctx.lineJoin = 'miter';
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushSize;
+        if (points.length > 1) {
+          ctx.beginPath();
+          ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
+          ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+          ctx.stroke();
+        }
+        break;
+      case 'pencil':
+        ctx.globalAlpha = 1;
+        ctx.lineCap = 'butt';
+        ctx.lineJoin = 'miter';
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushSize;
+        if (points.length > 1) {
+          ctx.beginPath();
+          ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
+          ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+          ctx.stroke();
+        }
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        break;
+      case 'classic_brush':
+        ctx.globalAlpha = 1;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = 10;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = 'rgb(0,0,0)';
+        if (points.length > 1) {
+          ctx.beginPath();
+          ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
+          ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+          ctx.stroke();
+        }
+        ctx.shadowBlur = 0;
+        ctx.shadowColor = 'transparent';
+        break;
+      case 'fur': // Fur (pelos)
+        if (furBrushImgRef.current) {
+          for (let i = 0; i < 10; i++) {
+            ctx.save();
+            ctx.translate(points[points.length - 1].x, points[points.length - 1].y);
+            ctx.rotate(Math.random() * 2 * Math.PI);
+            ctx.globalAlpha = 0.2 + Math.random() * 0.3;
+            ctx.drawImage(furBrushImgRef.current, -brushSize / 2, -brushSize / 2, brushSize, brushSize);
+            ctx.restore();
+          }
+        }
+        break;
+      case 'pen': // Pluma (ancho variable)
+        if (points.length > 1) {
+          ctx.beginPath();
+          ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
+          ctx.lineWidth = points[points.length - 2].width;
+          ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+          ctx.strokeStyle = brushColor;
+          ctx.stroke();
+        }
+        break;
+      case 'pen2': // Pluma múltiple
+        if (points.length > 1) {
+          for (let j = 0; j < 3; j++) {
+            ctx.beginPath();
+            ctx.moveTo(points[points.length - 2].x + Math.random() * 2, points[points.length - 2].y + Math.random() * 2);
+            ctx.lineTo(points[points.length - 1].x + Math.random() * 2, points[points.length - 1].y + Math.random() * 2);
+            ctx.lineWidth = brushSize * (0.7 + Math.random() * 0.6);
+            ctx.strokeStyle = brushColor;
+            ctx.globalAlpha = 0.7;
+            ctx.stroke();
+          }
+          ctx.globalAlpha = 1;
+        }
+        break;
+      case 'thick': // Thick brush
+        ctx.globalAlpha = 0.7;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushSize * 2.5;
+        ctx.beginPath();
+        ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
+        ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        break;
+      case 'sliced': // Sliced strokes
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushSize;
+        ctx.beginPath();
+        ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
+        ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+        ctx.stroke();
+        for (let i = 0; i < 3; i++) {
+          ctx.beginPath();
+          ctx.moveTo(points[points.length - 2].x + Math.random() * 8 - 4, points[points.length - 2].y + Math.random() * 8 - 4);
+          ctx.lineTo(points[points.length - 1].x + Math.random() * 8 - 4, points[points.length - 1].y + Math.random() * 8 - 4);
+          ctx.globalAlpha = 0.2;
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+        break;
+      case 'multi': // Múltiples líneas
+        for (let i = -2; i <= 2; i++) {
+          ctx.beginPath();
+          ctx.moveTo(points[points.length - 2].x + i * 2, points[points.length - 2].y + i * 2);
+          ctx.lineTo(points[points.length - 1].x + i * 2, points[points.length - 1].y + i * 2);
+          ctx.strokeStyle = brushColor;
+          ctx.lineWidth = brushSize;
+          ctx.globalAlpha = 0.5;
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+        break;
+      case 'multi_opacity': // Múltiples líneas opacidad
+        for (let i = -2; i <= 2; i++) {
+          ctx.beginPath();
+          ctx.moveTo(points[points.length - 2].x + i * 2, points[points.length - 2].y + i * 2);
+          ctx.lineTo(points[points.length - 1].x + i * 2, points[points.length - 1].y + i * 2);
+          ctx.strokeStyle = brushColor;
+          ctx.lineWidth = brushSize;
+          ctx.globalAlpha = 0.2 + 0.15 * Math.abs(i);
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+        break;
+      case 'stamp_circle': // Estampado círculo
+        ctx.beginPath();
+        ctx.arc(points[points.length - 1].x, points[points.length - 1].y, brushSize, 0, 2 * Math.PI);
+        ctx.fillStyle = brushColor;
+        ctx.globalAlpha = 0.7;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        break;
+      case 'stamp_star': // Estampado estrella
+        ctx.save();
+        ctx.translate(points[points.length - 1].x, points[points.length - 1].y);
+        ctx.rotate(Math.random() * 2 * Math.PI);
+        ctx.beginPath();
+        for (let i = 0; i < 5; i++) {
+          ctx.lineTo(Math.cos((18 + i * 72) / 180 * Math.PI) * brushSize, -Math.sin((18 + i * 72) / 180 * Math.PI) * brushSize);
+          ctx.lineTo(Math.cos((54 + i * 72) / 180 * Math.PI) * brushSize * 0.5, -Math.sin((54 + i * 72) / 180 * Math.PI) * brushSize * 0.5);
+        }
+        ctx.closePath();
+        ctx.fillStyle = brushColor;
+        ctx.globalAlpha = 0.7;
+        ctx.fill();
+        ctx.restore();
+        ctx.globalAlpha = 1;
+        break;
+      case 'pattern_dots': // Patrón puntos
+        {
+          const patternCanvas = document.createElement('canvas');
+          patternCanvas.width = patternCanvas.height = 8;
+          const pctx = patternCanvas.getContext('2d');
+          pctx.fillStyle = brushColor;
+          pctx.beginPath();
+          pctx.arc(4, 4, 2, 0, 2 * Math.PI);
+          pctx.fill();
+          const pattern = ctx.createPattern(patternCanvas, 'repeat');
+          ctx.strokeStyle = pattern;
+          ctx.lineWidth = brushSize;
+          ctx.beginPath();
+          ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
+          ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+          ctx.stroke();
+        }
+        break;
+      case 'pattern_lines': // Patrón líneas
+        {
+          const patternCanvas = document.createElement('canvas');
+          patternCanvas.width = 8; patternCanvas.height = 8;
+          const pctx = patternCanvas.getContext('2d');
+          pctx.strokeStyle = brushColor;
+          pctx.beginPath();
+          pctx.moveTo(0, 4); pctx.lineTo(8, 4);
+          pctx.stroke();
+          const pattern = ctx.createPattern(patternCanvas, 'repeat');
+          ctx.strokeStyle = pattern;
+          ctx.lineWidth = brushSize;
+          ctx.beginPath();
+          ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
+          ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+          ctx.stroke();
+        }
+        break;
+      case 'pattern_rainbow': // Patrón arcoíris
+        {
+          const patternCanvas = document.createElement('canvas');
+          patternCanvas.width = 16; patternCanvas.height = 16;
+          const pctx = patternCanvas.getContext('2d');
+          const colors = ['#f00','#ff0','#0f0','#0ff','#00f','#f0f'];
+          for (let i = 0; i < 6; i++) {
+            pctx.strokeStyle = colors[i];
+            pctx.beginPath();
+            pctx.moveTo(0, i * 2 + 1);
+            pctx.lineTo(16, i * 2 + 1);
+            pctx.stroke();
+          }
+          const pattern = ctx.createPattern(patternCanvas, 'repeat');
+          ctx.strokeStyle = pattern;
+          ctx.lineWidth = brushSize;
+          ctx.beginPath();
+          ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
+          ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+          ctx.stroke();
+        }
+        break;
+      case 'pattern_image': // Patrón imagen
+        if (furBrushImgRef.current) {
+          const pattern = ctx.createPattern(furBrushImgRef.current, 'repeat');
+          ctx.strokeStyle = pattern;
+          ctx.lineWidth = brushSize;
+          ctx.beginPath();
+          ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
+          ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+          ctx.stroke();
+        }
+        break;
+      case 'aerosol': // Aerosol (spray clásico)
+        for (let i = 0; i < brushSize * 4; i++) {
+          const angle = Math.random() * 2 * Math.PI;
+          const radius = Math.random() * brushSize * 1.2;
+          const px = points[points.length - 1].x + Math.cos(angle) * radius;
+          const py = points[points.length - 1].y + Math.sin(angle) * radius;
+          ctx.fillStyle = brushColor;
+          ctx.globalAlpha = 0.08 + Math.random() * 0.18;
+          ctx.beginPath();
+          ctx.arc(px, py, 0.8 + Math.random() * 2.2, 0, 2 * Math.PI);
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+        break;
+      case 'spray': // Spray (rápido)
+        for (let i = 0; i < brushSize * 8; i++) {
+          const angle = Math.random() * 2 * Math.PI;
+          const radius = Math.random() * brushSize * 1.5;
+          const px = points[points.length - 1].x + Math.cos(angle) * radius;
+          const py = points[points.length - 1].y + Math.sin(angle) * radius;
+          ctx.fillStyle = brushColor;
+          ctx.globalAlpha = 0.08 + Math.random() * 0.18;
+          ctx.beginPath();
+          ctx.arc(px, py, 0.8 + Math.random() * 2.2, 0, 2 * Math.PI);
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+        break;
+      case 'spray_time': // Spray por tiempo (usa drawSpray)
+        // El temporizador ya llama a drawSpray
+        break;
+      case 'sketchy': // Sketchy (Harmony)
+        if (points.length > 1) {
+          ctx.beginPath();
+          ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
+          ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+          ctx.strokeStyle = brushColor;
+          ctx.lineWidth = brushSize;
+          ctx.globalAlpha = 0.5;
+          ctx.stroke();
+          // Conexiones a puntos vecinos
+          const last = points[points.length - 1];
+          for (let i = 0; i < points.length - 1; i++) {
+            const dx = points[i].x - last.x;
+            const dy = points[i].y - last.y;
+            const d = dx * dx + dy * dy;
+            if (d < 1000 && Math.random() > d / 1000) {
+              ctx.beginPath();
+              ctx.moveTo(last.x, last.y);
+              ctx.lineTo(points[i].x, points[i].y);
+              ctx.globalAlpha = 0.1;
+              ctx.stroke();
+            }
+          }
+          ctx.globalAlpha = 1;
+        }
+        break;
+      case 'neighbor': // Neighbor points
+        if (points.length > 1) {
+          const last = points[points.length - 1];
+          for (let i = 0; i < points.length - 1; i++) {
+            const dx = points[i].x - last.x;
+            const dy = points[i].y - last.y;
+            const d = dx * dx + dy * dy;
+            if (d < 1000) {
+              ctx.beginPath();
+              ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+              ctx.moveTo(last.x + dx * 0.2, last.y + dy * 0.2);
+              ctx.lineTo(points[i].x - dx * 0.2, points[i].y - dy * 0.2);
+              ctx.stroke();
+            }
+          }
+        }
+        break;
+      case 'fur_neighbor': // Fur via neighbor points
+        if (points.length > 1) {
+          const last = points[points.length - 1];
+          for (let i = 0; i < points.length - 1; i++) {
+            const dx = points[i].x - last.x;
+            const dy = points[i].y - last.y;
+            const d = dx * dx + dy * dy;
+            if (d < 1000) {
+              ctx.beginPath();
+              ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+              ctx.moveTo(last.x - dx * 0.2, last.y - dy * 0.2);
+              ctx.lineTo(points[i].x + dx * 0.2, points[i].y + dy * 0.2);
+              ctx.stroke();
+            }
+          }
+        }
+        break;
+      case 'eraser':
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.strokeStyle = 'rgba(0,0,0,1)';
+        ctx.lineWidth = brushSize;
+        ctx.beginPath();
+        ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
+        ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+        ctx.stroke();
+        ctx.globalCompositeOperation = 'source-over';
+        break;
+      case 'rainbow_dynamic': // Arcoíris dinámico
+        {
+          let hue = (performance.now() / 5) % 360;
+          ctx.strokeStyle = `hsl(${hue}, 100%, 50%)`;
+          ctx.lineWidth = brushSize;
+          ctx.beginPath();
+          ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
+          ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+          ctx.stroke();
+        }
+        break;
+      case 'confetti': // Confeti
+        for (let i = 0; i < brushSize; i++) {
+          const angle = Math.random() * 2 * Math.PI;
+          const radius = Math.random() * brushSize * 1.2;
+          const px = points[points.length - 1].x + Math.cos(angle) * radius;
+          const py = points[points.length - 1].y + Math.sin(angle) * radius;
+          ctx.beginPath();
+          ctx.arc(px, py, 2 + Math.random() * 2, 0, 2 * Math.PI);
+          ctx.fillStyle = `hsl(${Math.random() * 360}, 100%, 60%)`;
+          ctx.globalAlpha = 0.7 + Math.random() * 0.3;
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+        break;
+      case 'shooting_star': // Estrella fugaz
+        {
+          const grad = ctx.createLinearGradient(points[points.length - 2].x, points[points.length - 2].y, points[points.length - 1].x, points[points.length - 1].y);
+          grad.addColorStop(0, 'white');
+          grad.addColorStop(1, brushColor);
+          ctx.strokeStyle = grad;
+          ctx.lineWidth = brushSize * 1.2;
+          ctx.beginPath();
+          ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
+          ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+          ctx.stroke();
+          // Dibuja estrella al final
+          ctx.save();
+          ctx.translate(points[points.length - 1].x, points[points.length - 1].y);
+          ctx.rotate(Math.random() * 2 * Math.PI);
+          ctx.beginPath();
+          for (let i = 0; i < 5; i++) {
+            ctx.lineTo(Math.cos((18 + i * 72) / 180 * Math.PI) * brushSize, -Math.sin((18 + i * 72) / 180 * Math.PI) * brushSize);
+            ctx.lineTo(Math.cos((54 + i * 72) / 180 * Math.PI) * brushSize * 0.5, -Math.sin((54 + i * 72) / 180 * Math.PI) * brushSize * 0.5);
+          }
+          ctx.closePath();
+          ctx.fillStyle = 'yellow';
+          ctx.globalAlpha = 0.8;
+          ctx.fill();
+          ctx.restore();
+        }
+        ctx.globalAlpha = 1;
+        break;
+      case 'glitch': // Glitch
+        for (let i = 0; i < 3; i++) {
+          ctx.save();
+          ctx.strokeStyle = i === 0 ? brushColor : `hsl(${Math.random() * 360},100%,60%)`;
+          ctx.lineWidth = brushSize * (0.7 + Math.random() * 0.6);
+          ctx.translate((Math.random() - 0.5) * 8, (Math.random() - 0.5) * 8);
+          ctx.beginPath();
+          ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
+          ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+          ctx.stroke();
+          ctx.restore();
+        }
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        break;
+      case 'heart_spray': // Spray de corazones
+        for (let i = 0; i < brushSize; i++) {
+          const angle = Math.random() * 2 * Math.PI;
+          const radius = Math.random() * brushSize * 1.2;
+          const px = points[points.length - 1].x + Math.cos(angle) * radius;
+          const py = points[points.length - 1].y + Math.sin(angle) * radius;
+          ctx.save();
+          ctx.translate(px, py);
+          ctx.rotate(Math.random() * 2 * Math.PI);
+          ctx.scale(0.7 + Math.random() * 0.6, 0.7 + Math.random() * 0.6);
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.bezierCurveTo(0, -3, -3, -3, -3, 0);
+          ctx.bezierCurveTo(-3, 3, 0, 3, 0, 6);
+          ctx.bezierCurveTo(0, 3, 3, 3, 3, 0);
+          ctx.bezierCurveTo(3, -3, 0, -3, 0, 0);
+          ctx.closePath();
+          ctx.fillStyle = `hsl(${Math.random() * 360}, 80%, 60%)`;
+          ctx.globalAlpha = 0.7 + Math.random() * 0.3;
+          ctx.fill();
+          ctx.restore();
+        }
+        ctx.globalAlpha = 1;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        break;
+      case 'lightning': // Rayo
+        ctx.save();
+        ctx.strokeStyle = 'yellow';
+        ctx.lineWidth = brushSize * 1.2;
+        ctx.shadowColor = 'white';
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
+        let x = points[points.length - 2].x;
+        let y = points[points.length - 2].y;
+        for (let i = 0; i < 5; i++) {
+          x += (points[points.length - 1].x - x) / (6 - i) + (Math.random() - 0.5) * brushSize * 2;
+          y += (points[points.length - 1].y - y) / (6 - i) + (Math.random() - 0.5) * brushSize * 2;
+          ctx.lineTo(x, y);
+        }
+        ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.restore();
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        break;
+      case 'bubble': // Burbuja
+        for (let i = 0; i < brushSize; i++) {
+          const angle = Math.random() * 2 * Math.PI;
+          const radius = Math.random() * brushSize * 1.2;
+          const px = points[points.length - 1].x + Math.cos(angle) * radius;
+          const py = points[points.length - 1].y + Math.sin(angle) * radius;
+          ctx.beginPath();
+          ctx.arc(px, py, 6 + Math.random() * 8, 0, 2 * Math.PI);
+          ctx.fillStyle = 'rgba(180,220,255,0.15)';
+          ctx.globalAlpha = 0.5 + Math.random() * 0.3;
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(180,220,255,0.4)';
+          ctx.lineWidth = 1.2;
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        break;
+      case 'ribbon': // Cinta
+        ctx.save();
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushSize * 3;
+        ctx.globalAlpha = 0.3;
+        ctx.beginPath();
+        ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
+        ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        ctx.lineWidth = brushSize;
+        ctx.strokeStyle = brushColor;
+        ctx.beginPath();
+        ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
+        ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+        ctx.stroke();
+        ctx.restore();
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        break;
+      case 'fire_realistic': // Fuego realista
+        for (let i = 0; i < brushSize * 2; i++) {
+          const angle = Math.random() * 2 * Math.PI;
+          const radius = Math.random() * brushSize * 1.2;
+          const px = points[points.length - 1].x + Math.cos(angle) * radius;
+          const py = points[points.length - 1].y + Math.sin(angle) * radius;
+          ctx.beginPath();
+          ctx.arc(px, py, 2 + Math.random() * 2, 0, 2 * Math.PI);
+          const grad = ctx.createRadialGradient(px, py, 0, px, py, 8);
+          grad.addColorStop(0, 'yellow');
+          grad.addColorStop(0.5, 'orange');
+          grad.addColorStop(1, 'red');
+          ctx.fillStyle = grad;
+          ctx.globalAlpha = 0.2 + Math.random() * 0.4;
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        break;
+      case 'particles': // Partículas
+        for (let i = 0; i < brushSize * 2; i++) {
+          const angle = Math.random() * 2 * Math.PI;
+          const radius = Math.random() * brushSize * 1.5;
+          const px = points[points.length - 1].x + Math.cos(angle) * radius;
+          const py = points[points.length - 1].y + Math.sin(angle) * radius;
+          ctx.beginPath();
+          ctx.arc(px, py, 1 + Math.random() * 2, 0, 2 * Math.PI);
+          ctx.fillStyle = brushColor;
+          ctx.globalAlpha = 0.2 + Math.random() * 0.5;
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        break;
+      default:
+        ctx.beginPath();
+        ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
+        ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushSize;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.globalAlpha = 1;
+        ctx.stroke();
+        break;
+    }
+    ctx.restore();
+  };
+
+  // ... existente ...
+  // En startDrawing:
   const startDrawing = (e) => {
     setIsDrawing(true);
-    const canvas = canvasRef.current;
-    const rect = canvas.getBoundingClientRect();
-    const cssX = e.clientX - rect.left;
-    const cssY = e.clientY - rect.top;
-    const x = (cssX * canvas.width) / rect.width;
-    const y = (cssY * canvas.height) / rect.height;
-    const ctx = canvas.getContext('2d');
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    setLastPoint({ x, y });
-  };
-  const draw = (e) => {
-    if (!isDrawing) return;
-    const canvas = canvasRef.current;
-    const { x, y } = getScaledCoords(e);
-    const ctx = canvas.getContext('2d');
-    ctx.lineCap = 'round';
-    if (brushType === 'brush') {
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.strokeStyle = brushColor;
-      ctx.lineWidth = brushSize;
-      ctx.lineTo(x, y);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-    } else if (brushType === 'eraser') {
-      ctx.globalCompositeOperation = 'destination-out';
-      ctx.lineWidth = brushSize;
-      ctx.lineTo(x, y);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-    } else if (brushType === 'aerosol') {
-      ctx.globalCompositeOperation = 'source-over';
-      for (let i = 0; i < brushSize * 4; i++) {
-        const angle = Math.random() * 2 * Math.PI;
-        const radius = Math.random() * brushSize * 1.2;
-        const px = x + Math.cos(angle) * radius;
-        const py = y + Math.sin(angle) * radius;
-        ctx.fillStyle = brushColor;
-        ctx.globalAlpha = 0.10 + Math.random() * 0.15;
-        ctx.beginPath();
-        ctx.arc(px, py, 0.8 + Math.random() * 1.8, 0, 2 * Math.PI);
-        ctx.fill();
-      }
-      ctx.globalAlpha = 1;
-    } else if (brushType === 'carboncillo') {
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.strokeStyle = brushColor;
-      ctx.lineWidth = brushSize * (0.8 + Math.random() * 0.4);
-      ctx.globalAlpha = 0.18 + Math.random() * 0.18;
-      for (let i = 0; i < 2 + Math.floor(brushSize / 6); i++) {
-        ctx.beginPath();
-        ctx.moveTo(x + (Math.random() - 0.5) * brushSize * 0.3, y + (Math.random() - 0.5) * brushSize * 0.3);
-        ctx.lineTo(x + (Math.random() - 0.5) * brushSize * 0.3, y + (Math.random() - 0.5) * brushSize * 0.3);
-        ctx.stroke();
-      }
-      ctx.globalAlpha = 1;
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-    } else if (brushType === 'acuarela') {
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.strokeStyle = brushColor;
-      ctx.lineWidth = brushSize * 2.2;
-      ctx.globalAlpha = 0.09 + Math.random() * 0.09;
-      ctx.shadowColor = brushColor;
-      ctx.shadowBlur = brushSize * 1.2;
-      ctx.lineTo(x, y);
-      ctx.stroke();
-      ctx.shadowBlur = 0;
-      ctx.globalAlpha = 1;
-      ctx.beginPath();
-      ctx.moveTo(x, y);
+    pointsRef.current = [];
+    addPoint(e);
+    addPoint(e); // dos puntos iguales para iniciar el trazo
+    if (brushType === 'spray_time') {
+      sprayTimerRef.current = setInterval(() => {
+        drawSpray(pointsRef.current[pointsRef.current.length - 1]);
+      }, 20);
+    } else {
+      draw(e);
     }
-    ctx.lineTo(x, y);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    setLastPoint({ x, y });
   };
-  const stopDrawing = () => {
-    setIsDrawing(false);
-    setLastPoint(null);
-    const canvas = canvasRef.current;
-    setCanvasImage(canvas.toDataURL());
+  // ... existente ...
+  // En handleMouseMove:
+  const handleMouseMove = (e) => {
+    if (!isDrawing) return;
+    addPoint(e);
+    draw(e);
   };
 
   useEffect(() => {
@@ -805,24 +1867,37 @@ function CrearObraModal({ isOpen, onClose, onCreate, session }) {
   const isCanvasStep = step === 1 && imgMode === "canvas";
 
   const [cursorPos, setCursorPos] = useState(null);
-  const handleMouseMove = (e) => {
-    const { x, y } = getScaledCoords(e);
-    setCursorPos({ x, y });
-    if (isDrawing) draw(e);
-  };
   const handleMouseLeave = () => {
     setCursorPos(null);
     stopDrawing();
   };
 
+  // Función para detener el dibujo y limpiar temporizadores
+  const stopDrawing = () => {
+    setIsDrawing(false);
+    setLastPoint(null);
+    setCanvasImage(canvasRef.current.toDataURL());
+    if (sprayTimerRef.current) {
+      clearInterval(sprayTimerRef.current);
+      sprayTimerRef.current = null;
+    }
+    pointsRef.current = [];
+  };
+
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div
+      className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+      style={{ isolation: 'isolate' }}
+      onClick={e => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
       <motion.div
         initial={{ opacity: 0, scale: 0.96 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.96 }}
-        className={`fixed bg-background dark:bg-neutral-900 border border-border rounded-2xl shadow-2xl w-full ${isCanvasStep ? "max-w-5xl min-h-[700px]" : "max-w-lg"} mx-auto p-0 overflow-hidden flex flex-col z-[99999]`}
+        className={`fixed bg-background dark:bg-neutral-900 border border-border rounded-2xl shadow-2xl w-full ${isCanvasStep ? "max-w-5xl min-h-[700px] mt-32" : "max-w-lg mt-20"} mx-auto p-0 overflow-hidden flex flex-col z-[99999]`}
         style={isCanvasStep ? { minHeight: 700, minWidth: 0 } : {}}
       >
         {/* Header */}
@@ -835,18 +1910,13 @@ function CrearObraModal({ isOpen, onClose, onCreate, session }) {
           </div>
           {/* Stepper */}
           <div className="flex items-center justify-center gap-4 mb-2">
-            {["Datos", "Imagen", "Confirmar"].map((label, i) => (
-              <div key={i} className="flex flex-col items-center">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold border-2 text-sm ${
-                  step === i
-                    ? "bg-indigo-600 text-white border-indigo-700 shadow-lg"
-                    : "bg-muted text-foreground border-border"
-                }`}>
-                  {i + 1}
-                </div>
-                <span className="mt-1 text-xs text-center min-w-[60px] text-muted-foreground">{label}</span>
-              </div>
-            ))}
+            <Stepper
+              steps={["Datos", "Imagen", "Confirmar"]}
+              activeStep={step}
+              color="indigo"
+              className="mb-8"
+              onStepClick={i => { if (i < step) setStep(i); }}
+            />
           </div>
         </div>
         {/* Contenido principal */}
@@ -861,7 +1931,7 @@ function CrearObraModal({ isOpen, onClose, onCreate, session }) {
                   setTitulo(e.target.value);
                   if (errors.titulo) setErrors(prev => ({ ...prev, titulo: undefined }));
                 }}
-                className="w-full px-4 py-3 rounded-xl border text-base bg-background dark:bg-neutral-800 border-border text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                className="w-full px-4 py-3 rounded-xl border-2 text-base bg-background dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
                 animate={errors.titulo ? { x: [0, -8, 8, -6, 6, -4, 4, 0, Math.random()] } : false}
                 transition={{ duration: 0.4 }}
               />
@@ -874,7 +1944,7 @@ function CrearObraModal({ isOpen, onClose, onCreate, session }) {
                   setTecnica(e.target.value);
                   if (errors.tecnica) setErrors(prev => ({ ...prev, tecnica: undefined }));
                 }}
-                className="w-full px-4 py-3 rounded-xl border text-base bg-background dark:bg-neutral-800 border-border text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                className="w-full px-4 py-3 rounded-xl border-2 text-base bg-background dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
                 animate={errors.tecnica ? { x: [0, -8, 8, -6, 6, -4, 4, 0, Math.random()] } : false}
                 transition={{ duration: 0.4 }}
               />
@@ -958,14 +2028,71 @@ function CrearObraModal({ isOpen, onClose, onCreate, session }) {
                               <span className="text-muted-foreground">Arrastra una imagen de fondo aquí o haz clic para seleccionar</span>
                             )}
                           </div>
-                          <div className="flex gap-2 items-center mb-3">
-                            <label className="font-medium">Pincel:</label>
-                            <select value={brushType} onChange={e => setBrushType(e.target.value)} className="rounded border px-2 py-1">
-                              <option value="brush">Pincel</option>
-                              <option value="aerosol">Aerosol</option>
-                              <option value="carboncillo">Carboncillo</option>
-                              <option value="acuarela">Acuarela</option>
-                            </select>
+                          <div className="w-full mb-3">
+                            <div className="flex gap-2 items-center overflow-x-auto px-2 max-w-full">
+                              <label className="font-medium">Pincel:</label>
+                              <select value={brushType} onChange={e => setBrushType(e.target.value)} className="rounded border-2 px-2 py-1 max-w-xs truncate w-full border-gray-300 dark:border-neutral-700" >
+                                <optgroup label="Básicos">
+                                  <option value="pencil">Lápiz simple</option>
+                                  <option value="smooth">Lápiz suave (Bezier)</option>
+                                  <option value="shadow">Sombra/Glow</option>
+                                  <option value="brush">Pincel clásico</option>
+                                  <option value="classic_brush">Pincel clásico (HTML/JS)</option>
+                                  <option value="eraser">Borrador</option>
+                                </optgroup>
+                                <optgroup label="Artísticos">
+                                  <option value="fur" disabled={!furReady}>Fur (pelos){!furReady ? ' (cargando...)' : ''}</option>
+                                  <option value="pen">Pluma (ancho variable)</option>
+                                  <option value="pen2">Pluma múltiple</option>
+                                  <option value="thick">Pincel grueso</option>
+                                  <option value="sliced">Pincel cortado</option>
+                                  <option value="multi">Múltiples líneas</option>
+                                  <option value="multi_opacity">Múltiples líneas opacidad</option>
+                                  <option value="carboncillo">Carboncillo</option>
+                                  <option value="acuarela">Acuarela</option>
+                                  <option value="tiza">Tiza</option>
+                                  <option value="marcador">Marcador</option>
+                                  <option value="oleo">Óleo</option>
+                                  <option value="pixel">Pixel</option>
+                                  <option value="neon">Neón</option>
+                                  <option value="puntos">Puntos</option>
+                                  <option value="lineas">Líneas</option>
+                                  <option value="fuego">Fuego</option>
+                                </optgroup>
+                                <optgroup label="Estampado">
+                                  <option value="stamp_circle">Estampado círculo</option>
+                                  <option value="stamp_star">Estampado estrella</option>
+                                </optgroup>
+                                <optgroup label="Patrón">
+                                  <option value="pattern_dots">Patrón puntos</option>
+                                  <option value="pattern_lines">Patrón líneas</option>
+                                  <option value="pattern_rainbow">Patrón arcoíris</option>
+                                  <option value="pattern_image">Patrón imagen</option>
+                                </optgroup>
+                                <optgroup label="Spray">
+                                  <option value="aerosol">Aerosol</option>
+                                  <option value="spray">Spray</option>
+                                  <option value="spray_time">Spray tiempo</option>
+                                </optgroup>
+                                <optgroup label="Sketch/Harmony">
+                                  <option value="sketchy">Sketchy (Harmony)</option>
+                                  <option value="neighbor">Neighbor points</option>
+                                  <option value="fur_neighbor">Fur neighbor</option>
+                                </optgroup>
+                                <optgroup label="Especiales">
+                                  <option value="rainbow_dynamic">Arcoíris dinámico</option>
+                                  <option value="confetti">Confeti</option>
+                                  <option value="shooting_star">Estrella fugaz</option>
+                                  <option value="glitch">Glitch</option>
+                                  <option value="heart_spray">Spray de corazones</option>
+                                  <option value="lightning">Rayo</option>
+                                  <option value="bubble">Burbuja</option>
+                                  <option value="ribbon">Cinta</option>
+                                  <option value="fire_realistic">Fuego realista</option>
+                                  <option value="particles">Partículas</option>
+                                </optgroup>
+                              </select>
+                            </div>
                           </div>
                           <div className="mb-3">
                             <label className="font-medium mr-2">Color:</label>
@@ -983,29 +2110,83 @@ function CrearObraModal({ isOpen, onClose, onCreate, session }) {
                             <div className="text-center mt-2 text-sm text-gray-600 dark:text-gray-400">{brushSize}px</div>
                           </div>
                           <div className="flex gap-2 mb-3">
-                            <button onClick={() => {
-                              const canvas = canvasRef.current;
-                              const ctx = canvas.getContext('2d');
-                              ctx.fillStyle = '#FFFFFF';
-                              ctx.fillRect(0, 0, canvas.width, canvas.height);
-                            }} className="px-3 py-1 rounded bg-red-600 text-white text-xs font-bold hover:bg-red-700">Limpiar</button>
+                            <button type="button" onClick={() => setCanvasBg("/assets/textures/wall.jpg")}
+                              className="px-3 py-1 rounded bg-gray-300 text-gray-800 text-xs font-bold hover:bg-gray-400">
+                              Fondo muro
+                            </button>
+                            <button
+                              onClick={() => {
+                                const canvas = canvasRef.current;
+                                const ctx = canvas.getContext('2d');
+                                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                                if (canvasBg) {
+                                  const img = new window.Image();
+                                  img.onload = () => ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                                  img.src = canvasBg;
+                                }
+                              }}
+                              className="px-3 py-1 rounded bg-red-600 text-white text-xs font-bold hover:bg-red-700"
+                            >
+                              Limpiar
+                            </button>
                           </div>
                         </div>
                       </div>
                       {/* Canvas grande */}
                       <div className="lg:col-span-3 flex items-center justify-center">
                         <div style={{ position: "relative", width: "100%", maxWidth: 900, aspectRatio: "4/3" }}>
+                          <div className="absolute top-2 right-2 z-10 flex gap-2">
+                            <button
+                              type="button"
+                              className="px-2 py-1 rounded bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs font-bold"
+                              onClick={() => setCanvasZoom(z => Math.max(0.5, z - 0.1))}
+                              title="Zoom -"
+                            >
+                              -
+                            </button>
+                            <span className="px-2 text-xs font-mono bg-white/80 rounded border border-gray-300 text-black">{(canvasZoom * 100).toFixed(0)}%</span>
+                            <button
+                              type="button"
+                              className="px-2 py-1 rounded bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs font-bold"
+                              onClick={() => setCanvasZoom(z => Math.min(2, z + 0.1))}
+                              title="Zoom +"
+                            >
+                              +
+                            </button>
+                          </div>
                           <canvas
                             ref={canvasRef}
                             width={800}
                             height={600}
-                            style={{ width: "100%", height: "100%", display: "block", background: "#fff", borderRadius: 12 }}
+                            style={{ width: "100%", height: "100%", display: "block", background: "#fff", borderRadius: 12, border: '2px solid #d1d5db', transform: `scale(${canvasZoom})`, transformOrigin: 'center center' }}
                             onMouseDown={startDrawing}
-                            onMouseMove={handleMouseMove}
+                            onMouseMove={e => {
+                              const rect = canvasRef.current.getBoundingClientRect();
+                              setCursorPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+                              handleMouseMove(e);
+                            }}
                             onMouseUp={stopDrawing}
-                            onMouseLeave={handleMouseLeave}
+                            onMouseLeave={e => {
+                              setCursorPos(null);
+                              handleMouseLeave(e);
+                            }}
                           />
-                          {cursorPos && null}
+                          {brushType === 'eraser' && cursorPos && (
+                            <div
+                              style={{
+                                position: 'absolute',
+                                left: `calc(${cursorPos.x}px - ${brushSize / 2}px)`,
+                                top: `calc(${cursorPos.y}px - ${brushSize / 2}px)`,
+                                width: brushSize,
+                                height: brushSize,
+                                borderRadius: '50%',
+                                background: 'rgba(200,200,200,0.3)',
+                                border: '2px solid #888',
+                                pointerEvents: 'none',
+                                zIndex: 20,
+                              }}
+                            />
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1071,6 +2252,29 @@ const cursorHotspot = {
   x: { x: 12, y: 12 }, // ejemplo: centro de una X de 24x24px
   hand: { x: 8, y: 2 }, // ejemplo: punta del dedo en un SVG de mano de 24x24px
 };
+
+// Define drawSpray para spray_time:
+function drawSpray(point) {
+  const canvas = canvasRef.current;
+  const ctx = canvas.getContext('2d');
+  for (let i = 0; i < brushSize * 8; i++) {
+    const angle = Math.random() * 2 * Math.PI;
+    const radius = Math.random() * brushSize * 1.5;
+    const px = point.x + Math.cos(angle) * radius;
+    const py = point.y + Math.sin(angle) * radius;
+    ctx.fillStyle = brushColor;
+    ctx.globalAlpha = 0.08 + Math.random() * 0.18;
+    ctx.beginPath();
+    ctx.arc(px, py, 0.8 + Math.random() * 2.2, 0, 2 * Math.PI);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+// 1. Agrega la función getRandomInt
+function getRandomInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
 
 export default function MisObras() {
   const { data: session, status } = useSession();
@@ -1208,6 +2412,15 @@ export default function MisObras() {
     },
     multiple: false
   });
+
+  useEffect(() => {
+    if (showCrearObraModal) {
+      document.body.classList.add("hide-footer");
+    } else {
+      document.body.classList.remove("hide-footer");
+    }
+    return () => document.body.classList.remove("hide-footer");
+  }, [showCrearObraModal]);
 
   if (status === 'loading' || loading) {
     return (

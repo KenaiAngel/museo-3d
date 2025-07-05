@@ -29,21 +29,26 @@ export default function Stepper({
   return (
     <div className={`flex items-center justify-center gap-4 mb-6 ${className}`}>
       {steps.map((step, i) => {
-        const isClickable = typeof onStepClick === "function" && i <= activeStep;
+        const isCompleted = i < activeStep;
+        const isActive = i === activeStep;
+        const isClickable = typeof onStepClick === "function" && isCompleted;
         return (
           <div key={i} className="flex flex-col items-center">
             <button
               type="button"
               disabled={!isClickable}
               onClick={isClickable ? () => onStepClick(i) : undefined}
+              style={{ cursor: isClickable ? 'pointer' : 'default' }}
               className={`w-8 h-8 rounded-full flex items-center justify-center font-bold border-2 text-sm transition-all duration-200 focus:outline-none
-                ${i === activeStep
+                ${isActive
                   ? `${colorBg} ${colorText} ${colorBorder} ${colorShadow}`
-                  : `${colorInactiveBg} ${colorInactiveText} ${colorInactiveBorder}`
+                  : isCompleted
+                    ? `bg-green-500 text-white border-green-700 shadow-md`
+                    : `${colorInactiveBg} ${colorInactiveText} ${colorInactiveBorder}`
                 }
                 ${isClickable ? "cursor-pointer hover:scale-110" : "cursor-default"}
               `}
-              aria-current={i === activeStep ? "step" : undefined}
+              aria-current={isActive ? "step" : undefined}
               tabIndex={isClickable ? 0 : -1}
             >
               {i + 1}

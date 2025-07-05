@@ -1986,3 +1986,8 @@ html.dark .toast-badge-info {
   z-index: 1;
   overflow: hidden;
 }
+
+/* Oculta el footer global cuando el modal de crear obra está abierto en MisObras */
+body.hide-footer footer {
+  display: none !important;
+}
