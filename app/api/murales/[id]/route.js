@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import cloudinary from "../../../utils/cloudinary";
 
 const prisma = new PrismaClient();
 
@@ -102,7 +103,6 @@ export async function PUT(req, context) {
       ) {
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
-        const cloudinary = require("../../../utils/cloudinary").default;
         const upload = await new Promise((resolve, reject) => {
           cloudinary.uploader
             .upload_stream({ folder: "murales" }, (err, result) => {
