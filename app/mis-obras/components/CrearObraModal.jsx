@@ -197,6 +197,54 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
     ctx.save();
 
     switch (brushType) {
+      // Lápiz simple: línea continua, sin efectos especiales
+      case 'pencil': {
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushSize;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.shadowBlur = 0;
+        ctx.globalAlpha = 1;
+        ctx.beginPath();
+        ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
+        ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+        ctx.stroke();
+        break;
+      }
+      // Lápiz suave: línea continua, sin sombra ni glow, solo lineJoin y lineCap 'round'
+      case 'smooth': {
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushSize;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.globalAlpha = 1;
+        ctx.beginPath();
+        ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
+        ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+        ctx.stroke();
+        break;
+      }
+      // Glow: resplandor intenso, modo lighter, halo extenso
+      case 'shadow': {
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushSize;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.shadowColor = brushColor;
+        ctx.shadowBlur = brushSize * 2.5;
+        ctx.globalAlpha = 0.85;
+        ctx.beginPath();
+        ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
+        ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.globalAlpha = 1;
+        ctx.globalCompositeOperation = 'source-over';
+        break;
+      }
       case 'eraser':
         ctx.globalCompositeOperation = 'destination-out';
         ctx.beginPath();
@@ -252,6 +300,313 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
         ctx.globalAlpha = 1;
         ctx.stroke();
         break;
+
+      // Carboncillo: puntos aleatorios y multiply
+      case 'carboncillo': {
+        ctx.globalCompositeOperation = 'multiply';
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushSize * 0.8;
+        ctx.lineCap = 'round';
+        ctx.globalAlpha = 0.3;
+        ctx.beginPath();
+        ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
+        ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+        ctx.stroke();
+        // Granulado
+        for (let i = 0; i < brushSize * 2; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const radius = Math.random() * brushSize * 0.7;
+          const px = points[points.length - 1].x + Math.cos(angle) * radius;
+          const py = points[points.length - 1].y + Math.sin(angle) * radius;
+          ctx.globalAlpha = 0.1 + Math.random() * 0.2;
+          ctx.beginPath();
+          ctx.arc(px, py, Math.random() * 1.2, 0, Math.PI * 2);
+          ctx.fillStyle = brushColor;
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+        ctx.globalCompositeOperation = 'source-over';
+        break;
+      }
+      // Acuarela: gradientes radiales multicapa
+      case 'acuarela': {
+        ctx.globalCompositeOperation = 'multiply';
+        for (let ring = 0; ring < 4; ring++) {
+          const ringRadius = brushSize * (0.7 + ring * 0.5);
+          const baseAlpha = 0.18 - ring * 0.03;
+          const gradient = ctx.createRadialGradient(points[points.length - 1].x, points[points.length - 1].y, 0, points[points.length - 1].x, points[points.length - 1].y, ringRadius);
+          gradient.addColorStop(0, `${brushColor}${Math.floor(baseAlpha * 255).toString(16).padStart(2, '0')}`);
+          gradient.addColorStop(1, `${brushColor}00`);
+          ctx.fillStyle = gradient;
+          ctx.beginPath();
+          ctx.arc(points[points.length - 1].x, points[points.length - 1].y, ringRadius, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.globalCompositeOperation = 'source-over';
+        break;
+      }
+      // Tiza: puntos dispersos y screen
+      case 'tiza': {
+        ctx.globalCompositeOperation = 'screen';
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushSize;
+        ctx.lineCap = 'round';
+        ctx.globalAlpha = 0.45;
+        ctx.beginPath();
+        ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
+        ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+        ctx.stroke();
+        for (let i = 0; i < brushSize * 4; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const radius = Math.random() * brushSize * 1.2;
+          const px = points[points.length - 1].x + Math.cos(angle) * radius;
+          const py = points[points.length - 1].y + Math.sin(angle) * radius;
+          ctx.globalAlpha = 0.1 + Math.random() * 0.15;
+          ctx.beginPath();
+          ctx.arc(px, py, Math.random() * 1.2, 0, Math.PI * 2);
+          ctx.fillStyle = brushColor;
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+        ctx.globalCompositeOperation = 'source-over';
+        break;
+      }
+      // Marcador: círculo relleno semitransparente (estilo p5.js)
+      case 'marcador': {
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.fillStyle = brushColor;
+        ctx.globalAlpha = 0.16;
+        ctx.beginPath();
+        ctx.arc(points[points.length - 1].x, points[points.length - 1].y, brushSize, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        break;
+      }
+      // Óleo: círculos y textura
+      case 'oleo': {
+        ctx.globalCompositeOperation = 'source-over';
+        const distance = Math.sqrt(
+          Math.pow(points[points.length - 1].x - points[points.length - 2].x, 2) +
+          Math.pow(points[points.length - 1].y - points[points.length - 2].y, 2)
+        );
+        const steps = Math.max(1, Math.ceil(distance / 3));
+        for (let i = 0; i <= steps; i++) {
+          const t = i / steps;
+          const interpX = points[points.length - 2].x + (points[points.length - 1].x - points[points.length - 2].x) * t;
+          const interpY = points[points.length - 2].y + (points[points.length - 1].y - points[points.length - 2].y) * t;
+          ctx.globalAlpha = 0.7;
+          ctx.fillStyle = brushColor;
+          ctx.beginPath();
+          ctx.arc(interpX, interpY, brushSize * 0.45, 0, Math.PI * 2);
+          ctx.fill();
+          // Textura
+          ctx.globalAlpha = 0.22;
+          ctx.strokeStyle = '#fff';
+          ctx.lineWidth = 1 + Math.random() * 1.2;
+          ctx.beginPath();
+          ctx.moveTo(interpX, interpY);
+          ctx.lineTo(interpX + Math.random() * 5 - 2.5, interpY + Math.random() * 5 - 2.5);
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+        break;
+      }
+      // Pixel: cuadrado tipo pixel art
+      case 'pixel': {
+        ctx.globalCompositeOperation = 'source-over';
+        const pixelSize = Math.max(2, Math.round(brushSize / 2));
+        const gridX = Math.floor(points[points.length - 1].x / pixelSize) * pixelSize;
+        const gridY = Math.floor(points[points.length - 1].y / pixelSize) * pixelSize;
+        ctx.fillStyle = brushColor;
+        ctx.fillRect(gridX, gridY, pixelSize, pixelSize);
+        break;
+      }
+      // Neón: glow fuerte y modo lighter
+      case 'neon': {
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushSize * 2.1;
+        ctx.shadowColor = brushColor;
+        ctx.shadowBlur = brushSize * 1.4;
+        ctx.globalAlpha = 0.7;
+        ctx.beginPath();
+        ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
+        ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.globalAlpha = 1;
+        ctx.globalCompositeOperation = 'source-over';
+        break;
+      }
+      // Puntillismo: puntos aleatorios
+      case 'puntos': {
+        ctx.globalCompositeOperation = 'source-over';
+        for (let i = 0; i < Math.floor(brushSize * 2); i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const radius = Math.random() * brushSize * 0.7;
+          const dotX = points[points.length - 1].x + Math.cos(angle) * radius;
+          const dotY = points[points.length - 1].y + Math.sin(angle) * radius;
+          ctx.globalAlpha = 0.5 + Math.random() * 0.5;
+          ctx.fillStyle = brushColor;
+          ctx.beginPath();
+          ctx.arc(dotX, dotY, Math.max(1, brushSize * 0.18), 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+        break;
+      }
+      // Líneas: grabado cruzado
+      case 'lineas': {
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = brushColor;
+        ctx.lineCap = 'round';
+        for (let dir = 0; dir < 4; dir++) {
+          const angle = dir * Math.PI / 4;
+          const lineCount = Math.floor(brushSize / 4);
+          ctx.globalAlpha = 0.5 - dir * 0.1;
+          ctx.lineWidth = 1.2;
+          for (let i = 0; i < lineCount; i++) {
+            const offset = (i - lineCount / 2) * 2;
+            const length = brushSize * (0.8 + Math.random() * 0.4);
+            const perpAngle = angle + Math.PI / 2;
+            const startX = points[points.length - 1].x + Math.cos(perpAngle) * offset - Math.cos(angle) * length / 2;
+            const startY = points[points.length - 1].y + Math.sin(perpAngle) * offset - Math.sin(angle) * length / 2;
+            const endX = startX + Math.cos(angle) * length;
+            const endY = startY + Math.sin(angle) * length;
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            ctx.lineTo(endX, endY);
+            ctx.stroke();
+          }
+        }
+        ctx.globalAlpha = 1;
+        break;
+      }
+      // Fuego: elipse y chispas
+      case 'fuego': {
+        ctx.globalCompositeOperation = 'lighter';
+        for (let layer = 0; layer < 3; layer++) {
+          const flameColor = `rgba(255,${140 + layer * 40},0,${0.3 - layer * 0.08})`;
+          const flameSize = brushSize * (1.2 + layer * 0.3);
+          ctx.beginPath();
+          ctx.ellipse(points[points.length - 1].x, points[points.length - 1].y, flameSize, flameSize * 1.5, 0, 0, Math.PI * 2);
+          ctx.fillStyle = flameColor;
+          ctx.fill();
+        }
+        for (let i = 0; i < Math.floor(brushSize / 2); i++) {
+          ctx.globalAlpha = 0.7;
+          ctx.fillStyle = 'yellow';
+          ctx.beginPath();
+          ctx.arc(points[points.length - 1].x + (Math.random() - 0.5) * brushSize * 2, points[points.length - 1].y - Math.random() * brushSize * 2, Math.random() * 2 + 1, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+        ctx.globalCompositeOperation = 'source-over';
+        break;
+      }
+      // Spray: puntos aleatorios en área circular
+      case 'spray': {
+        for (let i = 0; i < brushSize * 8; i++) {
+          const angle = Math.random() * 2 * Math.PI;
+          const radius = Math.random() * brushSize * 1.5;
+          const px = points[points.length - 1].x + Math.cos(angle) * radius;
+          const py = points[points.length - 1].y + Math.sin(angle) * radius;
+          ctx.fillStyle = brushColor;
+          ctx.globalAlpha = 0.08 + Math.random() * 0.18;
+          ctx.beginPath();
+          ctx.arc(px, py, 0.8 + Math.random() * 2.2, 0, 2 * Math.PI);
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+        break;
+      }
+      // Fur: líneas con offsets aleatorios
+      case 'fur': {
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushSize * 0.7;
+        ctx.lineCap = 'round';
+        ctx.globalAlpha = 0.7;
+        ctx.beginPath();
+        ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
+        ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+        ctx.stroke();
+        // Líneas "peludas"
+        for (let i = 0; i < 10; i++) {
+          const offsetX = (Math.random() - 0.5) * brushSize * 2;
+          const offsetY = (Math.random() - 0.5) * brushSize * 2;
+          ctx.beginPath();
+          ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
+          ctx.lineTo(points[points.length - 1].x + offsetX, points[points.length - 1].y + offsetY);
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+        break;
+      }
+      // Pen: ancho variable
+      case 'pen': {
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushSize * (0.7 + Math.random() * 0.6);
+        ctx.lineCap = 'round';
+        ctx.globalAlpha = 1;
+        ctx.beginPath();
+        ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
+        ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+        ctx.stroke();
+        break;
+      }
+      // Pen2: múltiples líneas
+      case 'pen2': {
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushSize * 0.7;
+        ctx.lineCap = 'round';
+        ctx.globalAlpha = 1;
+        for (let i = 0; i < 3; i++) {
+          const offsetX = (Math.random() - 0.5) * brushSize * 0.7;
+          const offsetY = (Math.random() - 0.5) * brushSize * 0.7;
+          ctx.beginPath();
+          ctx.moveTo(points[points.length - 2].x + offsetX, points[points.length - 2].y + offsetY);
+          ctx.lineTo(points[points.length - 1].x + offsetX, points[points.length - 1].y + offsetY);
+          ctx.stroke();
+        }
+        break;
+      }
+      // Multi-line: varias líneas con opacidad
+      case 'multi': {
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushSize * 0.5;
+        ctx.lineCap = 'round';
+        for (let i = 0; i < 5; i++) {
+          ctx.globalAlpha = 0.5 - i * 0.08;
+          const offsetX = (Math.random() - 0.5) * brushSize * 1.2;
+          const offsetY = (Math.random() - 0.5) * brushSize * 1.2;
+          ctx.beginPath();
+          ctx.moveTo(points[points.length - 2].x + offsetX, points[points.length - 2].y + offsetY);
+          ctx.lineTo(points[points.length - 1].x + offsetX, points[points.length - 1].y + offsetY);
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+        break;
+      }
+      // Multi-opacity: líneas con opacidad decreciente
+      case 'multi_opacity': {
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushSize * 0.7;
+        ctx.lineCap = 'round';
+        for (let i = 0; i < 4; i++) {
+          ctx.globalAlpha = 1 - i * 0.25;
+          ctx.beginPath();
+          ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
+          ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+        break;
+      }
     }
     ctx.restore();
   };
@@ -370,7 +725,7 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
         initial={{ opacity: 0, scale: 0.96 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.96 }}
-        className={`fixed bg-background dark:bg-neutral-900 border border-border rounded-2xl shadow-2xl w-full ${isCanvasStep ? "max-w-5xl min-h-[700px] mt-32" : "max-w-lg mt-20"} mx-auto p-0 overflow-hidden flex flex-col z-[99999]`}
+        className={`fixed bg-background dark:bg-neutral-900 border border-border rounded-2xl shadow-2xl w-full ${isCanvasStep ? "max-w-5xl min-h-[700px] mt-12" : "max-w-lg mt-8"} mx-auto p-0 overflow-hidden flex flex-col z-[99999]`}
         style={isCanvasStep ? { minHeight: 700, minWidth: 0 } : {}}
       >
         {/* Header */}
