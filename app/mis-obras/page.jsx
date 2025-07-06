@@ -2641,7 +2641,7 @@ export default function MisObras() {
                   transition={{ duration: 0.3 }}
                   className={
                     view === 'grid'
-                      ? 'bg-white/80 dark:bg-neutral-800/80 backdrop-blur-sm rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 border border-border'
+                      ? 'bg-white dark:bg-white backdrop-blur-sm rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 border border-border'
                       : 'bg-white/80 dark:bg-neutral-800/80 backdrop-blur-sm rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 border border-border flex items-center gap-4 p-4'
                   }
                 >
@@ -2675,7 +2675,7 @@ export default function MisObras() {
                           </div>
                         </div>
                       </div>
-                      <div className="p-4">
+                      <div className="p-4 bg-white dark:bg-neutral-900 transition-colors duration-300">
                         <h3 className="font-semibold text-lg text-foreground mb-1 truncate">
                           {mural.titulo}
                         </h3>
