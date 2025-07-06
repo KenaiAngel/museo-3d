@@ -520,29 +520,6 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
         ctx.globalAlpha = 1;
         break;
       }
-      // Fur: líneas con offsets aleatorios
-      case 'fur': {
-        ctx.globalCompositeOperation = 'source-over';
-        ctx.strokeStyle = brushColor;
-        ctx.lineWidth = brushSize * 0.7;
-        ctx.lineCap = 'round';
-        ctx.globalAlpha = 0.7;
-        ctx.beginPath();
-        ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
-        ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
-        ctx.stroke();
-        // Líneas "peludas"
-        for (let i = 0; i < 10; i++) {
-          const offsetX = (Math.random() - 0.5) * brushSize * 2;
-          const offsetY = (Math.random() - 0.5) * brushSize * 2;
-          ctx.beginPath();
-          ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
-          ctx.lineTo(points[points.length - 1].x + offsetX, points[points.length - 1].y + offsetY);
-          ctx.stroke();
-        }
-        ctx.globalAlpha = 1;
-        break;
-      }
       // Pen: ancho variable
       case 'pen': {
         ctx.globalCompositeOperation = 'source-over';
@@ -573,19 +550,49 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
         }
         break;
       }
-      // Multi-line: varias líneas con opacidad
+      // Multi-line mejorado: líneas paralelas y cruzadas, opacidad y grosor aleatorio
       case 'multi': {
         ctx.globalCompositeOperation = 'source-over';
         ctx.strokeStyle = brushColor;
-        ctx.lineWidth = brushSize * 0.5;
         ctx.lineCap = 'round';
-        for (let i = 0; i < 5; i++) {
-          ctx.globalAlpha = 0.5 - i * 0.08;
-          const offsetX = (Math.random() - 0.5) * brushSize * 1.2;
-          const offsetY = (Math.random() - 0.5) * brushSize * 1.2;
+        const numLines = 7;
+        for (let i = 0; i < numLines; i++) {
+          // Offset aleatorio para cada línea
+          const offsetX = (Math.random() - 0.5) * brushSize * 1.5;
+          const offsetY = (Math.random() - 0.5) * brushSize * 1.5;
+          ctx.globalAlpha = 0.18 + Math.random() * 0.32;
+          ctx.lineWidth = brushSize * (0.25 + Math.random() * 0.25);
+          // Variar longitud (simula líneas más cortas/largas)
+          const t1 = Math.random() * 0.2;
+          const t2 = 0.8 + Math.random() * 0.2;
           ctx.beginPath();
-          ctx.moveTo(points[points.length - 2].x + offsetX, points[points.length - 2].y + offsetY);
-          ctx.lineTo(points[points.length - 1].x + offsetX, points[points.length - 1].y + offsetY);
+          ctx.moveTo(
+            points[points.length - 2].x + offsetX * (1 - t1),
+            points[points.length - 2].y + offsetY * (1 - t1)
+          );
+          ctx.lineTo(
+            points[points.length - 1].x + offsetX * (1 - t2),
+            points[points.length - 1].y + offsetY * (1 - t2)
+          );
+          ctx.stroke();
+        }
+        // Líneas cruzadas (diagonales)
+        for (let i = 0; i < 3; i++) {
+          const angle = Math.PI / 4 + (Math.random() - 0.5) * Math.PI / 2;
+          const length = brushSize * (2 + Math.random() * 2);
+          ctx.globalAlpha = 0.12 + Math.random() * 0.18;
+          ctx.lineWidth = brushSize * (0.18 + Math.random() * 0.18);
+          ctx.beginPath();
+          const midX = (points[points.length - 2].x + points[points.length - 1].x) / 2;
+          const midY = (points[points.length - 2].y + points[points.length - 1].y) / 2;
+          ctx.moveTo(
+            midX - Math.cos(angle) * length / 2,
+            midY - Math.sin(angle) * length / 2
+          );
+          ctx.lineTo(
+            midX + Math.cos(angle) * length / 2,
+            midY + Math.sin(angle) * length / 2
+          );
           ctx.stroke();
         }
         ctx.globalAlpha = 1;
@@ -602,6 +609,115 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
           ctx.beginPath();
           ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
           ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+        break;
+      }
+      // Beads: círculo en el punto medio, diámetro igual a la distancia entre puntos
+      case 'beads': {
+        if (points.length < 2) break;
+        const x1 = points[points.length - 2].x;
+        const y1 = points[points.length - 2].y;
+        const x2 = points[points.length - 1].x;
+        const y2 = points[points.length - 1].y;
+        const midX = (x1 + x2) / 2;
+        const midY = (y1 + y2) / 2;
+        const distance = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.fillStyle = brushColor;
+        ctx.globalAlpha = 0.7;
+        ctx.beginPath();
+        ctx.arc(midX, midY, distance / 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        break;
+      }
+      // Pincel clásico mejorado: trazo artístico con variación de ancho y opacidad
+      case 'brush': {
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = brushColor;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        // Simular presión y textura
+        const width = brushSize * (0.85 + Math.random() * 0.3);
+        ctx.lineWidth = width;
+        ctx.globalAlpha = 0.7 + Math.random() * 0.25;
+        ctx.beginPath();
+        ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
+        ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        break;
+      }
+      // Pincel grueso mejorado: centro opaco, bordes difusos y residuos
+      case 'thick': {
+        ctx.globalCompositeOperation = 'source-over';
+        // Trazo principal (más opaco en el centro)
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushSize * 2.2;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.globalAlpha = 0.85;
+        ctx.beginPath();
+        ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
+        ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+        ctx.stroke();
+        // Bordes difusos (círculos semitransparentes)
+        for (let i = 0; i < 8; i++) {
+          const t = i / 7;
+          const x = points[points.length - 2].x + (points[points.length - 1].x - points[points.length - 2].x) * t;
+          const y = points[points.length - 2].y + (points[points.length - 1].y - points[points.length - 2].y) * t;
+          for (let j = 0; j < 6; j++) {
+            const angle = Math.random() * 2 * Math.PI;
+            const radius = brushSize * (1.1 + Math.random() * 0.7);
+            const px = x + Math.cos(angle) * radius;
+            const py = y + Math.sin(angle) * radius;
+            ctx.globalAlpha = 0.13 + Math.random() * 0.09;
+            ctx.beginPath();
+            ctx.arc(px, py, brushSize * (0.18 + Math.random() * 0.18), 0, Math.PI * 2);
+            ctx.fillStyle = brushColor;
+            ctx.fill();
+          }
+        }
+        // Residuos de pintura (puntos pequeños en los bordes)
+        for (let i = 0; i < 10; i++) {
+          const angle = Math.random() * 2 * Math.PI;
+          const radius = brushSize * (1.7 + Math.random() * 0.7);
+          const px = points[points.length - 1].x + Math.cos(angle) * radius;
+          const py = points[points.length - 1].y + Math.sin(angle) * radius;
+          ctx.globalAlpha = 0.08 + Math.random() * 0.08;
+          ctx.beginPath();
+          ctx.arc(px, py, Math.random() * 1.2 + 0.5, 0, Math.PI * 2);
+          ctx.fillStyle = brushColor;
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+        break;
+      }
+      // Pincel cortado: simula poca pintura, líneas sueltas e irregulares
+      case 'sliced': {
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = brushColor;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        const numLines = Math.max(3, Math.floor(brushSize / 2));
+        for (let i = 0; i < numLines; i++) {
+          const offset = (i - numLines / 2) * (brushSize * 0.4 + Math.random() * brushSize * 0.2);
+          // Simular líneas interrumpidas
+          if (Math.random() < 0.35) continue;
+          ctx.globalAlpha = 0.18 + Math.random() * 0.22;
+          ctx.lineWidth = brushSize * (0.18 + Math.random() * 0.18);
+          ctx.beginPath();
+          // A veces la línea es más corta (simula falta de pintura)
+          const t1 = Math.random() * 0.3;
+          const t2 = 0.7 + Math.random() * 0.3;
+          const xStart = points[points.length - 2].x + offset * (1 - t1);
+          const yStart = points[points.length - 2].y + offset * (1 - t1);
+          const xEnd = points[points.length - 1].x + offset * (1 - t2);
+          const yEnd = points[points.length - 1].y + offset * (1 - t2);
+          ctx.moveTo(xStart, yStart);
+          ctx.lineTo(xEnd, yEnd);
           ctx.stroke();
         }
         ctx.globalAlpha = 1;
@@ -725,8 +841,7 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
         initial={{ opacity: 0, scale: 0.96 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.96 }}
-        className={`fixed bg-background dark:bg-neutral-900 border border-border rounded-2xl shadow-2xl w-full ${isCanvasStep ? "max-w-5xl min-h-[700px] mt-12" : "max-w-lg mt-8"} mx-auto p-0 overflow-hidden flex flex-col z-[99999]`}
-        style={isCanvasStep ? { minHeight: 700, minWidth: 0 } : {}}
+        className={`fixed bg-background dark:bg-neutral-900 border border-border rounded-2xl shadow-2xl w-full ${isCanvasStep ? "max-w-5xl min-h-[700px]" : "max-w-lg"} mx-auto p-0 overflow-hidden flex flex-col z-[99999]`}
       >
         {/* Header */}
         <div className="px-8 pt-8 pb-4 border-b border-border">
@@ -873,11 +988,9 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
                               <option value="smooth">Lápiz suave (Bezier)</option>
                               <option value="shadow">Sombra/Glow</option>
                               <option value="brush">Pincel clásico</option>
-                              <option value="classic_brush">Pincel clásico (HTML/JS)</option>
                               <option value="eraser">Borrador</option>
                             </optgroup>
                             <optgroup label="Artísticos">
-                              <option value="fur" disabled={!furReady}>Fur (pelos){!furReady ? ' (cargando...)' : ''}</option>
                               <option value="pen">Pluma (ancho variable)</option>
                               <option value="pen2">Pluma múltiple</option>
                               <option value="thick">Pincel grueso</option>
@@ -894,6 +1007,7 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
                               <option value="puntos">Puntos</option>
                               <option value="lineas">Líneas</option>
                               <option value="fuego">Fuego</option>
+                              <option value="beads">Beads (perlas)</option>
                             </optgroup>
                             <optgroup label="Estampado">
                               <option value="stamp_circle">Estampado círculo</option>
