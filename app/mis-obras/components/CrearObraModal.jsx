@@ -43,6 +43,46 @@ function drawSpray(point, brushSize, brushColor, canvasRef) {
   ctx.globalAlpha = 1;
 }
 
+// Agregar función auxiliar para variar el color:
+function shadeColor(color, percent) {
+  // color: #rrggbb
+  let R = parseInt(color.substring(1,3),16);
+  let G = parseInt(color.substring(3,5),16);
+  let B = parseInt(color.substring(5,7),16);
+  R = Math.min(255, Math.max(0, R + percent));
+  G = Math.min(255, Math.max(0, G + percent));
+  B = Math.min(255, Math.max(0, B + percent));
+  return `rgb(${R},${G},${B})`;
+}
+
+// Agregar función auxiliar para dibujar una estrella:
+function drawStar(ctx, x, y, outerRadius, innerRadius, points, color) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(x, y - outerRadius);
+  for (let i = 0; i < points * 2; i++) {
+    const angle = Math.PI / points * i;
+    const r = i % 2 === 0 ? outerRadius : innerRadius;
+    ctx.lineTo(x + Math.sin(angle) * r, y - Math.cos(angle) * r);
+  }
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.restore();
+}
+
+// Agregar función auxiliar para convertir hex a rgba:
+function hexToRgba(hex, alpha) {
+  hex = hex.replace('#', '');
+  if (hex.length === 3) {
+    hex = hex.split('').map(x => x + x).join('');
+  }
+  const r = parseInt(hex.substring(0,2), 16);
+  const g = parseInt(hex.substring(2,4), 16);
+  const b = parseInt(hex.substring(4,6), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
 export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
   const { theme } = useTheme();
   const [step, setStep] = useState(0);
@@ -67,6 +107,12 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
   const [isDrawing, setIsDrawing] = useState(false);
   const [lastPoint, setLastPoint] = useState(null);
   const [cursorPos, setCursorPos] = useState(null);
+  const [patternImage, setPatternImage] = useState(null);
+  const [patternImageUrl, setPatternImageUrl] = useState(null);
+  const [showPatternImageModal, setShowPatternImageModal] = useState(false);
+  const [patternImageReady, setPatternImageReady] = useState(false);
+  const [aerosolTimer, setAerosolTimer] = useState(null);
+  const [aerosolPos, setAerosolPos] = useState(null);
 
   useEffect(() => {
     // Preparar textura para pincel "fur"
@@ -109,6 +155,20 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
     multiple: false
   });
   const { getRootProps: getBgRootProps, getInputProps: getBgInputProps, isDragActive: isBgDragActive } = bgDropzone;
+
+  // Dropzone para patrón de imagen
+  const patternImageDropzone = useDropzone({
+    onDrop: (acceptedFiles) => {
+      const file = acceptedFiles[0];
+      if (file) {
+        setPatternImage(file);
+        setShowPatternImageModal(false);
+      }
+    },
+    accept: { "image/*": [] },
+    multiple: false
+  });
+  const { getRootProps: getPatternImgRootProps, getInputProps: getPatternImgInputProps, isDragActive: isPatternImgDragActive } = patternImageDropzone;
 
   const reset = () => {
     setStep(0);
@@ -282,25 +342,179 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
         }
         break;
 
-      case 'glitch':
-      case 'heart_spray':
-      case 'lightning':
-      case 'bubble':
-      case 'ribbon':
-      case 'fire_realistic':
-      case 'particles':
-      default:
-        ctx.beginPath();
-        ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
-        ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
-        ctx.strokeStyle = brushColor;
-        ctx.lineWidth = brushSize;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        ctx.globalAlpha = 1;
-        ctx.stroke();
+      case 'glitch': {
+        // Línea principal
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        for (let i = 0; i < 3; i++) {
+          const offset = (i - 1) * 2;
+          ctx.strokeStyle = ['#f00', '#0ff', '#fff'][i];
+          ctx.lineWidth = brushSize + (i === 1 ? 2 : 0);
+          ctx.beginPath();
+          ctx.moveTo(points[points.length - 2].x + offset, points[points.length - 2].y + offset);
+          ctx.lineTo(points[points.length - 1].x + offset, points[points.length - 1].y + offset);
+          ctx.stroke();
+        }
+        // Saltos aleatorios
+        for (let i = 0; i < 4; i++) {
+          ctx.strokeStyle = '#fff';
+          ctx.lineWidth = brushSize * 0.7;
+          const t = Math.random();
+          const x1 = points[points.length - 2].x + (points[points.length - 1].x - points[points.length - 2].x) * t + getRandomInt(-4, 4);
+          const y1 = points[points.length - 2].y + (points[points.length - 1].y - points[points.length - 2].y) * t + getRandomInt(-4, 4);
+          const x2 = x1 + getRandomInt(-8, 8);
+          const y2 = y1 + getRandomInt(-8, 8);
+          ctx.beginPath();
+          ctx.moveTo(x1, y1);
+          ctx.lineTo(x2, y2);
+          ctx.stroke();
+        }
+        ctx.restore();
         break;
-
+      }
+      case 'heart_spray': {
+        // Spray de corazones
+        for (let i = 0; i < brushSize * 1.2; i++) {
+          const angle = Math.random() * 2 * Math.PI;
+          const radius = Math.random() * brushSize * 1.5;
+          const x = points[points.length - 1].x + Math.cos(angle) * radius;
+          const y = points[points.length - 1].y + Math.sin(angle) * radius;
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.rotate(angle);
+          ctx.scale(0.7 + Math.random() * 0.7, 0.7 + Math.random() * 0.7);
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.bezierCurveTo(0, -brushSize * 0.4, -brushSize * 0.5, -brushSize * 0.4, -brushSize * 0.5, 0);
+          ctx.bezierCurveTo(-brushSize * 0.5, brushSize * 0.5, 0, brushSize * 0.7, 0, brushSize * 1.1);
+          ctx.bezierCurveTo(0, brushSize * 0.7, brushSize * 0.5, brushSize * 0.5, brushSize * 0.5, 0);
+          ctx.bezierCurveTo(brushSize * 0.5, -brushSize * 0.4, 0, -brushSize * 0.4, 0, 0);
+          ctx.closePath();
+          ctx.fillStyle = `hsl(${Math.random() * 360}, 80%, 60%)`;
+          ctx.globalAlpha = 0.7 + Math.random() * 0.3;
+          ctx.fill();
+          ctx.restore();
+        }
+        break;
+      }
+      case 'lightning': {
+        // Rayo zig-zag
+        const x1 = points[points.length - 2].x;
+        const y1 = points[points.length - 2].y;
+        const x2 = points[points.length - 1].x;
+        const y2 = points[points.length - 1].y;
+        const steps = 8;
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        for (let j = 0; j < 2; j++) {
+          ctx.beginPath();
+          ctx.moveTo(x1, y1);
+          for (let i = 1; i < steps; i++) {
+            const t = i / steps;
+            const nx = x1 + (x2 - x1) * t + getRandomInt(-6, 6);
+            const ny = y1 + (y2 - y1) * t + getRandomInt(-6, 6);
+            ctx.lineTo(nx, ny);
+          }
+          ctx.lineTo(x2, y2);
+          ctx.strokeStyle = j === 0 ? '#fff' : 'yellow';
+          ctx.lineWidth = j === 0 ? brushSize * 1.2 : brushSize * 0.7;
+          ctx.shadowColor = 'yellow';
+          ctx.shadowBlur = 8;
+          ctx.globalAlpha = j === 0 ? 0.7 : 0.5;
+          ctx.stroke();
+        }
+        ctx.restore();
+        break;
+      }
+      case 'bubble': {
+        // Burbujas translúcidas
+        for (let i = 0; i < brushSize * 1.2; i++) {
+          const angle = Math.random() * 2 * Math.PI;
+          const radius = Math.random() * brushSize * 1.5;
+          const x = points[points.length - 1].x + Math.cos(angle) * radius;
+          const y = points[points.length - 1].y + Math.sin(angle) * radius;
+          ctx.beginPath();
+          ctx.arc(x, y, Math.max(3, brushSize * 0.5 + Math.random() * brushSize * 0.5), 0, Math.PI * 2);
+          ctx.globalAlpha = 0.18 + Math.random() * 0.22;
+          ctx.fillStyle = `rgba(180,220,255,0.5)`;
+          ctx.fill();
+          // Reflejo
+          ctx.globalAlpha = 0.12;
+          ctx.beginPath();
+          ctx.arc(x - brushSize * 0.2, y - brushSize * 0.2, Math.max(1, brushSize * 0.18), 0, Math.PI * 2);
+          ctx.fillStyle = '#fff';
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+        break;
+      }
+      case 'ribbon': {
+        // Cinta ondulante
+        const x1 = points[points.length - 2].x;
+        const y1 = points[points.length - 2].y;
+        const x2 = points[points.length - 1].x;
+        const y2 = points[points.length - 1].y;
+        const steps = 16;
+        ctx.save();
+        ctx.beginPath();
+        for (let i = 0; i <= steps; i++) {
+          const t = i / steps;
+          const angle = Math.PI * 2 * t * 2 + Date.now() / 200;
+          const r = Math.sin(angle) * brushSize * 0.7;
+          const x = x1 + (x2 - x1) * t + Math.cos(angle) * r;
+          const y = y1 + (y2 - y1) * t + Math.sin(angle) * r;
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushSize * 0.9;
+        ctx.globalAlpha = 0.7;
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        ctx.restore();
+        break;
+      }
+      case 'fire_realistic': {
+        // Llama realista
+        for (let i = 0; i < 3; i++) {
+          const flameColor = [
+            'rgba(255, 200, 0, 0.18)',
+            'rgba(255, 100, 0, 0.13)',
+            'rgba(255, 255, 255, 0.08)'
+          ][i];
+          const flameSize = brushSize * (1.2 + i * 0.5);
+          ctx.beginPath();
+          ctx.ellipse(points[points.length - 1].x, points[points.length - 1].y, flameSize, flameSize * (1.2 + Math.random() * 0.5), 0, 0, Math.PI * 2);
+          ctx.fillStyle = flameColor;
+          ctx.fill();
+        }
+        // Chispas
+        for (let i = 0; i < Math.floor(brushSize / 2); i++) {
+          ctx.globalAlpha = 0.7;
+          ctx.fillStyle = 'yellow';
+          ctx.beginPath();
+          ctx.arc(points[points.length - 1].x + (Math.random() - 0.5) * brushSize * 2, points[points.length - 1].y - Math.random() * brushSize * 2, Math.random() * 2 + 1, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+        break;
+      }
+      case 'particles': {
+        // Partículas de colores
+        for (let i = 0; i < brushSize * 2; i++) {
+          const angle = Math.random() * 2 * Math.PI;
+          const radius = Math.random() * brushSize * 1.2;
+          const x = points[points.length - 1].x + Math.cos(angle) * radius;
+          const y = points[points.length - 1].y + Math.sin(angle) * radius;
+          ctx.beginPath();
+          ctx.arc(x, y, Math.max(1, brushSize * 0.18), 0, Math.PI * 2);
+          ctx.globalAlpha = 0.5 + Math.random() * 0.5;
+          ctx.fillStyle = `hsl(${Math.random() * 360}, 80%, 60%)`;
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+        break;
+      }
       // Carboncillo: puntos aleatorios y multiply
       case 'carboncillo': {
         ctx.globalCompositeOperation = 'multiply';
@@ -382,31 +596,37 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
         ctx.globalAlpha = 1;
         break;
       }
-      // Óleo: círculos y textura
+      // Óleo mejorado: pinceladas visibles, textura y mezcla de tonos
       case 'oleo': {
         ctx.globalCompositeOperation = 'source-over';
-        const distance = Math.sqrt(
-          Math.pow(points[points.length - 1].x - points[points.length - 2].x, 2) +
-          Math.pow(points[points.length - 1].y - points[points.length - 2].y, 2)
-        );
-        const steps = Math.max(1, Math.ceil(distance / 3));
+        const x1 = points[points.length - 2].x;
+        const y1 = points[points.length - 2].y;
+        const x2 = points[points.length - 1].x;
+        const y2 = points[points.length - 1].y;
+        const distance = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+        const steps = Math.max(1, Math.ceil(distance / 2));
         for (let i = 0; i <= steps; i++) {
           const t = i / steps;
-          const interpX = points[points.length - 2].x + (points[points.length - 1].x - points[points.length - 2].x) * t;
-          const interpY = points[points.length - 2].y + (points[points.length - 1].y - points[points.length - 2].y) * t;
-          ctx.globalAlpha = 0.7;
+          const interpX = x1 + (x2 - x1) * t;
+          const interpY = y1 + (y2 - y1) * t;
+          // Mancha principal
+          ctx.globalAlpha = 0.45;
           ctx.fillStyle = brushColor;
           ctx.beginPath();
-          ctx.arc(interpX, interpY, brushSize * 0.45, 0, Math.PI * 2);
+          ctx.ellipse(interpX, interpY, brushSize * 0.7, brushSize * (0.4 + Math.random() * 0.3), Math.random() * Math.PI, 0, Math.PI * 2);
           ctx.fill();
-          // Textura
-          ctx.globalAlpha = 0.22;
-          ctx.strokeStyle = '#fff';
-          ctx.lineWidth = 1 + Math.random() * 1.2;
-          ctx.beginPath();
-          ctx.moveTo(interpX, interpY);
-          ctx.lineTo(interpX + Math.random() * 5 - 2.5, interpY + Math.random() * 5 - 2.5);
-          ctx.stroke();
+          // Pinceladas: líneas cortas y manchas
+          for (let j = 0; j < 3; j++) {
+            const angle = Math.random() * 2 * Math.PI;
+            const len = brushSize * (0.7 + Math.random() * 0.5);
+            ctx.globalAlpha = 0.10 + Math.random() * 0.05;
+            ctx.strokeStyle = shadeColor(brushColor, (Math.random() - 0.5) * 18);
+            ctx.lineWidth = brushSize * (0.18 + Math.random() * 0.18);
+            ctx.beginPath();
+            ctx.moveTo(interpX, interpY);
+            ctx.lineTo(interpX + Math.cos(angle) * len, interpY + Math.sin(angle) * len);
+            ctx.stroke();
+          }
         }
         ctx.globalAlpha = 1;
         break;
@@ -598,17 +818,30 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
         ctx.globalAlpha = 1;
         break;
       }
-      // Multi-opacity: líneas con opacidad decreciente
+      // Multi-opacity mejorado: líneas superpuestas con offsets, opacidad y grosor decreciente
       case 'multi_opacity': {
         ctx.globalCompositeOperation = 'source-over';
         ctx.strokeStyle = brushColor;
-        ctx.lineWidth = brushSize * 0.7;
         ctx.lineCap = 'round';
-        for (let i = 0; i < 4; i++) {
-          ctx.globalAlpha = 1 - i * 0.25;
+        ctx.lineJoin = 'round';
+        const numLines = 5;
+        for (let i = 0; i < numLines; i++) {
+          const offsetX = (Math.random() - 0.5) * brushSize * 1.1;
+          const offsetY = (Math.random() - 0.5) * brushSize * 1.1;
+          ctx.globalAlpha = 1 - i * 0.18 - Math.random() * 0.12;
+          ctx.lineWidth = brushSize * (0.7 - i * 0.12 + Math.random() * 0.08);
+          // Variar longitud de la línea
+          const t1 = Math.random() * 0.15;
+          const t2 = 0.85 + Math.random() * 0.15;
           ctx.beginPath();
-          ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
-          ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+          ctx.moveTo(
+            points[points.length - 2].x + offsetX * (1 - t1),
+            points[points.length - 2].y + offsetY * (1 - t1)
+          );
+          ctx.lineTo(
+            points[points.length - 1].x + offsetX * (1 - t2),
+            points[points.length - 1].y + offsetY * (1 - t2)
+          );
           ctx.stroke();
         }
         ctx.globalAlpha = 1;
@@ -723,6 +956,342 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
         ctx.globalAlpha = 1;
         break;
       }
+      // Wiggle: arco ondulado entre puntos, alternando dirección
+      case 'wiggle': {
+        if (points.length < 2) break;
+        const x1 = points[points.length - 2].x;
+        const y1 = points[points.length - 2].y;
+        const x2 = points[points.length - 1].x;
+        const y2 = points[points.length - 1].y;
+        const midX = (x1 + x2) / 2;
+        const midY = (y1 + y2) / 2;
+        const distance = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+        const angle = Math.atan2(y2 - y1, x2 - x1);
+        // Alternar flip usando un contador local
+        if (!draw.wiggleFlip) draw.wiggleFlip = 0;
+        draw.wiggleFlip = 1 - draw.wiggleFlip;
+        const flip = draw.wiggleFlip * Math.PI;
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = Math.max(2, brushSize * 0.7);
+        ctx.globalAlpha = 1;
+        ctx.beginPath();
+        ctx.arc(midX, midY, distance / 2, angle + flip, angle + Math.PI + flip);
+        ctx.stroke();
+        break;
+      }
+      // Estampado círculo mejorado: patrón de círculos repetidos como trazo
+      case 'stamp_circle': {
+        if (!draw.stampCirclePatternCache || draw.stampCirclePatternColor !== brushColor || draw.stampCirclePatternSize !== brushSize) {
+          // Crear patrón de círculo
+          const patternCanvas = document.createElement('canvas');
+          const dotWidth = Math.max(6, brushSize * 1.2);
+          const dotDistance = Math.max(2, brushSize * 0.4);
+          patternCanvas.width = patternCanvas.height = dotWidth + dotDistance;
+          const patternCtx = patternCanvas.getContext('2d');
+          patternCtx.fillStyle = brushColor;
+          patternCtx.beginPath();
+          patternCtx.arc(dotWidth / 2, dotWidth / 2, dotWidth / 2, 0, Math.PI * 2);
+          patternCtx.closePath();
+          patternCtx.fill();
+          draw.stampCirclePatternCache = ctx.createPattern(patternCanvas, 'repeat');
+          draw.stampCirclePatternColor = brushColor;
+          draw.stampCirclePatternSize = brushSize;
+        }
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.lineWidth = brushSize * 2;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = draw.stampCirclePatternCache;
+        // Trazar curva suave entre los dos últimos puntos
+        if (points.length >= 2) {
+          const p1 = points[points.length - 2];
+          const p2 = points[points.length - 1];
+          const midX = p1.x + (p2.x - p1.x) / 2;
+          const midY = p1.y + (p2.y - p1.y) / 2;
+          ctx.beginPath();
+          ctx.moveTo(p1.x, p1.y);
+          ctx.quadraticCurveTo(p1.x, p1.y, midX, midY);
+          ctx.stroke();
+        }
+        break;
+      }
+      // Estampado estrella: patrón de estrellas repetidas como trazo
+      case 'stamp_star': {
+        if (!draw.stampStarPatternCache || draw.stampStarPatternColor !== brushColor || draw.stampStarPatternSize !== brushSize) {
+          // Crear patrón de estrella
+          const patternCanvas = document.createElement('canvas');
+          const starSize = Math.max(8, brushSize * 1.4);
+          const starDistance = Math.max(3, brushSize * 0.7);
+          patternCanvas.width = patternCanvas.height = starSize + starDistance;
+          const patternCtx = patternCanvas.getContext('2d');
+          patternCtx.save();
+          patternCtx.translate(patternCanvas.width / 2, patternCanvas.height / 2);
+          drawStar(patternCtx, 0, 0, starSize / 2, starSize / 4, 5, brushColor);
+          patternCtx.restore();
+          draw.stampStarPatternCache = ctx.createPattern(patternCanvas, 'repeat');
+          draw.stampStarPatternColor = brushColor;
+          draw.stampStarPatternSize = brushSize;
+        }
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.lineWidth = brushSize * 2;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = draw.stampStarPatternCache;
+        // Trazar curva suave entre los dos últimos puntos
+        if (points.length >= 2) {
+          const p1 = points[points.length - 2];
+          const p2 = points[points.length - 1];
+          const midX = p1.x + (p2.x - p1.x) / 2;
+          const midY = p1.y + (p2.y - p1.y) / 2;
+          ctx.beginPath();
+          ctx.moveTo(p1.x, p1.y);
+          ctx.quadraticCurveTo(p1.x, p1.y, midX, midY);
+          ctx.stroke();
+        }
+        break;
+      }
+      // Patrón líneas: patrón de líneas paralelas como trazo
+      case 'pattern_lines': {
+        if (!draw.patternLinesCache || draw.patternLinesColor !== brushColor || draw.patternLinesSize !== brushSize) {
+          // Crear patrón de líneas
+          const patternCanvas = document.createElement('canvas');
+          const lineSpacing = Math.max(4, brushSize * 1.2);
+          const lineWidth = Math.max(2, brushSize * 0.5);
+          patternCanvas.width = patternCanvas.height = lineSpacing * 2;
+          const patternCtx = patternCanvas.getContext('2d');
+          patternCtx.strokeStyle = brushColor;
+          patternCtx.lineWidth = lineWidth;
+          for (let i = 0; i < 2; i++) {
+            patternCtx.beginPath();
+            patternCtx.moveTo(0, i * lineSpacing + lineWidth / 2);
+            patternCtx.lineTo(patternCanvas.width, i * lineSpacing + lineWidth / 2);
+            patternCtx.stroke();
+          }
+          draw.patternLinesCache = ctx.createPattern(patternCanvas, 'repeat');
+          draw.patternLinesColor = brushColor;
+          draw.patternLinesSize = brushSize;
+        }
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.lineWidth = brushSize * 2;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = draw.patternLinesCache;
+        // Trazar curva suave entre los dos últimos puntos
+        if (points.length >= 2) {
+          const p1 = points[points.length - 2];
+          const p2 = points[points.length - 1];
+          const midX = p1.x + (p2.x - p1.x) / 2;
+          const midY = p1.y + (p2.y - p1.y) / 2;
+          ctx.beginPath();
+          ctx.moveTo(p1.x, p1.y);
+          ctx.quadraticCurveTo(p1.x, p1.y, midX, midY);
+          ctx.stroke();
+        }
+        break;
+      }
+      // Patrón arcoíris: patrón de franjas de colores como trazo
+      case 'pattern_rainbow': {
+        if (!draw.patternRainbowCache || draw.patternRainbowSize !== brushSize) {
+          // Crear patrón de arcoíris
+          const patternCanvas = document.createElement('canvas');
+          patternCanvas.width = 35;
+          patternCanvas.height = Math.max(20, brushSize * 1.5);
+          const ctxPat = patternCanvas.getContext('2d');
+          const h = patternCanvas.height;
+          ctxPat.fillStyle = 'red';      ctxPat.fillRect(0, 0, 5, h);
+          ctxPat.fillStyle = 'orange';   ctxPat.fillRect(5, 0, 5, h);
+          ctxPat.fillStyle = 'yellow';   ctxPat.fillRect(10, 0, 5, h);
+          ctxPat.fillStyle = 'green';    ctxPat.fillRect(15, 0, 5, h);
+          ctxPat.fillStyle = 'lightblue';ctxPat.fillRect(20, 0, 5, h);
+          ctxPat.fillStyle = 'blue';     ctxPat.fillRect(25, 0, 5, h);
+          ctxPat.fillStyle = 'purple';   ctxPat.fillRect(30, 0, 5, h);
+          draw.patternRainbowCache = ctx.createPattern(patternCanvas, 'repeat');
+          draw.patternRainbowSize = brushSize;
+        }
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.lineWidth = brushSize * 2;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = draw.patternRainbowCache;
+        // Trazar curva suave entre los dos últimos puntos
+        if (points.length >= 2) {
+          const p1 = points[points.length - 2];
+          const p2 = points[points.length - 1];
+          const midX = p1.x + (p2.x - p1.x) / 2;
+          const midY = p1.y + (p2.y - p1.y) / 2;
+          ctx.beginPath();
+          ctx.moveTo(p1.x, p1.y);
+          ctx.quadraticCurveTo(p1.x, p1.y, midX, midY);
+          ctx.stroke();
+        }
+        break;
+      }
+      // Patrón imagen: patrón de imagen seleccionada por el usuario (sin caché, crea el patrón en cada draw)
+      case 'pattern_image': {
+        if (patternImageUrl) {
+          const img = new window.Image();
+          img.crossOrigin = 'anonymous';
+          img.src = patternImageUrl;
+          img.onload = () => {
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.lineWidth = brushSize * 2;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.strokeStyle = ctx.createPattern(img, 'repeat');
+            // Trazar curva suave entre los dos últimos puntos
+            if (points.length >= 2) {
+              const p1 = points[points.length - 2];
+              const p2 = points[points.length - 1];
+              const midX = p1.x + (p2.x - p1.x) / 2;
+              const midY = p1.y + (p2.y - p1.y) / 2;
+              ctx.beginPath();
+              ctx.moveTo(p1.x, p1.y);
+              ctx.quadraticCurveTo(p1.x, p1.y, midX, midY);
+              ctx.stroke();
+            }
+          };
+        }
+        break;
+      }
+      // Aerosol: spray continuo mientras el mouse está presionado
+      case 'aerosol': {
+        // El efecto se maneja en el temporizador, no aquí
+        break;
+      }
+      // Neighbor points: conecta cada punto con su vecino anterior
+      case 'neighbor': {
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = Math.max(1, brushSize * 0.5);
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        ctx.moveTo(points[0].x, points[0].y);
+        for (let i = 1; i < points.length; i++) {
+          ctx.lineTo(points[i].x, points[i].y);
+          const nearIdx = i - 5;
+          if (nearIdx >= 0) {
+            ctx.moveTo(points[nearIdx].x, points[nearIdx].y);
+            ctx.lineTo(points[i].x, points[i].y);
+          }
+        }
+        ctx.stroke();
+        break;
+      }
+      // Fur neighbor: conecta el punto actual con todos los puntos anteriores cercanos (efecto peludo)
+      case 'fur_neighbor': {
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = Math.max(1, brushSize * 0.5);
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        // Línea principal
+        ctx.beginPath();
+        ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
+        ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+        ctx.stroke();
+        // Líneas peludas a vecinos cercanos
+        for (let i = 0; i < points.length; i++) {
+          const dx = points[i].x - points[points.length - 1].x;
+          const dy = points[i].y - points[points.length - 1].y;
+          const d = dx * dx + dy * dy;
+          if (d < 1000) {
+            ctx.beginPath();
+            ctx.strokeStyle = hexToRgba(brushColor, 0.3);
+            ctx.moveTo(points[points.length - 1].x + dx * 0.2, points[points.length - 1].y + dy * 0.2);
+            ctx.lineTo(points[i].x - dx * 0.2, points[i].y - dy * 0.2);
+            ctx.stroke();
+            ctx.strokeStyle = brushColor;
+          }
+        }
+        break;
+      }
+      // Fountain pen: líneas inclinadas interpoladas entre puntos (efecto pluma estilográfica)
+      case 'fountain_pen': {
+        if (points.length < 2) break;
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = 1;
+        const width = Math.max(3, brushSize * 0.7);
+        const lerps = 16;
+        const x1 = points[points.length - 2].x;
+        const y1 = points[points.length - 2].y;
+        const x2 = points[points.length - 1].x;
+        const y2 = points[points.length - 1].y;
+        for (let i = 0; i < lerps; i++) {
+          const t = i / lerps;
+          const x = x1 + (x2 - x1) * t;
+          const y = y1 + (y2 - y1) * t;
+          ctx.beginPath();
+          ctx.moveTo(x - width, y - width);
+          ctx.lineTo(x + width, y + width);
+          ctx.stroke();
+        }
+        break;
+      }
+      // Sketchy: línea principal y líneas cruzadas semitransparentes a puntos cercanos (efecto boceto)
+      case 'sketchy': {
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = Math.max(1, brushSize * 0.5);
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        // Línea principal
+        if (points.length >= 2) {
+          ctx.beginPath();
+          ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
+          ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+          ctx.stroke();
+        }
+        // Líneas cruzadas tipo sketch
+        for (let i = 0; i < points.length; i++) {
+          const dx = points[i].x - points[points.length - 1].x;
+          const dy = points[i].y - points[points.length - 1].y;
+          const d = dx * dx + dy * dy;
+          if (d < 2000 && Math.random() > d / 2000) {
+            ctx.beginPath();
+            ctx.strokeStyle = hexToRgba(brushColor, 0.3);
+            ctx.moveTo(points[points.length - 1].x + dx * 0.5, points[points.length - 1].y + dy * 0.5);
+            ctx.lineTo(points[points.length - 1].x - dx * 0.5, points[points.length - 1].y - dy * 0.5);
+            ctx.stroke();
+            ctx.strokeStyle = brushColor;
+          }
+        }
+        break;
+      }
+      case 'spray_speed': {
+        // Spray dependiente de la velocidad del mouse
+        if (points.length < 2) break;
+        const p1 = points[points.length - 2];
+        const p2 = points[points.length - 1];
+        const speed = Math.abs(p2.x - p1.x) + Math.abs(p2.y - p1.y);
+        const minRadius = 10;
+        const sprayDensity = 80;
+        const r = speed + minRadius;
+        const rSquared = r * r;
+        const lerps = 10;
+        for (let i = 0; i < lerps; i++) {
+          // Interpolación entre los dos últimos puntos
+          const t = i / lerps;
+          const x = p1.x + (p2.x - p1.x) * t;
+          const y = p1.y + (p2.y - p1.y) * t;
+          // Spray de puntos
+          for (let j = 0; j < sprayDensity; j++) {
+            const angle = Math.random() * 2 * Math.PI;
+            const radius = Math.sqrt(Math.random() * rSquared);
+            const px = x + Math.cos(angle) * radius;
+            const py = y + Math.sin(angle) * radius;
+            ctx.beginPath();
+            ctx.arc(px, py, 0.8 + Math.random() * 1.2, 0, 2 * Math.PI);
+            ctx.globalAlpha = 0.12 + Math.random() * 0.18;
+            ctx.fillStyle = brushColor;
+            ctx.fill();
+          }
+        }
+        ctx.globalAlpha = 1;
+        break;
+      }
     }
     ctx.restore();
   };
@@ -738,6 +1307,27 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
           drawSpray(pointsRef.current[pointsRef.current.length - 1], brushSize, brushColor, canvasRef);
         }
       }, 20);
+    } else if (brushType === 'aerosol') {
+      const rect = canvasRef.current.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      setAerosolPos({ x, y });
+      const timer = setInterval(() => {
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+        const density = Math.max(10, brushSize * 3);
+        for (let i = 0; i < density; i++) {
+          const angle = Math.random() * 2 * Math.PI;
+          const radius = Math.random() * brushSize * 2;
+          const px = aerosolPos ? aerosolPos.x + Math.cos(angle) * radius : x + Math.cos(angle) * radius;
+          const py = aerosolPos ? aerosolPos.y + Math.sin(angle) * radius : y + Math.sin(angle) * radius;
+          ctx.fillStyle = brushColor;
+          ctx.globalAlpha = 0.18 + Math.random() * 0.18;
+          ctx.fillRect(px, py, 1.2, 1.2);
+        }
+        ctx.globalAlpha = 1;
+      }, 50);
+      setAerosolTimer(timer);
     } else {
       draw(e);
     }
@@ -746,7 +1336,12 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
   const handleMouseMove = (e) => {
     if (!isDrawing) return;
     addPoint(e);
-    draw(e);
+    if (brushType === 'aerosol') {
+      const rect = canvasRef.current.getBoundingClientRect();
+      setAerosolPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+    } else {
+      draw(e);
+    }
   };
 
   const handleMouseLeave = () => {
@@ -764,6 +1359,11 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
       clearInterval(sprayTimerRef.current);
       sprayTimerRef.current = null;
     }
+    if (aerosolTimer) {
+      clearInterval(aerosolTimer);
+      setAerosolTimer(null);
+    }
+    setAerosolPos(null);
     pointsRef.current = [];
   };
 
@@ -778,6 +1378,51 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
       img.src = canvasBg;
     }
   }, [canvasBg, imgMode]);
+
+  // Actualizar patternImageUrl cuando cambia patternImage
+  useEffect(() => {
+    if (patternImage) {
+      const url = URL.createObjectURL(patternImage);
+      setPatternImageUrl(url);
+      return () => URL.revokeObjectURL(url);
+    } else {
+      setPatternImageUrl(null);
+    }
+  }, [patternImage]);
+
+  // Crear patrón de imagen y marcarlo como listo
+  useEffect(() => {
+    setPatternImageReady(false);
+    if (patternImageUrl) {
+      const img = new window.Image();
+      img.crossOrigin = 'anonymous';
+      img.src = patternImageUrl;
+      img.onload = () => {
+        const canvas = canvasRef.current;
+        if (canvas) {
+          const ctx = canvas.getContext('2d');
+          const pattern = ctx.createPattern(img, 'repeat');
+          draw.patternImageCache = pattern;
+          draw.patternImageUrl = patternImageUrl;
+          draw.patternImageSize = brushSize;
+          setPatternImageReady(true);
+        }
+      };
+      img.onerror = () => {
+        setPatternImageReady(false);
+      };
+    } else {
+      draw.patternImageCache = null;
+      setPatternImageReady(false);
+    }
+  }, [patternImageUrl, brushSize]);
+
+  // Limpia el temporizador de aerosol al desmontar
+  useEffect(() => {
+    return () => {
+      if (aerosolTimer) clearInterval(aerosolTimer);
+    };
+  }, [aerosolTimer]);
 
   const handleCreate = async () => {
     if (!validateStep()) return;
@@ -1008,6 +1653,7 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
                               <option value="lineas">Líneas</option>
                               <option value="fuego">Fuego</option>
                               <option value="beads">Beads (perlas)</option>
+                              <option value="wiggle">Wiggle (ondas)</option>
                             </optgroup>
                             <optgroup label="Estampado">
                               <option value="stamp_circle">Estampado círculo</option>
@@ -1040,6 +1686,7 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
                               <option value="ribbon">Cinta</option>
                               <option value="fire_realistic">Fuego realista</option>
                               <option value="particles">Partículas</option>
+                              <option value="spray_speed">Spray velocidad</option>
                             </optgroup>
                           </select>
                         </div>
@@ -1085,6 +1732,38 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
                           Limpiar
                         </button>
                       </div>
+
+                      {/* Imagen para patrón (solo si pattern_image) */}
+                      {brushType === 'pattern_image' && (
+                        <div className="mb-3">
+                          <label className="font-medium mr-2">Imagen para patrón:</label>
+                          <button type="button" className="px-3 py-1 rounded bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700" onClick={() => setShowPatternImageModal(true)}>
+                            Seleccionar imagen
+                          </button>
+                          {patternImageUrl && (
+                            <img src={patternImageUrl} alt="pattern preview" className="mt-2 w-24 h-16 object-cover rounded border" />
+                          )}
+                          {!patternImageReady && patternImageUrl && (
+                            <div className="mt-2 text-xs text-gray-500 flex items-center gap-2"><span className="animate-spin inline-block w-4 h-4 border-2 border-gray-300 border-t-transparent rounded-full"></span> Cargando patrón...</div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Modal para seleccionar imagen de patrón */}
+                      {showPatternImageModal && (
+                        <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-black/40 backdrop-blur-sm" style={{ isolation: 'isolate' }}>
+                          <div className="bg-background dark:bg-neutral-900 border border-border rounded-2xl shadow-2xl p-8 flex flex-col items-center">
+                            <h3 className="font-semibold mb-4">Selecciona una imagen para el patrón</h3>
+                            <div {...getPatternImgRootProps()} className={`w-64 h-32 border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition flex items-center justify-center ${isPatternImgDragActive ? "border-indigo-500 bg-indigo-50" : "border-border bg-muted/40"}`}>
+                              <input {...getPatternImgInputProps()} />
+                              <span className="text-muted-foreground">Arrastra una imagen aquí o haz clic para seleccionar</span>
+                            </div>
+                            <button type="button" className="mt-6 px-4 py-2 rounded bg-gray-200 dark:bg-neutral-800 text-gray-700 dark:text-gray-200 font-bold hover:bg-gray-300 dark:hover:bg-neutral-700 transition" onClick={() => setShowPatternImageModal(false)}>
+                              Cancelar
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
 
