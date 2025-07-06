@@ -1,22 +1,33 @@
 "use client";
 
 import Link from "next/link";
-import AnimatedBackground from "../../../components/shared/AnimatedBackground";
+import AnimatedBackground from "./AnimatedBackground";
 
-const UnauthorizedScreen = () => {
+const UnauthorizedScreen = ({ 
+  title = "Inicia sesión para continuar",
+  message,
+  linkText = "Volver al inicio",
+  linkHref = "/",
+  withBackground = true
+}) => {
   return (
     <div className="relative min-h-screen">
-      <AnimatedBackground />
+      {withBackground && <AnimatedBackground />}
       <div className="relative z-10 min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-3xl font-bold text-foreground mb-4">
-            Inicia sesión para ver tus obras
+            {title}
           </h1>
+          {message && (
+            <p className="text-lg text-muted-foreground mb-6">
+              {message}
+            </p>
+          )}
           <Link
-            href="/"
+            href={linkHref}
             className="text-indigo-600 hover:text-indigo-500 underline"
           >
-            Volver al inicio
+            {linkText}
           </Link>
         </div>
       </div>

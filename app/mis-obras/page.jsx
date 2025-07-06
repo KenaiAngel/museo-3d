@@ -7,11 +7,9 @@ import { useMurales } from "./hooks/useMurales";
 import { useUIState } from "./hooks/useUIState";
 import CanvasEditor from "./components/CanvasEditor";
 import CrearObraModal from "./components/CrearObraModal";
-import AnimatedBackground from "./components/AnimatedBackground";
+import { AnimatedBackground, LoadingScreen, UnauthorizedScreen } from "../../components/shared";
 import FilterControls from "./components/FilterControls";
 import UploadModal from "./components/UploadModal";
-import LoadingScreen from "./components/LoadingScreen";
-import UnauthorizedScreen from "./components/UnauthorizedScreen";
 import PageHeader from "./components/PageHeader";
 import EmptyState from "./components/EmptyState";
 import MuralGrid from "./components/MuralGrid";
@@ -63,11 +61,16 @@ export default function MisObras() {
   };
 
   if (status === 'loading' || loading) {
-    return <LoadingScreen />;
+    return <LoadingScreen message="Cargando tus obras..." />;
   }
 
   if (!session) {
-    return <UnauthorizedScreen />;
+    return (
+      <UnauthorizedScreen 
+        title="Inicia sesión para ver tus obras"
+        message="Necesitas estar autenticado para crear y gestionar tus obras de arte"
+      />
+    );
   }
 
   return (

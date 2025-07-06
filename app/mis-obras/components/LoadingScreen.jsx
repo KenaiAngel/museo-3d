@@ -1,7 +1,7 @@
 "use client";
 
 import { RefreshCw } from "lucide-react";
-import AnimatedBackground from "./AnimatedBackground";
+import AnimatedBackground from "../../../components/shared/AnimatedBackground";
 
 const LoadingScreen = ({ message = "Cargando tus obras..." }) => {
   return (
