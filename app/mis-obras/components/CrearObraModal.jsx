@@ -1,8 +1,32 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { motion } from "framer-motion";
-import { X, Undo2, Redo2, Download, Trash2, Brush, Eraser, Droplets, Sparkles, PaintBucket, Palette, Flame, Grid3X3, Zap, MoreHorizontal, Target, Scissors, Waves, Circle, Star, Heart, Image } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  X,
+  Undo2,
+  Redo2,
+  Download,
+  Trash2,
+  Brush,
+  Eraser,
+  Droplets,
+  Sparkles,
+  PaintBucket,
+  Palette,
+  Flame,
+  Grid3X3,
+  Zap,
+  MoreHorizontal,
+  Target,
+  Scissors,
+  Waves,
+  Circle,
+  Star,
+  Heart,
+  Image,
+  Save,
+} from "lucide-react";
 import { useDropzone } from "react-dropzone";
 import toast from "react-hot-toast";
 import { useTheme } from "../../../providers/ThemeProvider";
@@ -16,8 +40,8 @@ const getScaledCoords = (e, canvasRef, canvasZoom) => {
   const scaleX = canvasRef.current.width / rect.width;
   const scaleY = canvasRef.current.height / rect.height;
   return {
-    x: (e.clientX - rect.left) * scaleX / canvasZoom,
-    y: (e.clientY - rect.top) * scaleY / canvasZoom
+    x: ((e.clientX - rect.left) * scaleX) / canvasZoom,
+    y: ((e.clientY - rect.top) * scaleY) / canvasZoom,
   };
 };
 
@@ -29,7 +53,7 @@ function getRandomInt(min, max) {
 // Función para dibujar spray (para spray_time)
 function drawSpray(point, brushSize, brushColor, canvasRef) {
   const canvas = canvasRef.current;
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext("2d");
   for (let i = 0; i < brushSize * 8; i++) {
     const angle = Math.random() * 2 * Math.PI;
     const radius = Math.random() * brushSize * 1.5;
@@ -47,9 +71,9 @@ function drawSpray(point, brushSize, brushColor, canvasRef) {
 // Agregar función auxiliar para variar el color:
 function shadeColor(color, percent) {
   // color: #rrggbb
-  let R = parseInt(color.substring(1,3),16);
-  let G = parseInt(color.substring(3,5),16);
-  let B = parseInt(color.substring(5,7),16);
+  let R = parseInt(color.substring(1, 3), 16);
+  let G = parseInt(color.substring(3, 5), 16);
+  let B = parseInt(color.substring(5, 7), 16);
   R = Math.min(255, Math.max(0, R + percent));
   G = Math.min(255, Math.max(0, G + percent));
   B = Math.min(255, Math.max(0, B + percent));
@@ -62,7 +86,7 @@ function drawStar(ctx, x, y, outerRadius, innerRadius, points, color) {
   ctx.beginPath();
   ctx.moveTo(x, y - outerRadius);
   for (let i = 0; i < points * 2; i++) {
-    const angle = Math.PI / points * i;
+    const angle = (Math.PI / points) * i;
     const r = i % 2 === 0 ? outerRadius : innerRadius;
     ctx.lineTo(x + Math.sin(angle) * r, y - Math.cos(angle) * r);
   }
@@ -74,13 +98,16 @@ function drawStar(ctx, x, y, outerRadius, innerRadius, points, color) {
 
 // Agregar función auxiliar para convertir hex a rgba:
 function hexToRgba(hex, alpha) {
-  hex = hex.replace('#', '');
+  hex = hex.replace("#", "");
   if (hex.length === 3) {
-    hex = hex.split('').map(x => x + x).join('');
+    hex = hex
+      .split("")
+      .map((x) => x + x)
+      .join("");
   }
-  const r = parseInt(hex.substring(0,2), 16);
-  const g = parseInt(hex.substring(2,4), 16);
-  const b = parseInt(hex.substring(4,6), 16);
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
   return `rgba(${r},${g},${b},${alpha})`;
 }
 
@@ -145,7 +172,26 @@ const BRUSH_SECTIONS = [
   },
   {
     label: "Artísticos",
-    keys: ["pen", "pen2", "thick", "sliced", "multi", "multi_opacity", "carboncillo", "acuarela", "tiza", "marcador", "oleo", "pixel", "neon", "puntos", "lineas", "fuego", "beads", "wiggle"],
+    keys: [
+      "pen",
+      "pen2",
+      "thick",
+      "sliced",
+      "multi",
+      "multi_opacity",
+      "carboncillo",
+      "acuarela",
+      "tiza",
+      "marcador",
+      "oleo",
+      "pixel",
+      "neon",
+      "puntos",
+      "lineas",
+      "fuego",
+      "beads",
+      "wiggle",
+    ],
   },
   {
     label: "Estampado",
@@ -165,9 +211,88 @@ const BRUSH_SECTIONS = [
   },
   {
     label: "Especiales",
-    keys: ["rainbow_dynamic", "confetti", "shooting_star", "glitch", "heart_spray", "lightning", "bubble", "ribbon", "fire_realistic", "particles"],
+    keys: [
+      "rainbow_dynamic",
+      "confetti",
+      "shooting_star",
+      "glitch",
+      "heart_spray",
+      "lightning",
+      "bubble",
+      "ribbon",
+      "fire_realistic",
+      "particles",
+    ],
   },
 ];
+
+// Definir paleta de colores rápida
+const colors = [
+  "#000000",
+  "#FFFFFF",
+  "#FF0000",
+  "#00FF00",
+  "#0000FF",
+  "#FFFF00",
+  "#FF00FF",
+  "#00FFFF",
+  "#FFA500",
+  "#800080",
+  "#FFC0CB",
+  "#A52A2A",
+  "#808080",
+  "#000080",
+  "#008000",
+];
+
+// Diccionario de nombres amigables en español para los pinceles
+const BRUSH_LABELS = {
+  pencil: "Lápiz",
+  smooth: "Lápiz suave",
+  shadow: "Sombra",
+  eraser: "Borrador",
+  carboncillo: "Carboncillo",
+  acuarela: "Acuarela",
+  tiza: "Tiza",
+  marcador: "Marcador",
+  oleo: "Óleo",
+  pixel: "Pixel",
+  neon: "Neón",
+  puntos: "Puntillismo",
+  lineas: "Líneas",
+  fuego: "Fuego",
+  thick: "Pincel grueso",
+  sliced: "Pincel cortado",
+  pen: "Pluma",
+  pen2: "Pluma doble",
+  multi: "Multi-línea",
+  multi_opacity: "Multi-opacidad",
+  beads: "Cuentas",
+  wiggle: "Ondulado",
+  stamp_circle: "Estampado círculo",
+  stamp_star: "Estampado estrella",
+  pattern_dots: "Patrón puntos",
+  pattern_lines: "Patrón líneas",
+  pattern_rainbow: "Patrón arcoíris",
+  pattern_image: "Patrón imagen",
+  aerosol: "Aerosol",
+  spray: "Spray",
+  spray_time: "Spray tiempo",
+  spray_speed: "Spray velocidad",
+  sketchy: "Boceto",
+  neighbor: "Vecino",
+  fur_neighbor: "Vecino peludo",
+  rainbow_dynamic: "Arcoíris dinámico",
+  confetti: "Confeti",
+  shooting_star: "Estrella fugaz",
+  glitch: "Glitch",
+  heart_spray: "Spray corazones",
+  lightning: "Rayo",
+  bubble: "Burbuja",
+  ribbon: "Cinta",
+  fire_realistic: "Fuego realista",
+  particles: "Partículas",
+};
 
 export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
   const { theme } = useTheme();
@@ -208,7 +333,15 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
   const brushDropdownRef = useRef(null);
   const brushButtonRef = useRef(null);
   const modalRef = useRef(null);
-  const [brushDropdownPos, setBrushDropdownPos] = useState({ left: '50%', top: '48px', width: 420 });
+  const [brushDropdownPos, setBrushDropdownPos] = useState({
+    left: "50%",
+    top: "48px",
+    width: 420,
+  });
+  const [showBrushModal, setShowBrushModal] = useState(false);
+  const [expandedBrushSection, setExpandedBrushSection] = useState(
+    BRUSH_SECTIONS[0]?.label || ""
+  );
 
   useEffect(() => {
     // Preparar textura para pincel "fur"
@@ -221,20 +354,23 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
   }, []);
 
   // Dropzone para archivos (imagen principal)
-  const onDrop = useCallback((acceptedFiles) => {
-    const file = acceptedFiles[0];
-    if (file) {
-      setImagen(file);
-      if (errors.imagen) {
-        setErrors(prev => ({ ...prev, imagen: undefined }));
+  const onDrop = useCallback(
+    (acceptedFiles) => {
+      const file = acceptedFiles[0];
+      if (file) {
+        setImagen(file);
+        if (errors.imagen) {
+          setErrors((prev) => ({ ...prev, imagen: undefined }));
+        }
       }
-    }
-  }, [errors.imagen]);
+    },
+    [errors.imagen]
+  );
 
   const dropzone = useDropzone({
     onDrop,
     accept: { "image/*": [] },
-    multiple: false
+    multiple: false,
   });
   const { getRootProps, getInputProps, isDragActive } = dropzone;
 
@@ -248,9 +384,13 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
       }
     },
     accept: { "image/*": [] },
-    multiple: false
+    multiple: false,
   });
-  const { getRootProps: getBgRootProps, getInputProps: getBgInputProps, isDragActive: isBgDragActive } = bgDropzone;
+  const {
+    getRootProps: getBgRootProps,
+    getInputProps: getBgInputProps,
+    isDragActive: isBgDragActive,
+  } = bgDropzone;
 
   // Dropzone para patrón de imagen
   const patternImageDropzone = useDropzone({
@@ -262,9 +402,13 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
       }
     },
     accept: { "image/*": [] },
-    multiple: false
+    multiple: false,
   });
-  const { getRootProps: getPatternImgRootProps, getInputProps: getPatternImgInputProps, isDragActive: isPatternImgDragActive } = patternImageDropzone;
+  const {
+    getRootProps: getPatternImgRootProps,
+    getInputProps: getPatternImgInputProps,
+    isDragActive: isPatternImgDragActive,
+  } = patternImageDropzone;
 
   const reset = () => {
     setStep(0);
@@ -293,19 +437,19 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
 
   const validateStep = () => {
     const newErrors = {};
-    
+
     if (step === 0) {
       if (!titulo.trim()) newErrors.titulo = "El título es requerido";
       if (!tecnica.trim()) newErrors.tecnica = "La técnica es requerida";
       if (!year) newErrors.year = "El año es requerido";
     }
-    
+
     if (step === 1) {
       if (imgMode === "archivo" && !imagen) {
         newErrors.imagen = "Selecciona una imagen";
       }
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -323,7 +467,7 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
     if (file) {
       setImagen(file);
       if (errors.imagen) {
-        setErrors(prev => ({ ...prev, imagen: undefined }));
+        setErrors((prev) => ({ ...prev, imagen: undefined }));
       }
     }
   };
@@ -345,21 +489,21 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
   // Función para dibujar en el canvas según el brushType
   const draw = (e) => {
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     const points = pointsRef.current;
-    
+
     if (points.length < 2) return;
 
     ctx.save();
 
     switch (brushType) {
       // Lápiz simple: línea continua, sin efectos especiales
-      case 'pencil': {
-        ctx.globalCompositeOperation = 'source-over';
+      case "pencil": {
+        ctx.globalCompositeOperation = "source-over";
         ctx.strokeStyle = brushColor;
         ctx.lineWidth = brushSize;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
         ctx.shadowBlur = 0;
         ctx.globalAlpha = 1;
         ctx.beginPath();
@@ -369,12 +513,12 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
         break;
       }
       // Lápiz suave: línea continua, sin sombra ni glow, solo lineJoin y lineCap 'round'
-      case 'smooth': {
-        ctx.globalCompositeOperation = 'source-over';
+      case "smooth": {
+        ctx.globalCompositeOperation = "source-over";
         ctx.strokeStyle = brushColor;
         ctx.lineWidth = brushSize;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
         ctx.globalAlpha = 1;
         ctx.beginPath();
         ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
@@ -383,12 +527,12 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
         break;
       }
       // Glow: resplandor intenso, modo lighter, halo extenso
-      case 'shadow': {
-        ctx.globalCompositeOperation = 'lighter';
+      case "shadow": {
+        ctx.globalCompositeOperation = "lighter";
         ctx.strokeStyle = brushColor;
         ctx.lineWidth = brushSize;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
         ctx.shadowColor = brushColor;
         ctx.shadowBlur = brushSize * 2.5;
         ctx.globalAlpha = 0.85;
@@ -398,34 +542,34 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
         ctx.stroke();
         ctx.shadowBlur = 0;
         ctx.globalAlpha = 1;
-        ctx.globalCompositeOperation = 'source-over';
+        ctx.globalCompositeOperation = "source-over";
         break;
       }
-      case 'eraser':
-        ctx.globalCompositeOperation = 'destination-out';
+      case "eraser":
+        ctx.globalCompositeOperation = "destination-out";
         ctx.beginPath();
         ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
         ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
         ctx.lineWidth = brushSize;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
         ctx.stroke();
         break;
 
-      case 'rainbow_dynamic':
+      case "rainbow_dynamic":
         const hue = (Date.now() / 10) % 360;
         ctx.strokeStyle = `hsl(${hue}, 70%, 50%)`;
         ctx.lineWidth = brushSize;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
         ctx.beginPath();
         ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
         ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
         ctx.stroke();
         break;
 
-      case 'confetti':
-      case 'shooting_star':
+      case "confetti":
+      case "shooting_star":
         for (let i = 0; i < 5; i++) {
           const offsetX = (Math.random() - 0.5) * brushSize * 2;
           const offsetY = (Math.random() - 0.5) * brushSize * 2;
@@ -433,31 +577,44 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
           ctx.fillRect(
             points[points.length - 1].x + offsetX,
             points[points.length - 1].y + offsetY,
-            2, 2
+            2,
+            2
           );
         }
         break;
 
-      case 'glitch': {
+      case "glitch": {
         // Línea principal
         ctx.save();
-        ctx.globalCompositeOperation = 'lighter';
+        ctx.globalCompositeOperation = "lighter";
         for (let i = 0; i < 3; i++) {
           const offset = (i - 1) * 2;
-          ctx.strokeStyle = ['#f00', '#0ff', '#fff'][i];
+          ctx.strokeStyle = ["#f00", "#0ff", "#fff"][i];
           ctx.lineWidth = brushSize + (i === 1 ? 2 : 0);
           ctx.beginPath();
-          ctx.moveTo(points[points.length - 2].x + offset, points[points.length - 2].y + offset);
-          ctx.lineTo(points[points.length - 1].x + offset, points[points.length - 1].y + offset);
+          ctx.moveTo(
+            points[points.length - 2].x + offset,
+            points[points.length - 2].y + offset
+          );
+          ctx.lineTo(
+            points[points.length - 1].x + offset,
+            points[points.length - 1].y + offset
+          );
           ctx.stroke();
         }
         // Saltos aleatorios
         for (let i = 0; i < 4; i++) {
-          ctx.strokeStyle = '#fff';
+          ctx.strokeStyle = "#fff";
           ctx.lineWidth = brushSize * 0.7;
           const t = Math.random();
-          const x1 = points[points.length - 2].x + (points[points.length - 1].x - points[points.length - 2].x) * t + getRandomInt(-4, 4);
-          const y1 = points[points.length - 2].y + (points[points.length - 1].y - points[points.length - 2].y) * t + getRandomInt(-4, 4);
+          const x1 =
+            points[points.length - 2].x +
+            (points[points.length - 1].x - points[points.length - 2].x) * t +
+            getRandomInt(-4, 4);
+          const y1 =
+            points[points.length - 2].y +
+            (points[points.length - 1].y - points[points.length - 2].y) * t +
+            getRandomInt(-4, 4);
           const x2 = x1 + getRandomInt(-8, 8);
           const y2 = y1 + getRandomInt(-8, 8);
           ctx.beginPath();
@@ -468,7 +625,7 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
         ctx.restore();
         break;
       }
-      case 'heart_spray': {
+      case "heart_spray": {
         // Spray de corazones
         for (let i = 0; i < brushSize * 1.2; i++) {
           const angle = Math.random() * 2 * Math.PI;
@@ -481,10 +638,38 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
           ctx.scale(0.7 + Math.random() * 0.7, 0.7 + Math.random() * 0.7);
           ctx.beginPath();
           ctx.moveTo(0, 0);
-          ctx.bezierCurveTo(0, -brushSize * 0.4, -brushSize * 0.5, -brushSize * 0.4, -brushSize * 0.5, 0);
-          ctx.bezierCurveTo(-brushSize * 0.5, brushSize * 0.5, 0, brushSize * 0.7, 0, brushSize * 1.1);
-          ctx.bezierCurveTo(0, brushSize * 0.7, brushSize * 0.5, brushSize * 0.5, brushSize * 0.5, 0);
-          ctx.bezierCurveTo(brushSize * 0.5, -brushSize * 0.4, 0, -brushSize * 0.4, 0, 0);
+          ctx.bezierCurveTo(
+            0,
+            -brushSize * 0.4,
+            -brushSize * 0.5,
+            -brushSize * 0.4,
+            -brushSize * 0.5,
+            0
+          );
+          ctx.bezierCurveTo(
+            -brushSize * 0.5,
+            brushSize * 0.5,
+            0,
+            brushSize * 0.7,
+            0,
+            brushSize * 1.1
+          );
+          ctx.bezierCurveTo(
+            0,
+            brushSize * 0.7,
+            brushSize * 0.5,
+            brushSize * 0.5,
+            brushSize * 0.5,
+            0
+          );
+          ctx.bezierCurveTo(
+            brushSize * 0.5,
+            -brushSize * 0.4,
+            0,
+            -brushSize * 0.4,
+            0,
+            0
+          );
           ctx.closePath();
           ctx.fillStyle = `hsl(${Math.random() * 360}, 80%, 60%)`;
           ctx.globalAlpha = 0.7 + Math.random() * 0.3;
@@ -493,7 +678,7 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
         }
         break;
       }
-      case 'lightning': {
+      case "lightning": {
         // Rayo zig-zag
         const x1 = points[points.length - 2].x;
         const y1 = points[points.length - 2].y;
@@ -501,7 +686,7 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
         const y2 = points[points.length - 1].y;
         const steps = 8;
         ctx.save();
-        ctx.globalCompositeOperation = 'lighter';
+        ctx.globalCompositeOperation = "lighter";
         for (let j = 0; j < 2; j++) {
           ctx.beginPath();
           ctx.moveTo(x1, y1);
@@ -512,9 +697,9 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
             ctx.lineTo(nx, ny);
           }
           ctx.lineTo(x2, y2);
-          ctx.strokeStyle = j === 0 ? '#fff' : 'yellow';
+          ctx.strokeStyle = j === 0 ? "#fff" : "yellow";
           ctx.lineWidth = j === 0 ? brushSize * 1.2 : brushSize * 0.7;
-          ctx.shadowColor = 'yellow';
+          ctx.shadowColor = "yellow";
           ctx.shadowBlur = 8;
           ctx.globalAlpha = j === 0 ? 0.7 : 0.5;
           ctx.stroke();
@@ -522,7 +707,7 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
         ctx.restore();
         break;
       }
-      case 'bubble': {
+      case "bubble": {
         // Burbujas translúcidas
         for (let i = 0; i < brushSize * 1.2; i++) {
           const angle = Math.random() * 2 * Math.PI;
@@ -530,21 +715,33 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
           const x = points[points.length - 1].x + Math.cos(angle) * radius;
           const y = points[points.length - 1].y + Math.sin(angle) * radius;
           ctx.beginPath();
-          ctx.arc(x, y, Math.max(3, brushSize * 0.5 + Math.random() * brushSize * 0.5), 0, Math.PI * 2);
+          ctx.arc(
+            x,
+            y,
+            Math.max(3, brushSize * 0.5 + Math.random() * brushSize * 0.5),
+            0,
+            Math.PI * 2
+          );
           ctx.globalAlpha = 0.18 + Math.random() * 0.22;
           ctx.fillStyle = `rgba(180,220,255,0.5)`;
           ctx.fill();
           // Reflejo
           ctx.globalAlpha = 0.12;
           ctx.beginPath();
-          ctx.arc(x - brushSize * 0.2, y - brushSize * 0.2, Math.max(1, brushSize * 0.18), 0, Math.PI * 2);
-          ctx.fillStyle = '#fff';
+          ctx.arc(
+            x - brushSize * 0.2,
+            y - brushSize * 0.2,
+            Math.max(1, brushSize * 0.18),
+            0,
+            Math.PI * 2
+          );
+          ctx.fillStyle = "#fff";
           ctx.fill();
         }
         ctx.globalAlpha = 1;
         break;
       }
-      case 'ribbon': {
+      case "ribbon": {
         // Cinta ondulante
         const x1 = points[points.length - 2].x;
         const y1 = points[points.length - 2].y;
@@ -570,32 +767,46 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
         ctx.restore();
         break;
       }
-      case 'fire_realistic': {
+      case "fire_realistic": {
         // Llama realista
         for (let i = 0; i < 3; i++) {
           const flameColor = [
-            'rgba(255, 200, 0, 0.18)',
-            'rgba(255, 100, 0, 0.13)',
-            'rgba(255, 255, 255, 0.08)'
+            "rgba(255, 200, 0, 0.18)",
+            "rgba(255, 100, 0, 0.13)",
+            "rgba(255, 255, 255, 0.08)",
           ][i];
           const flameSize = brushSize * (1.2 + i * 0.5);
           ctx.beginPath();
-          ctx.ellipse(points[points.length - 1].x, points[points.length - 1].y, flameSize, flameSize * (1.2 + Math.random() * 0.5), 0, 0, Math.PI * 2);
+          ctx.ellipse(
+            points[points.length - 1].x,
+            points[points.length - 1].y,
+            flameSize,
+            flameSize * (1.2 + Math.random() * 0.5),
+            0,
+            0,
+            Math.PI * 2
+          );
           ctx.fillStyle = flameColor;
           ctx.fill();
         }
         // Chispas
         for (let i = 0; i < Math.floor(brushSize / 2); i++) {
           ctx.globalAlpha = 0.7;
-          ctx.fillStyle = 'yellow';
+          ctx.fillStyle = "yellow";
           ctx.beginPath();
-          ctx.arc(points[points.length - 1].x + (Math.random() - 0.5) * brushSize * 2, points[points.length - 1].y - Math.random() * brushSize * 2, Math.random() * 2 + 1, 0, Math.PI * 2);
+          ctx.arc(
+            points[points.length - 1].x + (Math.random() - 0.5) * brushSize * 2,
+            points[points.length - 1].y - Math.random() * brushSize * 2,
+            Math.random() * 2 + 1,
+            0,
+            Math.PI * 2
+          );
           ctx.fill();
         }
         ctx.globalAlpha = 1;
         break;
       }
-      case 'particles': {
+      case "particles": {
         // Partículas de colores
         for (let i = 0; i < brushSize * 2; i++) {
           const angle = Math.random() * 2 * Math.PI;
@@ -612,11 +823,11 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
         break;
       }
       // Carboncillo: puntos aleatorios y multiply
-      case 'carboncillo': {
-        ctx.globalCompositeOperation = 'multiply';
+      case "carboncillo": {
+        ctx.globalCompositeOperation = "multiply";
         ctx.strokeStyle = brushColor;
         ctx.lineWidth = brushSize * 0.8;
-        ctx.lineCap = 'round';
+        ctx.lineCap = "round";
         ctx.globalAlpha = 0.3;
         ctx.beginPath();
         ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
@@ -635,32 +846,50 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
           ctx.fill();
         }
         ctx.globalAlpha = 1;
-        ctx.globalCompositeOperation = 'source-over';
+        ctx.globalCompositeOperation = "source-over";
         break;
       }
       // Acuarela: gradientes radiales multicapa
-      case 'acuarela': {
-        ctx.globalCompositeOperation = 'multiply';
+      case "acuarela": {
+        ctx.globalCompositeOperation = "multiply";
         for (let ring = 0; ring < 4; ring++) {
           const ringRadius = brushSize * (0.7 + ring * 0.5);
           const baseAlpha = 0.18 - ring * 0.03;
-          const gradient = ctx.createRadialGradient(points[points.length - 1].x, points[points.length - 1].y, 0, points[points.length - 1].x, points[points.length - 1].y, ringRadius);
-          gradient.addColorStop(0, `${brushColor}${Math.floor(baseAlpha * 255).toString(16).padStart(2, '0')}`);
+          const gradient = ctx.createRadialGradient(
+            points[points.length - 1].x,
+            points[points.length - 1].y,
+            0,
+            points[points.length - 1].x,
+            points[points.length - 1].y,
+            ringRadius
+          );
+          gradient.addColorStop(
+            0,
+            `${brushColor}${Math.floor(baseAlpha * 255)
+              .toString(16)
+              .padStart(2, "0")}`
+          );
           gradient.addColorStop(1, `${brushColor}00`);
           ctx.fillStyle = gradient;
           ctx.beginPath();
-          ctx.arc(points[points.length - 1].x, points[points.length - 1].y, ringRadius, 0, Math.PI * 2);
+          ctx.arc(
+            points[points.length - 1].x,
+            points[points.length - 1].y,
+            ringRadius,
+            0,
+            Math.PI * 2
+          );
           ctx.fill();
         }
-        ctx.globalCompositeOperation = 'source-over';
+        ctx.globalCompositeOperation = "source-over";
         break;
       }
       // Tiza: puntos dispersos y screen
-      case 'tiza': {
-        ctx.globalCompositeOperation = 'screen';
+      case "tiza": {
+        ctx.globalCompositeOperation = "screen";
         ctx.strokeStyle = brushColor;
         ctx.lineWidth = brushSize;
-        ctx.lineCap = 'round';
+        ctx.lineCap = "round";
         ctx.globalAlpha = 0.45;
         ctx.beginPath();
         ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
@@ -678,23 +907,29 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
           ctx.fill();
         }
         ctx.globalAlpha = 1;
-        ctx.globalCompositeOperation = 'source-over';
+        ctx.globalCompositeOperation = "source-over";
         break;
       }
       // Marcador: círculo relleno semitransparente (estilo p5.js)
-      case 'marcador': {
-        ctx.globalCompositeOperation = 'source-over';
+      case "marcador": {
+        ctx.globalCompositeOperation = "source-over";
         ctx.fillStyle = brushColor;
         ctx.globalAlpha = 0.16;
         ctx.beginPath();
-        ctx.arc(points[points.length - 1].x, points[points.length - 1].y, brushSize, 0, Math.PI * 2);
+        ctx.arc(
+          points[points.length - 1].x,
+          points[points.length - 1].y,
+          brushSize,
+          0,
+          Math.PI * 2
+        );
         ctx.fill();
         ctx.globalAlpha = 1;
         break;
       }
       // Óleo mejorado: pinceladas visibles, textura y mezcla de tonos
-      case 'oleo': {
-        ctx.globalCompositeOperation = 'source-over';
+      case "oleo": {
+        ctx.globalCompositeOperation = "source-over";
         const x1 = points[points.length - 2].x;
         const y1 = points[points.length - 2].y;
         const x2 = points[points.length - 1].x;
@@ -709,18 +944,32 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
           ctx.globalAlpha = 0.45;
           ctx.fillStyle = brushColor;
           ctx.beginPath();
-          ctx.ellipse(interpX, interpY, brushSize * 0.7, brushSize * (0.4 + Math.random() * 0.3), Math.random() * Math.PI, 0, Math.PI * 2);
+          ctx.ellipse(
+            interpX,
+            interpY,
+            brushSize * 0.7,
+            brushSize * (0.4 + Math.random() * 0.3),
+            Math.random() * Math.PI,
+            0,
+            Math.PI * 2
+          );
           ctx.fill();
           // Pinceladas: líneas cortas y manchas
           for (let j = 0; j < 3; j++) {
             const angle = Math.random() * 2 * Math.PI;
             const len = brushSize * (0.7 + Math.random() * 0.5);
-            ctx.globalAlpha = 0.10 + Math.random() * 0.05;
-            ctx.strokeStyle = shadeColor(brushColor, (Math.random() - 0.5) * 18);
+            ctx.globalAlpha = 0.1 + Math.random() * 0.05;
+            ctx.strokeStyle = shadeColor(
+              brushColor,
+              (Math.random() - 0.5) * 18
+            );
             ctx.lineWidth = brushSize * (0.18 + Math.random() * 0.18);
             ctx.beginPath();
             ctx.moveTo(interpX, interpY);
-            ctx.lineTo(interpX + Math.cos(angle) * len, interpY + Math.sin(angle) * len);
+            ctx.lineTo(
+              interpX + Math.cos(angle) * len,
+              interpY + Math.sin(angle) * len
+            );
             ctx.stroke();
           }
         }
@@ -728,18 +977,20 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
         break;
       }
       // Pixel: cuadrado tipo pixel art
-      case 'pixel': {
-        ctx.globalCompositeOperation = 'source-over';
+      case "pixel": {
+        ctx.globalCompositeOperation = "source-over";
         const pixelSize = Math.max(2, Math.round(brushSize / 2));
-        const gridX = Math.floor(points[points.length - 1].x / pixelSize) * pixelSize;
-        const gridY = Math.floor(points[points.length - 1].y / pixelSize) * pixelSize;
+        const gridX =
+          Math.floor(points[points.length - 1].x / pixelSize) * pixelSize;
+        const gridY =
+          Math.floor(points[points.length - 1].y / pixelSize) * pixelSize;
         ctx.fillStyle = brushColor;
         ctx.fillRect(gridX, gridY, pixelSize, pixelSize);
         break;
       }
       // Neón: glow fuerte y modo lighter
-      case 'neon': {
-        ctx.globalCompositeOperation = 'lighter';
+      case "neon": {
+        ctx.globalCompositeOperation = "lighter";
         ctx.strokeStyle = brushColor;
         ctx.lineWidth = brushSize * 2.1;
         ctx.shadowColor = brushColor;
@@ -751,12 +1002,12 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
         ctx.stroke();
         ctx.shadowBlur = 0;
         ctx.globalAlpha = 1;
-        ctx.globalCompositeOperation = 'source-over';
+        ctx.globalCompositeOperation = "source-over";
         break;
       }
       // Puntillismo: puntos aleatorios
-      case 'puntos': {
-        ctx.globalCompositeOperation = 'source-over';
+      case "puntos": {
+        ctx.globalCompositeOperation = "source-over";
         for (let i = 0; i < Math.floor(brushSize * 2); i++) {
           const angle = Math.random() * Math.PI * 2;
           const radius = Math.random() * brushSize * 0.7;
@@ -772,12 +1023,12 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
         break;
       }
       // Líneas: grabado cruzado
-      case 'lineas': {
-        ctx.globalCompositeOperation = 'source-over';
+      case "lineas": {
+        ctx.globalCompositeOperation = "source-over";
         ctx.strokeStyle = brushColor;
-        ctx.lineCap = 'round';
+        ctx.lineCap = "round";
         for (let dir = 0; dir < 4; dir++) {
-          const angle = dir * Math.PI / 4;
+          const angle = (dir * Math.PI) / 4;
           const lineCount = Math.floor(brushSize / 4);
           ctx.globalAlpha = 0.5 - dir * 0.1;
           ctx.lineWidth = 1.2;
@@ -785,8 +1036,14 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
             const offset = (i - lineCount / 2) * 2;
             const length = brushSize * (0.8 + Math.random() * 0.4);
             const perpAngle = angle + Math.PI / 2;
-            const startX = points[points.length - 1].x + Math.cos(perpAngle) * offset - Math.cos(angle) * length / 2;
-            const startY = points[points.length - 1].y + Math.sin(perpAngle) * offset - Math.sin(angle) * length / 2;
+            const startX =
+              points[points.length - 1].x +
+              Math.cos(perpAngle) * offset -
+              (Math.cos(angle) * length) / 2;
+            const startY =
+              points[points.length - 1].y +
+              Math.sin(perpAngle) * offset -
+              (Math.sin(angle) * length) / 2;
             const endX = startX + Math.cos(angle) * length;
             const endY = startY + Math.sin(angle) * length;
             ctx.beginPath();
@@ -799,29 +1056,45 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
         break;
       }
       // Fuego: elipse y chispas
-      case 'fuego': {
-        ctx.globalCompositeOperation = 'lighter';
+      case "fuego": {
+        ctx.globalCompositeOperation = "lighter";
         for (let layer = 0; layer < 3; layer++) {
-          const flameColor = `rgba(255,${140 + layer * 40},0,${0.3 - layer * 0.08})`;
+          const flameColor = `rgba(255,${140 + layer * 40},0,${
+            0.3 - layer * 0.08
+          })`;
           const flameSize = brushSize * (1.2 + layer * 0.3);
           ctx.beginPath();
-          ctx.ellipse(points[points.length - 1].x, points[points.length - 1].y, flameSize, flameSize * 1.5, 0, 0, Math.PI * 2);
+          ctx.ellipse(
+            points[points.length - 1].x,
+            points[points.length - 1].y,
+            flameSize,
+            flameSize * 1.5,
+            0,
+            0,
+            Math.PI * 2
+          );
           ctx.fillStyle = flameColor;
           ctx.fill();
         }
         for (let i = 0; i < Math.floor(brushSize / 2); i++) {
           ctx.globalAlpha = 0.7;
-          ctx.fillStyle = 'yellow';
+          ctx.fillStyle = "yellow";
           ctx.beginPath();
-          ctx.arc(points[points.length - 1].x + (Math.random() - 0.5) * brushSize * 2, points[points.length - 1].y - Math.random() * brushSize * 2, Math.random() * 2 + 1, 0, Math.PI * 2);
+          ctx.arc(
+            points[points.length - 1].x + (Math.random() - 0.5) * brushSize * 2,
+            points[points.length - 1].y - Math.random() * brushSize * 2,
+            Math.random() * 2 + 1,
+            0,
+            Math.PI * 2
+          );
           ctx.fill();
         }
         ctx.globalAlpha = 1;
-        ctx.globalCompositeOperation = 'source-over';
+        ctx.globalCompositeOperation = "source-over";
         break;
       }
       // Spray: puntos aleatorios en área circular
-      case 'spray': {
+      case "spray": {
         for (let i = 0; i < brushSize * 8; i++) {
           const angle = Math.random() * 2 * Math.PI;
           const radius = Math.random() * brushSize * 1.5;
@@ -837,11 +1110,11 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
         break;
       }
       // Pen: ancho variable
-      case 'pen': {
-        ctx.globalCompositeOperation = 'source-over';
+      case "pen": {
+        ctx.globalCompositeOperation = "source-over";
         ctx.strokeStyle = brushColor;
         ctx.lineWidth = brushSize * (0.7 + Math.random() * 0.6);
-        ctx.lineCap = 'round';
+        ctx.lineCap = "round";
         ctx.globalAlpha = 1;
         ctx.beginPath();
         ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
@@ -850,27 +1123,33 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
         break;
       }
       // Pen2: múltiples líneas
-      case 'pen2': {
-        ctx.globalCompositeOperation = 'source-over';
+      case "pen2": {
+        ctx.globalCompositeOperation = "source-over";
         ctx.strokeStyle = brushColor;
         ctx.lineWidth = brushSize * 0.7;
-        ctx.lineCap = 'round';
+        ctx.lineCap = "round";
         ctx.globalAlpha = 1;
         for (let i = 0; i < 3; i++) {
           const offsetX = (Math.random() - 0.5) * brushSize * 0.7;
           const offsetY = (Math.random() - 0.5) * brushSize * 0.7;
           ctx.beginPath();
-          ctx.moveTo(points[points.length - 2].x + offsetX, points[points.length - 2].y + offsetY);
-          ctx.lineTo(points[points.length - 1].x + offsetX, points[points.length - 1].y + offsetY);
+          ctx.moveTo(
+            points[points.length - 2].x + offsetX,
+            points[points.length - 2].y + offsetY
+          );
+          ctx.lineTo(
+            points[points.length - 1].x + offsetX,
+            points[points.length - 1].y + offsetY
+          );
           ctx.stroke();
         }
         break;
       }
       // Multi-line mejorado: líneas paralelas y cruzadas, opacidad y grosor aleatorio
-      case 'multi': {
-        ctx.globalCompositeOperation = 'source-over';
+      case "multi": {
+        ctx.globalCompositeOperation = "source-over";
         ctx.strokeStyle = brushColor;
-        ctx.lineCap = 'round';
+        ctx.lineCap = "round";
         const numLines = 7;
         for (let i = 0; i < numLines; i++) {
           // Offset aleatorio para cada línea
@@ -894,20 +1173,22 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
         }
         // Líneas cruzadas (diagonales)
         for (let i = 0; i < 3; i++) {
-          const angle = Math.PI / 4 + (Math.random() - 0.5) * Math.PI / 2;
+          const angle = Math.PI / 4 + ((Math.random() - 0.5) * Math.PI) / 2;
           const length = brushSize * (2 + Math.random() * 2);
           ctx.globalAlpha = 0.12 + Math.random() * 0.18;
           ctx.lineWidth = brushSize * (0.18 + Math.random() * 0.18);
           ctx.beginPath();
-          const midX = (points[points.length - 2].x + points[points.length - 1].x) / 2;
-          const midY = (points[points.length - 2].y + points[points.length - 1].y) / 2;
+          const midX =
+            (points[points.length - 2].x + points[points.length - 1].x) / 2;
+          const midY =
+            (points[points.length - 2].y + points[points.length - 1].y) / 2;
           ctx.moveTo(
-            midX - Math.cos(angle) * length / 2,
-            midY - Math.sin(angle) * length / 2
+            midX - (Math.cos(angle) * length) / 2,
+            midY - (Math.sin(angle) * length) / 2
           );
           ctx.lineTo(
-            midX + Math.cos(angle) * length / 2,
-            midY + Math.sin(angle) * length / 2
+            midX + (Math.cos(angle) * length) / 2,
+            midY + (Math.sin(angle) * length) / 2
           );
           ctx.stroke();
         }
@@ -915,11 +1196,11 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
         break;
       }
       // Multi-opacity mejorado: líneas superpuestas con offsets, opacidad y grosor decreciente
-      case 'multi_opacity': {
-        ctx.globalCompositeOperation = 'source-over';
+      case "multi_opacity": {
+        ctx.globalCompositeOperation = "source-over";
         ctx.strokeStyle = brushColor;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
         const numLines = 5;
         for (let i = 0; i < numLines; i++) {
           const offsetX = (Math.random() - 0.5) * brushSize * 1.1;
@@ -944,7 +1225,7 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
         break;
       }
       // Beads: círculo en el punto medio, diámetro igual a la distancia entre puntos
-      case 'beads': {
+      case "beads": {
         if (points.length < 2) break;
         const x1 = points[points.length - 2].x;
         const y1 = points[points.length - 2].y;
@@ -953,7 +1234,7 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
         const midX = (x1 + x2) / 2;
         const midY = (y1 + y2) / 2;
         const distance = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
-        ctx.globalCompositeOperation = 'source-over';
+        ctx.globalCompositeOperation = "source-over";
         ctx.fillStyle = brushColor;
         ctx.globalAlpha = 0.7;
         ctx.beginPath();
@@ -963,11 +1244,11 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
         break;
       }
       // Pincel clásico mejorado: trazo artístico con variación de ancho y opacidad
-      case 'brush': {
-        ctx.globalCompositeOperation = 'source-over';
+      case "brush": {
+        ctx.globalCompositeOperation = "source-over";
         ctx.strokeStyle = brushColor;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
         // Simular presión y textura
         const width = brushSize * (0.85 + Math.random() * 0.3);
         ctx.lineWidth = width;
@@ -980,13 +1261,13 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
         break;
       }
       // Pincel grueso mejorado: centro opaco, bordes difusos y residuos
-      case 'thick': {
-        ctx.globalCompositeOperation = 'source-over';
+      case "thick": {
+        ctx.globalCompositeOperation = "source-over";
         // Trazo principal (más opaco en el centro)
         ctx.strokeStyle = brushColor;
         ctx.lineWidth = brushSize * 2.2;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
         ctx.globalAlpha = 0.85;
         ctx.beginPath();
         ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
@@ -995,8 +1276,12 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
         // Bordes difusos (círculos semitransparentes)
         for (let i = 0; i < 8; i++) {
           const t = i / 7;
-          const x = points[points.length - 2].x + (points[points.length - 1].x - points[points.length - 2].x) * t;
-          const y = points[points.length - 2].y + (points[points.length - 1].y - points[points.length - 2].y) * t;
+          const x =
+            points[points.length - 2].x +
+            (points[points.length - 1].x - points[points.length - 2].x) * t;
+          const y =
+            points[points.length - 2].y +
+            (points[points.length - 1].y - points[points.length - 2].y) * t;
           for (let j = 0; j < 6; j++) {
             const angle = Math.random() * 2 * Math.PI;
             const radius = brushSize * (1.1 + Math.random() * 0.7);
@@ -1004,7 +1289,13 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
             const py = y + Math.sin(angle) * radius;
             ctx.globalAlpha = 0.13 + Math.random() * 0.09;
             ctx.beginPath();
-            ctx.arc(px, py, brushSize * (0.18 + Math.random() * 0.18), 0, Math.PI * 2);
+            ctx.arc(
+              px,
+              py,
+              brushSize * (0.18 + Math.random() * 0.18),
+              0,
+              Math.PI * 2
+            );
             ctx.fillStyle = brushColor;
             ctx.fill();
           }
@@ -1025,14 +1316,16 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
         break;
       }
       // Pincel cortado: simula poca pintura, líneas sueltas e irregulares
-      case 'sliced': {
-        ctx.globalCompositeOperation = 'source-over';
+      case "sliced": {
+        ctx.globalCompositeOperation = "source-over";
         ctx.strokeStyle = brushColor;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
         const numLines = Math.max(3, Math.floor(brushSize / 2));
         for (let i = 0; i < numLines; i++) {
-          const offset = (i - numLines / 2) * (brushSize * 0.4 + Math.random() * brushSize * 0.2);
+          const offset =
+            (i - numLines / 2) *
+            (brushSize * 0.4 + Math.random() * brushSize * 0.2);
           // Simular líneas interrumpidas
           if (Math.random() < 0.35) continue;
           ctx.globalAlpha = 0.18 + Math.random() * 0.22;
@@ -1053,7 +1346,7 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
         break;
       }
       // Wiggle: arco ondulado entre puntos, alternando dirección
-      case 'wiggle': {
+      case "wiggle": {
         if (points.length < 2) break;
         const x1 = points[points.length - 2].x;
         const y1 = points[points.length - 2].y;
@@ -1067,7 +1360,7 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
         if (!draw.wiggleFlip) draw.wiggleFlip = 0;
         draw.wiggleFlip = 1 - draw.wiggleFlip;
         const flip = draw.wiggleFlip * Math.PI;
-        ctx.globalCompositeOperation = 'source-over';
+        ctx.globalCompositeOperation = "source-over";
         ctx.strokeStyle = brushColor;
         ctx.lineWidth = Math.max(2, brushSize * 0.7);
         ctx.globalAlpha = 1;
@@ -1077,27 +1370,40 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
         break;
       }
       // Estampado círculo mejorado: patrón de círculos repetidos como trazo
-      case 'stamp_circle': {
-        if (!draw.stampCirclePatternCache || draw.stampCirclePatternColor !== brushColor || draw.stampCirclePatternSize !== brushSize) {
+      case "stamp_circle": {
+        if (
+          !draw.stampCirclePatternCache ||
+          draw.stampCirclePatternColor !== brushColor ||
+          draw.stampCirclePatternSize !== brushSize
+        ) {
           // Crear patrón de círculo
-          const patternCanvas = document.createElement('canvas');
+          const patternCanvas = document.createElement("canvas");
           const dotWidth = Math.max(6, brushSize * 1.2);
           const dotDistance = Math.max(2, brushSize * 0.4);
           patternCanvas.width = patternCanvas.height = dotWidth + dotDistance;
-          const patternCtx = patternCanvas.getContext('2d');
+          const patternCtx = patternCanvas.getContext("2d");
           patternCtx.fillStyle = brushColor;
           patternCtx.beginPath();
-          patternCtx.arc(dotWidth / 2, dotWidth / 2, dotWidth / 2, 0, Math.PI * 2);
+          patternCtx.arc(
+            dotWidth / 2,
+            dotWidth / 2,
+            dotWidth / 2,
+            0,
+            Math.PI * 2
+          );
           patternCtx.closePath();
           patternCtx.fill();
-          draw.stampCirclePatternCache = ctx.createPattern(patternCanvas, 'repeat');
+          draw.stampCirclePatternCache = ctx.createPattern(
+            patternCanvas,
+            "repeat"
+          );
           draw.stampCirclePatternColor = brushColor;
           draw.stampCirclePatternSize = brushSize;
         }
-        ctx.globalCompositeOperation = 'source-over';
+        ctx.globalCompositeOperation = "source-over";
         ctx.lineWidth = brushSize * 2;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
         ctx.strokeStyle = draw.stampCirclePatternCache;
         // Trazar curva suave entre los dos últimos puntos
         if (points.length >= 2) {
@@ -1113,26 +1419,36 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
         break;
       }
       // Estampado estrella: patrón de estrellas repetidas como trazo
-      case 'stamp_star': {
-        if (!draw.stampStarPatternCache || draw.stampStarPatternColor !== brushColor || draw.stampStarPatternSize !== brushSize) {
+      case "stamp_star": {
+        if (
+          !draw.stampStarPatternCache ||
+          draw.stampStarPatternColor !== brushColor ||
+          draw.stampStarPatternSize !== brushSize
+        ) {
           // Crear patrón de estrella
-          const patternCanvas = document.createElement('canvas');
+          const patternCanvas = document.createElement("canvas");
           const starSize = Math.max(8, brushSize * 1.4);
           const starDistance = Math.max(3, brushSize * 0.7);
           patternCanvas.width = patternCanvas.height = starSize + starDistance;
-          const patternCtx = patternCanvas.getContext('2d');
+          const patternCtx = patternCanvas.getContext("2d");
           patternCtx.save();
-          patternCtx.translate(patternCanvas.width / 2, patternCanvas.height / 2);
+          patternCtx.translate(
+            patternCanvas.width / 2,
+            patternCanvas.height / 2
+          );
           drawStar(patternCtx, 0, 0, starSize / 2, starSize / 4, 5, brushColor);
           patternCtx.restore();
-          draw.stampStarPatternCache = ctx.createPattern(patternCanvas, 'repeat');
+          draw.stampStarPatternCache = ctx.createPattern(
+            patternCanvas,
+            "repeat"
+          );
           draw.stampStarPatternColor = brushColor;
           draw.stampStarPatternSize = brushSize;
         }
-        ctx.globalCompositeOperation = 'source-over';
+        ctx.globalCompositeOperation = "source-over";
         ctx.lineWidth = brushSize * 2;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
         ctx.strokeStyle = draw.stampStarPatternCache;
         // Trazar curva suave entre los dos últimos puntos
         if (points.length >= 2) {
@@ -1148,30 +1464,37 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
         break;
       }
       // Patrón líneas: patrón de líneas paralelas como trazo
-      case 'pattern_lines': {
-        if (!draw.patternLinesCache || draw.patternLinesColor !== brushColor || draw.patternLinesSize !== brushSize) {
+      case "pattern_lines": {
+        if (
+          !draw.patternLinesCache ||
+          draw.patternLinesColor !== brushColor ||
+          draw.patternLinesSize !== brushSize
+        ) {
           // Crear patrón de líneas
-          const patternCanvas = document.createElement('canvas');
+          const patternCanvas = document.createElement("canvas");
           const lineSpacing = Math.max(4, brushSize * 1.2);
           const lineWidth = Math.max(2, brushSize * 0.5);
           patternCanvas.width = patternCanvas.height = lineSpacing * 2;
-          const patternCtx = patternCanvas.getContext('2d');
+          const patternCtx = patternCanvas.getContext("2d");
           patternCtx.strokeStyle = brushColor;
           patternCtx.lineWidth = lineWidth;
           for (let i = 0; i < 2; i++) {
             patternCtx.beginPath();
             patternCtx.moveTo(0, i * lineSpacing + lineWidth / 2);
-            patternCtx.lineTo(patternCanvas.width, i * lineSpacing + lineWidth / 2);
+            patternCtx.lineTo(
+              patternCanvas.width,
+              i * lineSpacing + lineWidth / 2
+            );
             patternCtx.stroke();
           }
-          draw.patternLinesCache = ctx.createPattern(patternCanvas, 'repeat');
+          draw.patternLinesCache = ctx.createPattern(patternCanvas, "repeat");
           draw.patternLinesColor = brushColor;
           draw.patternLinesSize = brushSize;
         }
-        ctx.globalCompositeOperation = 'source-over';
+        ctx.globalCompositeOperation = "source-over";
         ctx.lineWidth = brushSize * 2;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
         ctx.strokeStyle = draw.patternLinesCache;
         // Trazar curva suave entre los dos últimos puntos
         if (points.length >= 2) {
@@ -1187,28 +1510,38 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
         break;
       }
       // Patrón arcoíris: patrón de franjas de colores como trazo
-      case 'pattern_rainbow': {
-        if (!draw.patternRainbowCache || draw.patternRainbowSize !== brushSize) {
+      case "pattern_rainbow": {
+        if (
+          !draw.patternRainbowCache ||
+          draw.patternRainbowSize !== brushSize
+        ) {
           // Crear patrón de arcoíris
-          const patternCanvas = document.createElement('canvas');
+          const patternCanvas = document.createElement("canvas");
           patternCanvas.width = 35;
           patternCanvas.height = Math.max(20, brushSize * 1.5);
-          const ctxPat = patternCanvas.getContext('2d');
+          const ctxPat = patternCanvas.getContext("2d");
           const h = patternCanvas.height;
-          ctxPat.fillStyle = 'red';      ctxPat.fillRect(0, 0, 5, h);
-          ctxPat.fillStyle = 'orange';   ctxPat.fillRect(5, 0, 5, h);
-          ctxPat.fillStyle = 'yellow';   ctxPat.fillRect(10, 0, 5, h);
-          ctxPat.fillStyle = 'green';    ctxPat.fillRect(15, 0, 5, h);
-          ctxPat.fillStyle = 'lightblue';ctxPat.fillRect(20, 0, 5, h);
-          ctxPat.fillStyle = 'blue';     ctxPat.fillRect(25, 0, 5, h);
-          ctxPat.fillStyle = 'purple';   ctxPat.fillRect(30, 0, 5, h);
-          draw.patternRainbowCache = ctx.createPattern(patternCanvas, 'repeat');
+          ctxPat.fillStyle = "red";
+          ctxPat.fillRect(0, 0, 5, h);
+          ctxPat.fillStyle = "orange";
+          ctxPat.fillRect(5, 0, 5, h);
+          ctxPat.fillStyle = "yellow";
+          ctxPat.fillRect(10, 0, 5, h);
+          ctxPat.fillStyle = "green";
+          ctxPat.fillRect(15, 0, 5, h);
+          ctxPat.fillStyle = "lightblue";
+          ctxPat.fillRect(20, 0, 5, h);
+          ctxPat.fillStyle = "blue";
+          ctxPat.fillRect(25, 0, 5, h);
+          ctxPat.fillStyle = "purple";
+          ctxPat.fillRect(30, 0, 5, h);
+          draw.patternRainbowCache = ctx.createPattern(patternCanvas, "repeat");
           draw.patternRainbowSize = brushSize;
         }
-        ctx.globalCompositeOperation = 'source-over';
+        ctx.globalCompositeOperation = "source-over";
         ctx.lineWidth = brushSize * 2;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
         ctx.strokeStyle = draw.patternRainbowCache;
         // Trazar curva suave entre los dos últimos puntos
         if (points.length >= 2) {
@@ -1224,17 +1557,17 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
         break;
       }
       // Patrón imagen: patrón de imagen seleccionada por el usuario (sin caché, crea el patrón en cada draw)
-      case 'pattern_image': {
+      case "pattern_image": {
         if (patternImageUrl) {
           const img = new window.Image();
-          img.crossOrigin = 'anonymous';
+          img.crossOrigin = "anonymous";
           img.src = patternImageUrl;
           img.onload = () => {
-            ctx.globalCompositeOperation = 'source-over';
+            ctx.globalCompositeOperation = "source-over";
             ctx.lineWidth = brushSize * 2;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-            ctx.strokeStyle = ctx.createPattern(img, 'repeat');
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+            ctx.strokeStyle = ctx.createPattern(img, "repeat");
             // Trazar curva suave entre los dos últimos puntos
             if (points.length >= 2) {
               const p1 = points[points.length - 2];
@@ -1251,17 +1584,17 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
         break;
       }
       // Aerosol: spray continuo mientras el mouse está presionado
-      case 'aerosol': {
+      case "aerosol": {
         // El efecto se maneja en el temporizador, no aquí
         break;
       }
       // Neighbor points: conecta cada punto con su vecino anterior
-      case 'neighbor': {
-        ctx.globalCompositeOperation = 'source-over';
+      case "neighbor": {
+        ctx.globalCompositeOperation = "source-over";
         ctx.strokeStyle = brushColor;
         ctx.lineWidth = Math.max(1, brushSize * 0.5);
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
         ctx.beginPath();
         ctx.moveTo(points[0].x, points[0].y);
         for (let i = 1; i < points.length; i++) {
@@ -1276,12 +1609,12 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
         break;
       }
       // Fur neighbor: conecta el punto actual con todos los puntos anteriores cercanos (efecto peludo)
-      case 'fur_neighbor': {
-        ctx.globalCompositeOperation = 'source-over';
+      case "fur_neighbor": {
+        ctx.globalCompositeOperation = "source-over";
         ctx.strokeStyle = brushColor;
         ctx.lineWidth = Math.max(1, brushSize * 0.5);
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
         // Línea principal
         ctx.beginPath();
         ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
@@ -1295,7 +1628,10 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
           if (d < 1000) {
             ctx.beginPath();
             ctx.strokeStyle = hexToRgba(brushColor, 0.3);
-            ctx.moveTo(points[points.length - 1].x + dx * 0.2, points[points.length - 1].y + dy * 0.2);
+            ctx.moveTo(
+              points[points.length - 1].x + dx * 0.2,
+              points[points.length - 1].y + dy * 0.2
+            );
             ctx.lineTo(points[i].x - dx * 0.2, points[i].y - dy * 0.2);
             ctx.stroke();
             ctx.strokeStyle = brushColor;
@@ -1304,9 +1640,9 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
         break;
       }
       // Fountain pen: líneas inclinadas interpoladas entre puntos (efecto pluma estilográfica)
-      case 'fountain_pen': {
+      case "fountain_pen": {
         if (points.length < 2) break;
-        ctx.globalCompositeOperation = 'source-over';
+        ctx.globalCompositeOperation = "source-over";
         ctx.strokeStyle = brushColor;
         ctx.lineWidth = 1;
         const width = Math.max(3, brushSize * 0.7);
@@ -1327,12 +1663,12 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
         break;
       }
       // Sketchy: línea principal y líneas cruzadas semitransparentes a puntos cercanos (efecto boceto)
-      case 'sketchy': {
-        ctx.globalCompositeOperation = 'source-over';
+      case "sketchy": {
+        ctx.globalCompositeOperation = "source-over";
         ctx.strokeStyle = brushColor;
         ctx.lineWidth = Math.max(1, brushSize * 0.5);
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
         // Línea principal
         if (points.length >= 2) {
           ctx.beginPath();
@@ -1348,15 +1684,21 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
           if (d < 2000 && Math.random() > d / 2000) {
             ctx.beginPath();
             ctx.strokeStyle = hexToRgba(brushColor, 0.3);
-            ctx.moveTo(points[points.length - 1].x + dx * 0.5, points[points.length - 1].y + dy * 0.5);
-            ctx.lineTo(points[points.length - 1].x - dx * 0.5, points[points.length - 1].y - dy * 0.5);
+            ctx.moveTo(
+              points[points.length - 1].x + dx * 0.5,
+              points[points.length - 1].y + dy * 0.5
+            );
+            ctx.lineTo(
+              points[points.length - 1].x - dx * 0.5,
+              points[points.length - 1].y - dy * 0.5
+            );
             ctx.stroke();
             ctx.strokeStyle = brushColor;
           }
         }
         break;
       }
-      case 'spray_speed': {
+      case "spray_speed": {
         // Spray dependiente de la velocidad del mouse
         if (points.length < 2) break;
         const p1 = points[points.length - 2];
@@ -1397,26 +1739,35 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
     pointsRef.current = [];
     addPoint(e);
     addPoint(e); // dos puntos iguales para iniciar el trazo
-    if (brushType === 'spray_time') {
+    if (brushType === "spray_time") {
       sprayTimerRef.current = setInterval(() => {
         if (pointsRef.current.length > 0) {
-          drawSpray(pointsRef.current[pointsRef.current.length - 1], brushSize, brushColor, canvasRef);
+          drawSpray(
+            pointsRef.current[pointsRef.current.length - 1],
+            brushSize,
+            brushColor,
+            canvasRef
+          );
         }
       }, 20);
-    } else if (brushType === 'aerosol') {
+    } else if (brushType === "aerosol") {
       const rect = canvasRef.current.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
       setAerosolPos({ x, y });
       const timer = setInterval(() => {
         const canvas = canvasRef.current;
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext("2d");
         const density = Math.max(10, brushSize * 3);
         for (let i = 0; i < density; i++) {
           const angle = Math.random() * 2 * Math.PI;
           const radius = Math.random() * brushSize * 2;
-          const px = aerosolPos ? aerosolPos.x + Math.cos(angle) * radius : x + Math.cos(angle) * radius;
-          const py = aerosolPos ? aerosolPos.y + Math.sin(angle) * radius : y + Math.sin(angle) * radius;
+          const px = aerosolPos
+            ? aerosolPos.x + Math.cos(angle) * radius
+            : x + Math.cos(angle) * radius;
+          const py = aerosolPos
+            ? aerosolPos.y + Math.sin(angle) * radius
+            : y + Math.sin(angle) * radius;
           ctx.fillStyle = brushColor;
           ctx.globalAlpha = 0.18 + Math.random() * 0.18;
           ctx.fillRect(px, py, 1.2, 1.2);
@@ -1432,7 +1783,7 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
   const handleMouseMove = (e) => {
     if (!isDrawing) return;
     addPoint(e);
-    if (brushType === 'aerosol') {
+    if (brushType === "aerosol") {
       const rect = canvasRef.current.getBoundingClientRect();
       setAerosolPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
     } else {
@@ -1470,7 +1821,13 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
       const img = new window.Image();
       img.onload = () => {
         ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-        ctx.drawImage(img, 0, 0, canvasRef.current.width, canvasRef.current.height);
+        ctx.drawImage(
+          img,
+          0,
+          0,
+          canvasRef.current.width,
+          canvasRef.current.height
+        );
       };
       img.src = canvasBg;
     }
@@ -1492,13 +1849,13 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
     setPatternImageReady(false);
     if (patternImageUrl) {
       const img = new window.Image();
-      img.crossOrigin = 'anonymous';
+      img.crossOrigin = "anonymous";
       img.src = patternImageUrl;
       img.onload = () => {
         const canvas = canvasRef.current;
         if (canvas) {
-          const ctx = canvas.getContext('2d');
-          const pattern = ctx.createPattern(img, 'repeat');
+          const ctx = canvas.getContext("2d");
+          const pattern = ctx.createPattern(img, "repeat");
           draw.patternImageCache = pattern;
           draw.patternImageUrl = patternImageUrl;
           draw.patternImageSize = brushSize;
@@ -1528,7 +1885,8 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
     const dataUrl = canvas.toDataURL();
     let newHistory = canvasHistory.slice(0, historyIndex + 1);
     newHistory.push(dataUrl);
-    if (newHistory.length > HISTORY_LIMIT) newHistory = newHistory.slice(newHistory.length - HISTORY_LIMIT);
+    if (newHistory.length > HISTORY_LIMIT)
+      newHistory = newHistory.slice(newHistory.length - HISTORY_LIMIT);
     setCanvasHistory(newHistory);
     setHistoryIndex(newHistory.length - 1);
   }, [canvasRef, canvasHistory, historyIndex]);
@@ -1541,7 +1899,7 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
       const img = new window.Image();
       img.onload = () => {
         const canvas = canvasRef.current;
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext("2d");
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, 0, 0);
       };
@@ -1556,7 +1914,7 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
       const img = new window.Image();
       img.onload = () => {
         const canvas = canvasRef.current;
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext("2d");
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, 0, 0);
       };
@@ -1566,15 +1924,15 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
   // Descargar canvas
   const downloadCanvas = () => {
     const canvas = canvasRef.current;
-    const link = document.createElement('a');
-    link.download = `${titulo || 'obra'}.png`;
-    link.href = canvas.toDataURL('image/png');
+    const link = document.createElement("a");
+    link.download = `${titulo || "obra"}.png`;
+    link.href = canvas.toDataURL("image/png");
     link.click();
   };
   // Limpiar canvas y guardar en historial
   const clearCanvasAndSave = () => {
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     if (canvasBg) {
       const img = new window.Image();
@@ -1599,22 +1957,25 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
 
   const handleCreate = async () => {
     if (!validateStep()) return;
-    
+
     let imgFile = null;
     let imgUrl = null;
-    
+
     if (imgMode === "archivo" && imagen) {
       imgFile = imagen;
     } else if (imgMode === "canvas" && canvasImage) {
       // Convertir canvas a blob
       const canvas = canvasRef.current;
       canvas.toBlob((blob) => {
-        imgFile = new File([blob], `${titulo || 'obra'}.png`, { type: 'image/png' });
-      }, 'image/png');
+        imgFile = new File([blob], `${titulo || "obra"}.png`, {
+          type: "image/png",
+        });
+      }, "image/png");
     }
 
     const formData = new FormData();
-    if (imgFile) formData.append("imagen", imgFile, titulo ? `${titulo}.png` : "obra.png");
+    if (imgFile)
+      formData.append("imagen", imgFile, titulo ? `${titulo}.png` : "obra.png");
     formData.append("titulo", titulo);
     formData.append("tecnica", tecnica);
     formData.append("anio", year ? year.toString() : "");
@@ -1626,7 +1987,7 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
         method: "POST",
         body: formData,
       });
-      
+
       if (response.ok) {
         const result = await response.json();
         onCreate(result);
@@ -1649,7 +2010,10 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
   useEffect(() => {
     if (!showBrushDropdown) return;
     function handleClick(e) {
-      if (brushDropdownRef.current && !brushDropdownRef.current.contains(e.target)) {
+      if (
+        brushDropdownRef.current &&
+        !brushDropdownRef.current.contains(e.target)
+      ) {
         setShowBrushDropdown(false);
       }
     }
@@ -1663,7 +2027,7 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
       setBrushDropdownPos({
         left: btnRect.right + 8, // 8px de separación a la derecha del botón
         top: btnRect.top,
-        width: 420
+        width: 420,
       });
     }
   }, [showBrushDropdown]);
@@ -1671,14 +2035,24 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
   if (!isOpen) return null;
 
   // Overlay y modal principal
-  const modalClassName = `relative w-full ${isCanvasStep ? 'max-w-4xl md:max-w-5xl lg:max-w-6xl xl:max-w-7xl p-8 md:p-10' : 'max-w-lg p-4 md:p-6'} bg-background dark:bg-neutral-900 rounded-2xl shadow-2xl border border-border flex flex-col`;
-  const modalStyle = isCanvasStep ? { minHeight: 'min(90vh, 600px)' } : { minHeight: 'min(80vh, 400px)' };
+  const modalClassName = `relative w-full ${
+    isCanvasStep
+      ? "max-w-4xl md:max-w-5xl lg:max-w-6xl xl:max-w-7xl p-8 md:p-10"
+      : "max-w-lg p-4 md:p-6"
+  } bg-background dark:bg-neutral-900 rounded-2xl shadow-2xl border border-border flex flex-col`;
+  const modalStyle = isCanvasStep
+    ? { minHeight: "min(90vh, 600px)" }
+    : { minHeight: "min(80vh, 400px)" };
 
   return (
     <div
-      className={`fixed inset-0 z-[99999] flex ${isCanvasStep ? 'items-start justify-center mt-16' : 'items-center justify-center'} bg-black/40 backdrop-blur-sm`}
-      style={{ isolation: 'isolate' }}
-      onClick={e => {
+      className={`fixed inset-0 z-[99999] flex ${
+        isCanvasStep
+          ? "items-start justify-center mt-16"
+          : "items-center justify-center"
+      } bg-black/40 backdrop-blur-sm`}
+      style={{ isolation: "isolate" }}
+      onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
@@ -1694,8 +2068,13 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
         {/* Header */}
         <div className="px-8 pt-8 pb-4 border-b border-border">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-xl font-bold text-foreground">Crear nueva obra</h2>
-            <button onClick={onClose} className="p-2 rounded hover:bg-muted transition-colors">
+            <h2 className="text-xl font-bold text-foreground">
+              Crear nueva obra
+            </h2>
+            <button
+              onClick={onClose}
+              className="p-2 rounded hover:bg-muted transition-colors"
+            >
               <X className="h-5 w-5" />
             </button>
           </div>
@@ -1706,7 +2085,9 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
               activeStep={step}
               color="indigo"
               className="mb-8"
-              onStepClick={i => { if (i < step) setStep(i); }}
+              onStepClick={(i) => {
+                if (i < step) setStep(i);
+              }}
             />
           </div>
         </div>
@@ -1719,41 +2100,60 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
                 type="text"
                 placeholder="Título de la obra"
                 value={titulo}
-                onChange={e => {
+                onChange={(e) => {
                   setTitulo(e.target.value);
-                  if (errors.titulo) setErrors(prev => ({ ...prev, titulo: undefined }));
+                  if (errors.titulo)
+                    setErrors((prev) => ({ ...prev, titulo: undefined }));
                 }}
                 className="w-full px-4 py-3 rounded-xl border-2 text-base bg-background dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
-                animate={errors.titulo ? { x: [0, -8, 8, -6, 6, -4, 4, 0, Math.random()] } : false}
+                animate={
+                  errors.titulo
+                    ? { x: [0, -8, 8, -6, 6, -4, 4, 0, Math.random()] }
+                    : false
+                }
                 transition={{ duration: 0.4 }}
               />
-              {errors.titulo && <div className="text-pink-500 text-sm">{errors.titulo}</div>}
-              
+              {errors.titulo && (
+                <div className="text-pink-500 text-sm">{errors.titulo}</div>
+              )}
+
               <motion.input
                 type="text"
                 placeholder="Técnica"
                 value={tecnica}
-                onChange={e => {
+                onChange={(e) => {
                   setTecnica(e.target.value);
-                  if (errors.tecnica) setErrors(prev => ({ ...prev, tecnica: undefined }));
+                  if (errors.tecnica)
+                    setErrors((prev) => ({ ...prev, tecnica: undefined }));
                 }}
                 className="w-full px-4 py-3 rounded-xl border-2 text-base bg-background dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
-                animate={errors.tecnica ? { x: [0, -8, 8, -6, 6, -4, 4, 0, Math.random()] } : false}
+                animate={
+                  errors.tecnica
+                    ? { x: [0, -8, 8, -6, 6, -4, 4, 0, Math.random()] }
+                    : false
+                }
                 transition={{ duration: 0.4 }}
               />
-              {errors.tecnica && <div className="text-pink-500 text-sm">{errors.tecnica}</div>}
-              
+              {errors.tecnica && (
+                <div className="text-pink-500 text-sm">{errors.tecnica}</div>
+              )}
+
               <motion.div
-                animate={errors.year ? { x: [0, -8, 8, -6, 6, -4, 4, 0, Math.random()] } : false}
+                animate={
+                  errors.year
+                    ? { x: [0, -8, 8, -6, 6, -4, 4, 0, Math.random()] }
+                    : false
+                }
                 transition={{ duration: 0.4 }}
               >
                 <DatePicker
                   value={year ? `${year}-01-01` : null}
-                  onChange={dateString => {
+                  onChange={(dateString) => {
                     if (dateString) {
                       const d = new Date(dateString);
                       setYear(d.getFullYear());
-                      if (errors.year) setErrors(prev => ({ ...prev, year: undefined }));
+                      if (errors.year)
+                        setErrors((prev) => ({ ...prev, year: undefined }));
                     } else {
                       setYear(null);
                     }
@@ -1761,22 +2161,36 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
                   placeholder="Selecciona el año..."
                 />
               </motion.div>
-              {errors.year && <div className="text-pink-500 text-sm">{errors.year}</div>}
+              {errors.year && (
+                <div className="text-pink-500 text-sm">{errors.year}</div>
+              )}
             </>
           )}
 
           {step === 1 && (
             <>
-              <div className="flex gap-4 mb-4">
+              <div className="flex gap-0 mb-4 border-b border-border w-full max-w-md mx-auto">
                 <button
-                  className={`px-4 py-2 rounded-lg font-bold border ${imgMode === "archivo" ? "bg-indigo-600 text-white border-indigo-700" : "bg-muted text-foreground border-border"}`}
+                  className={`flex-1 px-4 py-2 font-bold transition-colors border-b-2 focus:outline-none
+                    ${imgMode === "archivo"
+                      ? "border-indigo-600 text-indigo-700 bg-white dark:bg-neutral-900"
+                      : "border-transparent text-muted-foreground bg-muted hover:text-indigo-600"}
+                    rounded-tl-lg`}
+                  style={{ borderBottomWidth: 3 }}
                   onClick={() => setImgMode("archivo")}
+                  type="button"
                 >
                   Subir archivo
                 </button>
                 <button
-                  className={`px-4 py-2 rounded-lg font-bold border ${imgMode === "canvas" ? "bg-indigo-600 text-white border-indigo-700" : "bg-muted text-foreground border-border"}`}
+                  className={`flex-1 px-4 py-2 font-bold transition-colors border-b-2 focus:outline-none
+                    ${imgMode === "canvas"
+                      ? "border-indigo-600 text-indigo-700 bg-white dark:bg-neutral-900"
+                      : "border-transparent text-muted-foreground bg-muted hover:text-indigo-600"}
+                    rounded-tr-lg`}
+                  style={{ borderBottomWidth: 3 }}
                   onClick={() => setImgMode("canvas")}
+                  type="button"
                 >
                   Crear en canvas
                 </button>
@@ -1784,271 +2198,219 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
 
               {imgMode === "archivo" && (
                 <>
-                  <div {...getRootProps()} className={`w-full border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition ${isDragActive ? "border-indigo-500 bg-indigo-50" : "border-border bg-muted/40"}`}>
+                  <div
+                    {...getRootProps()}
+                    className={`w-full border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition ${
+                      isDragActive
+                        ? "border-indigo-500 bg-indigo-50"
+                        : "border-border bg-muted/40"
+                    }`}
+                  >
                     <input {...getInputProps()} />
                     {imagen ? (
-                      <img src={URL.createObjectURL(imagen)} alt="preview" className="w-full max-h-64 object-contain rounded-xl border mt-2 mx-auto" />
+                      <img
+                        src={URL.createObjectURL(imagen)}
+                        alt="preview"
+                        className="w-full max-h-64 object-contain rounded-xl border mt-2 mx-auto"
+                      />
                     ) : (
-                      <span className="text-muted-foreground">Arrastra una imagen aquí o haz clic para seleccionar</span>
+                      <span className="text-muted-foreground">
+                        Arrastra una imagen aquí o haz clic para seleccionar
+                      </span>
                     )}
                   </div>
-                  {errors.imagen && <div className="text-pink-500 text-sm">{errors.imagen}</div>}
+                  {errors.imagen && (
+                    <div className="text-pink-500 text-sm">{errors.imagen}</div>
+                  )}
                 </>
               )}
 
               {imgMode === "canvas" && (
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                  {/* Panel de herramientas */}
-                  <div className="lg:col-span-1 space-y-6">
-                    <div className="bg-gray-50 dark:bg-neutral-800 rounded-lg p-4 flex flex-col gap-4">
-                      <h3 className="font-semibold mb-3">Herramientas</h3>
-                      
-                      {/* Fondo del canvas */}
-                      <motion.div
-                        {...getBgRootProps()}
-                        className={`w-full border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition relative ${isBgDragActive ? "border-indigo-500 bg-indigo-50" : "border-border bg-muted/40"}`}
-                        initial={{ scale: 1 }}
-                        animate={isBgDragActive ? { scale: 1.04 } : { scale: 1 }}
-                        whileHover={{ scale: 1.02 }}
-                      >
-                        <input {...getBgInputProps()} />
-                        {canvasBg ? (
-                          <motion.div
-                            className="relative inline-block w-full"
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            transition={{ duration: 0.3 }}
-                          >
-                            <img src={canvasBg} alt="bg" className="w-full max-h-32 object-contain rounded-xl border mx-auto" />
-                            <motion.button
-                              type="button"
-                              onClick={e => { e.stopPropagation(); setCanvasBg(null); }}
-                              className="absolute top-2 right-2 bg-black/60 hover:bg-black/80 text-white rounded-full p-1 z-10"
-                              tabIndex={-1}
-                              aria-label="Eliminar fondo"
-                              whileTap={{ scale: 0.9 }}
-                              whileHover={{ scale: 1.1 }}
-                            >
-                              <X className="h-4 w-4" />
-                            </motion.button>
-                          </motion.div>
-                        ) : (
-                          <span className="text-muted-foreground">Arrastra una imagen de fondo aquí o haz clic para seleccionar</span>
-                        )}
-                      </motion.div>
-
-                      {/* Selector de pincel compacto con dropdown usando portal */}
-                      <div className="w-full mb-3 relative">
+                  {/* Panel lateral solo en lg, solo en modo canvas */}
+                  <div
+                    className={`hidden lg:flex lg:flex-col lg:col-span-1 space-y-6 ${
+                      imgMode !== "canvas"
+                        ? "opacity-30 pointer-events-none select-none"
+                        : ""
+                    }`}
+                  >
+                    {imgMode === "canvas" && (
+                      <div className="flex flex-col items-center gap-3 mb-2 w-full">
+                        <div className="flex items-center gap-2 px-2 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-700 shadow-sm">
+                          {(() => {
+                            const Icon = TOOL_ICONS[brushType] || Brush;
+                            return (
+                              <Icon className="h-6 w-6 text-indigo-600 dark:text-indigo-300" />
+                            );
+                          })()}
+                          <span className="font-semibold text-indigo-700 dark:text-indigo-200 text-base">
+                            {BRUSH_LABELS[brushType] ||
+                              brushType.charAt(0).toUpperCase() +
+                                brushType.slice(1)}
+                          </span>
+                        </div>
                         <button
-                          ref={brushButtonRef}
                           type="button"
-                          className="flex items-center gap-2 px-3 py-2 rounded-lg border-2 font-medium bg-muted text-foreground border-border hover:bg-gray-100 dark:hover:bg-neutral-700 w-full justify-start"
-                          onClick={() => setShowBrushDropdown((v) => !v)}
-                          aria-haspopup="listbox"
-                          aria-expanded={showBrushDropdown}
+                          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white font-bold shadow hover:bg-indigo-700 transition text-base"
+                          onClick={() => setShowBrushModal(true)}
+                          aria-label="Seleccionar pincel"
                         >
                           {(() => {
                             const Icon = TOOL_ICONS[brushType] || Brush;
-                            return <Icon className="w-5 h-5" />;
+                            return <Icon className="h-6 w-6" />;
                           })()}
-                          <span className="truncate">{brushType}</span>
-                          <svg className="ml-auto w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.584l3.71-3.354a.75.75 0 111.02 1.1l-4.25 3.846a.75.75 0 01-1.02 0l-4.25-3.846a.75.75 0 01.02-1.06z" clipRule="evenodd" /></svg>
-                        </button>
-                        {showBrushDropdown && typeof window !== 'undefined' && ReactDOM.createPortal(
-                          <div ref={brushDropdownRef} className="fixed z-[999999] pointer-events-none left-0 top-0 w-screen h-screen">
-                            <motion.div
-                              initial={{ opacity: 0, scale: 0.96, y: 20 }}
-                              animate={{ opacity: 1, scale: 1, y: 0 }}
-                              exit={{ opacity: 0, scale: 0.96, y: 20 }}
-                              transition={{ duration: 0.18 }}
-                              className="absolute z-[999999] bg-background dark:bg-neutral-900 border border-border rounded-2xl shadow-2xl p-6 max-h-[80vh] overflow-y-auto animate-fade-in pointer-events-auto flex flex-col items-center"
-                              style={{ left: `${brushDropdownPos.left}px`, top: `${brushDropdownPos.top}px`, width: `${brushDropdownPos.width}px`, minWidth: 320, maxWidth: 480 }}
-                            >
-                              {BRUSH_SECTIONS.map(section => (
-                                <div key={section.label} className="mb-3 w-full">
-                                  <div className="text-xs font-bold text-gray-500 dark:text-gray-400 mb-1 px-2">{section.label}</div>
-                                  <div className="flex flex-wrap gap-3 mb-1">
-                                    {section.keys.map(key => {
-                                      const Icon = TOOL_ICONS[key] || Brush;
-                                      return (
-                                        <button
-                                          key={key}
-                                          onClick={() => { setBrushType(key); setShowBrushDropdown(false); }}
-                                          className={`flex flex-col items-center justify-center p-2 rounded-lg border-2 transition-colors text-xs font-medium w-16 h-16 ${brushType === key ? 'bg-indigo-600 text-white border-indigo-700' : 'bg-muted text-foreground border-border hover:bg-gray-100 dark:hover:bg-neutral-700'}`}
-                                          title={key}
-                                          type="button"
-                                        >
-                                          <Icon className="w-6 h-6 mb-1" />
-                                          <span className="truncate w-full text-[11px] text-center leading-tight max-w-[3.5rem]">{key}</span>
-                                        </button>
-                                      );
-                                    })}
-                                  </div>
-                                </div>
-                              ))}
-                            </motion.div>
-                          </div>,
-                          document.body
-                        )}
-                      </div>
-
-                      {/* Color y tamaño */}
-                      <div className="mb-3">
-                        <label className="font-medium mr-2">Color:</label>
-                        <input type="color" value={brushColor} onChange={e => setBrushColor(e.target.value)} className="w-8 h-8 rounded align-middle" />
-                      </div>
-                      
-                      <div className="mt-2 mb-3">
-                        <input
-                          type="range"
-                          min="1"
-                          max="50"
-                          value={brushSize}
-                          onChange={e => setBrushSize(parseInt(e.target.value))}
-                          className="w-full max-w-xs"
-                        />
-                        <div className="text-center mt-2 text-sm text-gray-600 dark:text-gray-400">{brushSize}px</div>
-                      </div>
-
-                      {/* Botones de acción */}
-                      <div className="flex gap-2 mb-3">
-                        <button type="button" onClick={() => setCanvasBg("/assets/textures/wall.jpg")}
-                          className="px-3 py-1 rounded bg-gray-300 text-gray-800 text-xs font-bold hover:bg-gray-400">
-                          Fondo muro
-                        </button>
-                        <button
-                          onClick={() => {
-                            const canvas = canvasRef.current;
-                            const ctx = canvas.getContext('2d');
-                            ctx.clearRect(0, 0, canvas.width, canvas.height);
-                            if (canvasBg) {
-                              const img = new window.Image();
-                              img.onload = () => ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                              img.src = canvasBg;
-                            }
-                          }}
-                          className="px-3 py-1 rounded bg-red-600 text-white text-xs font-bold hover:bg-red-700"
-                        >
-                          Limpiar
+                          <span>Seleccionar pincel</span>
                         </button>
                       </div>
-
-                      {/* Imagen para patrón (solo si pattern_image) */}
-                      {brushType === 'pattern_image' && (
-                        <motion.div
-                          className="mb-3"
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -10 }}
-                          transition={{ duration: 0.3 }}
-                        >
-                          <label className="font-medium mr-2">Imagen para patrón:</label>
-                          <button type="button" className="px-3 py-1 rounded bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700" onClick={() => setShowPatternImageModal(true)}>
-                            Seleccionar imagen
-                          </button>
-                          {patternImageUrl && (
-                            <motion.div
-                              className="mt-2 w-24 h-16 object-cover rounded border relative"
-                              initial={{ scale: 0.9, opacity: 0 }}
-                              animate={{ scale: 1, opacity: 1 }}
-                              exit={{ scale: 0.9, opacity: 0 }}
-                              transition={{ duration: 0.2 }}
-                            >
-                              <img src={patternImageUrl} alt="pattern preview" className="w-full h-full object-cover rounded border" />
-                              <motion.button
-                                type="button"
-                                onClick={() => setPatternImageUrl(null)}
-                                className="absolute top-1 right-1 bg-black/60 hover:bg-black/80 text-white rounded-full p-1 z-10"
-                                tabIndex={-1}
-                                aria-label="Eliminar imagen"
-                                whileTap={{ scale: 0.9 }}
-                                whileHover={{ scale: 1.1 }}
-                              >
-                                <X className="h-4 w-4" />
-                              </motion.button>
-                            </motion.div>
-                          )}
-                          {!patternImageReady && patternImageUrl && (
-                            <div className="mt-2 text-xs text-gray-500 flex items-center gap-2"><span className="animate-spin inline-block w-4 h-4 border-2 border-gray-300 border-t-transparent rounded-full"></span> Cargando patrón...</div>
-                          )}
-                        </motion.div>
-                      )}
-
-                      {/* Modal para seleccionar imagen de patrón */}
-                      {showPatternImageModal && (
-                        <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-black/40 backdrop-blur-sm" style={{ isolation: 'isolate' }}>
-                          <div className="bg-background dark:bg-neutral-900 border border-border rounded-2xl shadow-2xl p-8 flex flex-col items-center">
-                            <h3 className="font-semibold mb-4">Selecciona una imagen para el patrón</h3>
-                            <motion.div
-                              {...getPatternImgRootProps()}
-                              className={`w-64 h-32 border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition flex items-center justify-center ${isPatternImgDragActive ? "border-indigo-500 bg-indigo-50" : "border-border bg-muted/40"}`}
-                              initial={{ scale: 1 }}
-                              animate={isPatternImgDragActive ? { scale: 1.04 } : { scale: 1 }}
-                              whileHover={{ scale: 1.02 }}
-                            >
-                              <input {...getPatternImgInputProps()} />
-                              <span className="text-muted-foreground">Arrastra una imagen aquí o haz clic para seleccionar</span>
-                            </motion.div>
-                            <button type="button" className="mt-6 px-4 py-2 rounded bg-gray-200 dark:bg-neutral-800 text-gray-700 dark:text-gray-200 font-bold hover:bg-gray-300 dark:hover:bg-neutral-700 transition" onClick={() => setShowPatternImageModal(false)}>
-                              Cancelar
-                            </button>
-                          </div>
-                        </div>
-                      )}
+                    )}
+                    {/* Tamaño del pincel */}
+                    <div className="flex flex-col items-center gap-2 mt-2">
+                      <h4 className="font-semibold text-sm mb-1">
+                        Tamaño del pincel
+                      </h4>
+                      <input
+                        type="range"
+                        min="1"
+                        max="50"
+                        value={brushSize}
+                        onChange={(e) => setBrushSize(parseInt(e.target.value))}
+                        className="w-3/4 sm:w-2/3 h-3 accent-indigo-600"
+                        style={{ minWidth: 120, maxWidth: 240 }}
+                      />
+                      <div className="text-center mt-1 text-lg font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1 rounded-full shadow-sm">
+                        {brushSize}px
+                      </div>
+                    </div>
+                    {/* Colores */}
+                    <div className="flex flex-col items-center gap-2 mt-2">
+                      <h4 className="font-semibold text-sm mb-1">Color</h4>
+                      <div className="flex flex-wrap justify-center gap-2 mb-2">
+                        {colors.map((color) => (
+                          <button
+                            key={color}
+                            onClick={() => setBrushColor(color)}
+                            className={`w-8 h-8 rounded-full border-2 transition-all ${
+                              brushColor === color
+                                ? "border-indigo-600 scale-110 shadow-md"
+                                : "border-gray-300 hover:scale-105"
+                            }`}
+                            style={{ backgroundColor: color }}
+                            aria-label={`Color ${color}`}
+                          />
+                        ))}
+                      </div>
+                      <input
+                        type="color"
+                        value={brushColor}
+                        onChange={(e) => setBrushColor(e.target.value)}
+                        className="w-16 h-10 rounded-xl border-2 border-indigo-300 shadow-sm bg-white dark:bg-neutral-700"
+                        style={{ margin: "0 auto" }}
+                      />
                     </div>
                   </div>
-
-                  {/* Canvas grande */}
-                  <div className="lg:col-span-3 flex flex-col items-center justify-center">
-                    {/* Botones de control arriba del canvas */}
-                    <div className="flex gap-2 mb-2 items-center">
+                  {/* Canvas y controles para sm/md y lg */}
+                  <div className="col-span-1 lg:col-span-3 flex flex-col items-center justify-center w-full">
+                    {/* Indicador y botón de pincel juntos en sm/md, solo en modo canvas */}
+                    {imgMode === "canvas" && (
+                      <div className="flex flex-col items-center gap-3 mb-4 w-full lg:hidden">
+                        <div className="flex items-center gap-2 px-2 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-700 shadow-sm">
+                          {(() => {
+                            const Icon = TOOL_ICONS[brushType] || Brush;
+                            return (
+                              <Icon className="h-6 w-6 text-indigo-600 dark:text-indigo-300" />
+                            );
+                          })()}
+                          <span className="font-semibold text-indigo-700 dark:text-indigo-200 text-base">
+                            {BRUSH_LABELS[brushType] ||
+                              brushType.charAt(0).toUpperCase() +
+                                brushType.slice(1)}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white font-bold shadow hover:bg-indigo-700 transition text-base"
+                          onClick={() => setShowBrushModal(true)}
+                          aria-label="Seleccionar pincel"
+                        >
+                          {(() => {
+                            const Icon = TOOL_ICONS[brushType] || Brush;
+                            return <Icon className="h-6 w-6" />;
+                          })()}
+                          <span>Seleccionar pincel</span>
+                        </button>
+                      </div>
+                    )}
+                    {/* Botones de acciones principales */}
+                    <div className="flex flex-wrap gap-3 mb-4 w-full justify-center">
                       <button
                         onClick={undo}
                         disabled={historyIndex <= 0}
+                        className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-semibold"
                         title="Deshacer"
-                        className="p-2 rounded transition-colors disabled:opacity-50 bg-gray-200 hover:bg-gray-300 dark:bg-neutral-700 dark:hover:bg-neutral-600"
                       >
-                        <Undo2 className="w-5 h-5 text-gray-800 dark:text-gray-100" />
+                        <Undo2 className="h-5 w-5" /> Deshacer
                       </button>
                       <button
                         onClick={redo}
                         disabled={historyIndex >= canvasHistory.length - 1}
+                        className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-semibold"
                         title="Rehacer"
-                        className="p-2 rounded transition-colors disabled:opacity-50 bg-gray-200 hover:bg-gray-300 dark:bg-neutral-700 dark:hover:bg-neutral-600"
                       >
-                        <Redo2 className="w-5 h-5 text-gray-800 dark:text-gray-100" />
-                      </button>
-                      <button
-                        onClick={downloadCanvas}
-                        title="Descargar imagen"
-                        className="p-2 rounded transition-colors bg-gray-200 hover:bg-gray-300 dark:bg-neutral-700 dark:hover:bg-neutral-600"
-                      >
-                        <Download className="w-5 h-5 text-gray-800 dark:text-gray-100" />
+                        <Redo2 className="h-5 w-5" /> Rehacer
                       </button>
                       <button
                         onClick={clearCanvasAndSave}
-                        title="Limpiar canvas"
-                        className="p-2 rounded transition-colors bg-red-200 hover:bg-red-400 dark:bg-red-900 dark:hover:bg-red-700"
+                        className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-semibold"
+                        title="Limpiar lienzo"
                       >
-                        <Trash2 className="w-5 h-5 text-red-700 dark:text-red-200" />
+                        <Trash2 className="h-5 w-5" /> Limpiar
+                      </button>
+                      <button
+                        onClick={downloadCanvas}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold"
+                        title="Descargar imagen"
+                      >
+                        <Download className="h-5 w-5" /> Descargar
+                      </button>
+                      <button
+                        onClick={handleCreate}
+                        className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold"
+                        title="Guardar obra"
+                      >
+                        <Save className="h-5 w-5" /> Guardar
                       </button>
                     </div>
-                    <div style={{ position: "relative", width: "100%", maxWidth: 900, aspectRatio: "4/3" }}>
+                    {/* Canvas grande y centrado */}
+                    <div
+                      style={{
+                        position: "relative",
+                        width: "100%",
+                        maxWidth: 900,
+                        aspectRatio: "4/3",
+                      }}
+                      className="mx-auto"
+                    >
                       <div className="absolute top-2 right-2 z-10 flex gap-2">
                         <button
                           type="button"
                           className="px-2 py-1 rounded bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs font-bold"
-                          onClick={() => setCanvasZoom(z => Math.max(0.5, z - 0.1))}
+                          onClick={() =>
+                            setCanvasZoom((z) => Math.max(0.5, z - 0.1))
+                          }
                           title="Zoom -"
                         >
                           -
                         </button>
-                        <span className="px-2 text-xs font-mono bg-white/80 rounded border border-gray-300 text-black">{(canvasZoom * 100).toFixed(0)}%</span>
+                        <span className="px-2 text-xs font-mono bg-white/80 rounded border border-gray-300 text-black">
+                          {(canvasZoom * 100).toFixed(0)}%
+                        </span>
                         <button
                           type="button"
                           className="px-2 py-1 rounded bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs font-bold"
-                          onClick={() => setCanvasZoom(z => Math.min(2, z + 0.1))}
+                          onClick={() =>
+                            setCanvasZoom((z) => Math.min(2, z + 0.1))
+                          }
                           title="Zoom +"
                         >
                           +
@@ -2058,43 +2420,350 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
                         ref={canvasRef}
                         width={800}
                         height={600}
-                        style={{ 
-                          width: "100%", 
-                          height: "100%", 
-                          display: "block", 
-                          background: "#fff", 
-                          borderRadius: 12, 
-                          border: '2px solid #d1d5db', 
-                          transform: `scale(${canvasZoom})`, 
-                          transformOrigin: 'center center' 
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          display: "block",
+                          background: "#fff",
+                          borderRadius: 12,
+                          border: "2px solid #d1d5db",
+                          cursor: "crosshair",
+                          transform: `scale(${canvasZoom})`,
+                          transformOrigin: "center center",
                         }}
                         onMouseDown={startDrawing}
-                        onMouseMove={e => {
-                          const rect = canvasRef.current.getBoundingClientRect();
-                          setCursorPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+                        onMouseMove={(e) => {
+                          const rect =
+                            canvasRef.current.getBoundingClientRect();
+                          setCursorPos({
+                            x: e.clientX - rect.left,
+                            y: e.clientY - rect.top,
+                          });
                           handleMouseMove(e);
                         }}
                         onMouseUp={stopDrawing}
                         onMouseLeave={handleMouseLeave}
                       />
-                      {brushType === 'eraser' && cursorPos && (
+                      {brushType === "eraser" && cursorPos && (
                         <div
                           style={{
-                            position: 'absolute',
+                            position: "absolute",
                             left: `calc(${cursorPos.x}px - ${brushSize / 2}px)`,
                             top: `calc(${cursorPos.y}px - ${brushSize / 2}px)`,
                             width: brushSize,
                             height: brushSize,
-                            borderRadius: '50%',
-                            background: 'rgba(200,200,200,0.3)',
-                            border: '2px solid #888',
-                            pointerEvents: 'none',
+                            borderRadius: "50%",
+                            background: "rgba(200,200,200,0.3)",
+                            border: "2px solid #888",
+                            pointerEvents: "none",
                             zIndex: 20,
                           }}
                         />
                       )}
                     </div>
+                    {/* Panel de controles debajo del canvas en sm/md */}
+                    <div className="block lg:hidden w-full mt-6 space-y-6">
+                      {/* Tamaño del pincel */}
+                      <div className="flex flex-col items-center gap-2 mt-2">
+                        <h4 className="font-semibold text-sm mb-1">
+                          Tamaño del pincel
+                        </h4>
+                        <input
+                          type="range"
+                          min="1"
+                          max="50"
+                          value={brushSize}
+                          onChange={(e) =>
+                            setBrushSize(parseInt(e.target.value))
+                          }
+                          className="w-3/4 sm:w-2/3 h-3 accent-indigo-600"
+                          style={{ minWidth: 120, maxWidth: 240 }}
+                        />
+                        <div className="text-center mt-1 text-lg font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1 rounded-full shadow-sm">
+                          {brushSize}px
+                        </div>
+                      </div>
+                      {/* Colores */}
+                      <div className="flex flex-col items-center gap-2 mt-2">
+                        <h4 className="font-semibold text-sm mb-1">Color</h4>
+                        <div className="flex flex-wrap justify-center gap-2 mb-2">
+                          {colors.map((color) => (
+                            <button
+                              key={color}
+                              onClick={() => setBrushColor(color)}
+                              className={`w-8 h-8 rounded-full border-2 transition-all ${
+                                brushColor === color
+                                  ? "border-indigo-600 scale-110 shadow-md"
+                                  : "border-gray-300 hover:scale-105"
+                              }`}
+                              style={{ backgroundColor: color }}
+                              aria-label={`Color ${color}`}
+                            />
+                          ))}
+                        </div>
+                        <input
+                          type="color"
+                          value={brushColor}
+                          onChange={(e) => setBrushColor(e.target.value)}
+                          className="w-16 h-10 rounded-xl border-2 border-indigo-300 shadow-sm bg-white dark:bg-neutral-700"
+                          style={{ margin: "0 auto" }}
+                        />
+                      </div>
+                    </div>
+                    {/* Modal de pinceles */}
+                    <AnimatePresence>
+                      {showBrushModal && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.95 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.95 }}
+                          className="fixed inset-0 z-[9999999] flex items-center justify-center pointer-events-none"
+                          onClick={(e) => {
+                            if (e.target === e.currentTarget)
+                              setShowBrushModal(false);
+                          }}
+                        >
+                          <div className="pointer-events-auto bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 p-8 max-w-2xl w-full flex flex-col items-center relative max-h-[80vh] overflow-y-auto">
+                            {/* Botón de cerrar (X) */}
+                            <button
+                              type="button"
+                              className="absolute top-4 right-4 p-2 rounded-full bg-gray-200 dark:bg-neutral-800 hover:bg-gray-300 dark:hover:bg-neutral-700 text-gray-700 dark:text-gray-200 z-10"
+                              onClick={() => setShowBrushModal(false)}
+                              aria-label="Cerrar"
+                            >
+                              <X className="h-5 w-5" />
+                            </button>
+                            <h3 className="font-semibold text-lg mb-4">
+                              Selecciona un pincel
+                            </h3>
+                            <div className="w-full max-w-2xl space-y-4 mb-6">
+                              {BRUSH_SECTIONS.map((section) => (
+                                <div
+                                  key={section.label}
+                                  className="bg-gray-50 dark:bg-neutral-800 rounded-xl mb-2 border-b border-gray-200 dark:border-gray-700"
+                                >
+                                  <button
+                                    type="button"
+                                    className="w-full flex items-center justify-between px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-400 rounded-xl"
+                                    onClick={() =>
+                                      setExpandedBrushSection(
+                                        expandedBrushSection === section.label
+                                          ? ""
+                                          : section.label
+                                      )
+                                    }
+                                    aria-expanded={
+                                      expandedBrushSection === section.label
+                                    }
+                                  >
+                                    <span className="font-bold text-sm text-indigo-700 dark:text-indigo-300 tracking-wide uppercase">
+                                      {section.label}
+                                    </span>
+                                    <span className="ml-2 text-indigo-400">
+                                      {expandedBrushSection === section.label
+                                        ? "▲"
+                                        : "▼"}
+                                    </span>
+                                  </button>
+                                  <AnimatePresence initial={false}>
+                                    {expandedBrushSection === section.label && (
+                                      <motion.div
+                                        initial={{ height: 0, opacity: 0 }}
+                                        animate={{ height: "auto", opacity: 1 }}
+                                        exit={{ height: 0, opacity: 0 }}
+                                        transition={{ duration: 0.2 }}
+                                        className="overflow-hidden"
+                                      >
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-5 gap-8 p-4">
+                                          {section.keys.map((key) => {
+                                            const IconComponent =
+                                              TOOL_ICONS[key] || Brush;
+                                            const label =
+                                              BRUSH_LABELS[key] ||
+                                              key.charAt(0).toUpperCase() +
+                                                key.slice(1);
+                                            return (
+                                              <button
+                                                key={key}
+                                                onClick={() => {
+                                                  setBrushType(key);
+                                                  setShowBrushModal(false);
+                                                }}
+                                                className={`m-3 flex flex-col items-center justify-center w-20 h-20 rounded-xl border-2 transition-all text-xs font-medium shadow-sm
+                                                  ${
+                                                    brushType === key
+                                                      ? "border-indigo-600 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-200 scale-110 shadow-lg ring-4 ring-indigo-400"
+                                                      : "border-gray-200 dark:border-gray-700 bg-white dark:bg-neutral-700 hover:border-indigo-400 hover:bg-gray-50 dark:hover:bg-neutral-800"
+                                                  }
+                                                `}
+                                                title={label}
+                                                style={{
+                                                  fontWeight:
+                                                    brushType === key
+                                                      ? "bold"
+                                                      : "normal",
+                                                }}
+                                              >
+                                                <IconComponent
+                                                  className={`h-7 w-7 mb-2 ${
+                                                    brushType === key
+                                                      ? "scale-125"
+                                                      : ""
+                                                  }`}
+                                                />
+                                                <span className="text-sm px-2 whitespace-normal leading-tight text-center w-full">
+                                                  {label}
+                                                </span>
+                                              </button>
+                                            );
+                                          })}
+                                        </div>
+                                      </motion.div>
+                                    )}
+                                  </AnimatePresence>
+                                </div>
+                              ))}
+                            </div>
+                            <button
+                              type="button"
+                              className="mt-2 px-4 py-2 rounded-lg bg-gray-200 dark:bg-neutral-800 text-gray-700 dark:text-gray-200 font-bold hover:bg-gray-300 dark:hover:bg-neutral-700 transition"
+                              onClick={() => setShowBrushModal(false)}
+                            >
+                              Cancelar
+                            </button>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
+
+                  {/* Botones de acción */}
+                  <div className="flex gap-2 mb-3">
+                    <button
+                      type="button"
+                      onClick={() => setCanvasBg("/assets/textures/wall.jpg")}
+                      className="px-3 py-1 rounded bg-gray-300 text-gray-800 text-xs font-bold hover:bg-gray-400"
+                    >
+                      Fondo muro
+                    </button>
+                    <button
+                      onClick={() => {
+                        const canvas = canvasRef.current;
+                        const ctx = canvas.getContext("2d");
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        if (canvasBg) {
+                          const img = new window.Image();
+                          img.onload = () =>
+                            ctx.drawImage(
+                              img,
+                              0,
+                              0,
+                              canvas.width,
+                              canvas.height
+                            );
+                          img.src = canvasBg;
+                        }
+                      }}
+                      className="px-3 py-1 rounded bg-red-600 text-white text-xs font-bold hover:bg-red-700"
+                    >
+                      Limpiar
+                    </button>
+                  </div>
+
+                  {/* Imagen para patrón (solo si pattern_image) */}
+                  {brushType === "pattern_image" && (
+                    <motion.div
+                      className="mb-3"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <label className="font-medium mr-2">
+                        Imagen para patrón:
+                      </label>
+                      <button
+                        type="button"
+                        className="px-3 py-1 rounded bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700"
+                        onClick={() => setShowPatternImageModal(true)}
+                      >
+                        Seleccionar imagen
+                      </button>
+                      {patternImageUrl && (
+                        <motion.div
+                          className="mt-2 w-24 h-16 object-cover rounded border relative"
+                          initial={{ scale: 0.9, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          exit={{ scale: 0.9, opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <img
+                            src={patternImageUrl}
+                            alt="pattern preview"
+                            className="w-full h-full object-cover rounded border"
+                          />
+                          <motion.button
+                            type="button"
+                            onClick={() => setPatternImageUrl(null)}
+                            className="absolute top-1 right-1 bg-black/60 hover:bg-black/80 text-white rounded-full p-1 z-10"
+                            tabIndex={-1}
+                            aria-label="Eliminar imagen"
+                            whileTap={{ scale: 0.9 }}
+                            whileHover={{ scale: 1.1 }}
+                          >
+                            <X className="h-4 w-4" />
+                          </motion.button>
+                        </motion.div>
+                      )}
+                      {!patternImageReady && patternImageUrl && (
+                        <div className="mt-2 text-xs text-gray-500 flex items-center gap-2">
+                          <span className="animate-spin inline-block w-4 h-4 border-2 border-gray-300 border-t-transparent rounded-full"></span>{" "}
+                          Cargando patrón...
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+
+                  {/* Modal para seleccionar imagen de patrón */}
+                  {showPatternImageModal && (
+                    <div
+                      className="fixed inset-0 z-[999999] flex items-center justify-center bg-black/40 backdrop-blur-sm"
+                      style={{ isolation: "isolate" }}
+                    >
+                      <div className="bg-background dark:bg-neutral-900 border border-border rounded-2xl shadow-2xl p-8 flex flex-col items-center">
+                        <h3 className="font-semibold mb-4">
+                          Selecciona una imagen para el patrón
+                        </h3>
+                        <motion.div
+                          {...getPatternImgRootProps()}
+                          className={`w-64 h-32 border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition flex items-center justify-center ${
+                            isPatternImgDragActive
+                              ? "border-indigo-500 bg-indigo-50"
+                              : "border-border bg-muted/40"
+                          }`}
+                          initial={{ scale: 1 }}
+                          animate={
+                            isPatternImgDragActive
+                              ? { scale: 1.04 }
+                              : { scale: 1 }
+                          }
+                          whileHover={{ scale: 1.02 }}
+                        >
+                          <input {...getPatternImgInputProps()} />
+                          <span className="text-muted-foreground">
+                            Arrastra una imagen aquí o haz clic para seleccionar
+                          </span>
+                        </motion.div>
+                        <button
+                          type="button"
+                          className="mt-6 px-4 py-2 rounded bg-gray-200 dark:bg-neutral-800 text-gray-700 dark:text-gray-200 font-bold hover:bg-gray-300 dark:hover:bg-neutral-700 transition"
+                          onClick={() => setShowPatternImageModal(false)}
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </>
@@ -2102,12 +2771,26 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
 
           {step === 2 && (
             <div className="space-y-4">
-              <div className="text-lg font-semibold text-foreground">¿Listo para crear tu obra?</div>
+              <div className="text-lg font-semibold text-foreground">
+                ¿Listo para crear tu obra?
+              </div>
               <div className="flex flex-col gap-2">
-                <div><span className="font-medium">Título:</span> {titulo}</div>
-                <div><span className="font-medium">Técnica:</span> {tecnica}</div>
-                <div><span className="font-medium">Año:</span> {year}</div>
-                {imagen && <img src={URL.createObjectURL(imagen)} alt="preview" className="w-full max-h-40 object-contain rounded-xl border" />}
+                <div>
+                  <span className="font-medium">Título:</span> {titulo}
+                </div>
+                <div>
+                  <span className="font-medium">Técnica:</span> {tecnica}
+                </div>
+                <div>
+                  <span className="font-medium">Año:</span> {year}
+                </div>
+                {imagen && (
+                  <img
+                    src={URL.createObjectURL(imagen)}
+                    alt="preview"
+                    className="w-full max-h-40 object-contain rounded-xl border"
+                  />
+                )}
               </div>
             </div>
           )}
