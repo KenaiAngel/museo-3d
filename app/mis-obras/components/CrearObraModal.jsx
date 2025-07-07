@@ -2,12 +2,13 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { X } from "lucide-react";
+import { X, Undo2, Redo2, Download, Trash2, Brush, Eraser, Droplets, Sparkles, PaintBucket, Palette, Flame, Grid3X3, Zap, MoreHorizontal, Target, Scissors, Waves, Circle, Star, Heart, Image } from "lucide-react";
 import { useDropzone } from "react-dropzone";
 import toast from "react-hot-toast";
 import { useTheme } from "../../../providers/ThemeProvider";
 import Stepper from "../../../components/ui/Stepper";
 import { DatePicker } from "../../components/ui/date-picker-new";
+import ReactDOM from "react-dom";
 
 // Función auxiliar para obtener coordenadas escaladas en el canvas
 const getScaledCoords = (e, canvasRef, canvasZoom) => {
@@ -83,6 +84,91 @@ function hexToRgba(hex, alpha) {
   return `rgba(${r},${g},${b},${alpha})`;
 }
 
+// Definir herramientas principales con íconos
+const TOOL_ICONS = {
+  pencil: Brush,
+  smooth: Sparkles,
+  shadow: Zap,
+  eraser: Eraser,
+  carboncillo: Scissors,
+  acuarela: Droplets,
+  tiza: Grid3X3,
+  marcador: PaintBucket,
+  oleo: Palette,
+  pixel: Grid3X3,
+  neon: Zap,
+  puntos: Target,
+  lineas: MoreHorizontal,
+  fuego: Flame,
+  thick: Brush,
+  sliced: Scissors,
+  pen: Brush,
+  pen2: Brush,
+  multi: Waves,
+  multi_opacity: Waves,
+  beads: Circle,
+  wiggle: Waves,
+  // Estampados y patrones
+  stamp_circle: Circle,
+  stamp_star: Star,
+  pattern_dots: Grid3X3,
+  pattern_lines: MoreHorizontal,
+  pattern_rainbow: Flame,
+  pattern_image: Image,
+  // Spray
+  aerosol: Droplets,
+  spray: Droplets,
+  spray_time: Droplets,
+  spray_speed: Droplets,
+  // Sketch/Harmony
+  sketchy: Brush,
+  neighbor: Brush,
+  fur_neighbor: Brush,
+  // Especiales
+  rainbow_dynamic: Flame,
+  confetti: Sparkles,
+  shooting_star: Star,
+  glitch: Zap,
+  heart_spray: Heart,
+  lightning: Zap,
+  bubble: Circle,
+  ribbon: Waves,
+  fire_realistic: Flame,
+  particles: Sparkles,
+};
+
+// Agrupación de pinceles por sección
+const BRUSH_SECTIONS = [
+  {
+    label: "Básicos",
+    keys: ["pencil", "smooth", "shadow", "brush", "eraser"],
+  },
+  {
+    label: "Artísticos",
+    keys: ["pen", "pen2", "thick", "sliced", "multi", "multi_opacity", "carboncillo", "acuarela", "tiza", "marcador", "oleo", "pixel", "neon", "puntos", "lineas", "fuego", "beads", "wiggle"],
+  },
+  {
+    label: "Estampado",
+    keys: ["stamp_circle", "stamp_star"],
+  },
+  {
+    label: "Patrón",
+    keys: ["pattern_dots", "pattern_lines", "pattern_rainbow", "pattern_image"],
+  },
+  {
+    label: "Spray",
+    keys: ["aerosol", "spray", "spray_time", "spray_speed"],
+  },
+  {
+    label: "Sketch/Harmony",
+    keys: ["sketchy", "neighbor", "fur_neighbor"],
+  },
+  {
+    label: "Especiales",
+    keys: ["rainbow_dynamic", "confetti", "shooting_star", "glitch", "heart_spray", "lightning", "bubble", "ribbon", "fire_realistic", "particles"],
+  },
+];
+
 export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
   const { theme } = useTheme();
   const [step, setStep] = useState(0);
@@ -113,6 +199,16 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
   const [patternImageReady, setPatternImageReady] = useState(false);
   const [aerosolTimer, setAerosolTimer] = useState(null);
   const [aerosolPos, setAerosolPos] = useState(null);
+  // Estados para historial de canvas
+  const [canvasHistory, setCanvasHistory] = useState([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const HISTORY_LIMIT = 30;
+  // Estado para mostrar/ocultar el dropdown de pinceles
+  const [showBrushDropdown, setShowBrushDropdown] = useState(false);
+  const brushDropdownRef = useRef(null);
+  const brushButtonRef = useRef(null);
+  const modalRef = useRef(null);
+  const [brushDropdownPos, setBrushDropdownPos] = useState({ left: '50%', top: '48px', width: 420 });
 
   useEffect(() => {
     // Preparar textura para pincel "fur"
@@ -1354,6 +1450,7 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
     setLastPoint(null);
     if (canvasRef.current) {
       setCanvasImage(canvasRef.current.toDataURL());
+      saveToHistory();
     }
     if (sprayTimerRef.current) {
       clearInterval(sprayTimerRef.current);
@@ -1424,6 +1521,82 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
     };
   }, [aerosolTimer]);
 
+  // Guardar el estado actual del canvas en el historial
+  const saveToHistory = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const dataUrl = canvas.toDataURL();
+    let newHistory = canvasHistory.slice(0, historyIndex + 1);
+    newHistory.push(dataUrl);
+    if (newHistory.length > HISTORY_LIMIT) newHistory = newHistory.slice(newHistory.length - HISTORY_LIMIT);
+    setCanvasHistory(newHistory);
+    setHistoryIndex(newHistory.length - 1);
+  }, [canvasRef, canvasHistory, historyIndex]);
+
+  // Deshacer
+  const undo = () => {
+    if (historyIndex > 0) {
+      const newIndex = historyIndex - 1;
+      setHistoryIndex(newIndex);
+      const img = new window.Image();
+      img.onload = () => {
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+      };
+      img.src = canvasHistory[newIndex];
+    }
+  };
+  // Rehacer
+  const redo = () => {
+    if (historyIndex < canvasHistory.length - 1) {
+      const newIndex = historyIndex + 1;
+      setHistoryIndex(newIndex);
+      const img = new window.Image();
+      img.onload = () => {
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+      };
+      img.src = canvasHistory[newIndex];
+    }
+  };
+  // Descargar canvas
+  const downloadCanvas = () => {
+    const canvas = canvasRef.current;
+    const link = document.createElement('a');
+    link.download = `${titulo || 'obra'}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  };
+  // Limpiar canvas y guardar en historial
+  const clearCanvasAndSave = () => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (canvasBg) {
+      const img = new window.Image();
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        saveToHistory();
+      };
+      img.src = canvasBg;
+    } else {
+      saveToHistory();
+    }
+  };
+  // Inicializar historial al abrir modal
+  useEffect(() => {
+    if (isOpen && imgMode === "canvas") {
+      setTimeout(() => {
+        saveToHistory();
+      }, 200);
+    }
+    // eslint-disable-next-line
+  }, [isOpen, imgMode]);
+
   const handleCreate = async () => {
     if (!validateStep()) return;
     
@@ -1472,21 +1645,51 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
   // Determinar si estamos en el paso de canvas
   const isCanvasStep = step === 1 && imgMode === "canvas";
 
+  // Cerrar el dropdown al hacer clic fuera
+  useEffect(() => {
+    if (!showBrushDropdown) return;
+    function handleClick(e) {
+      if (brushDropdownRef.current && !brushDropdownRef.current.contains(e.target)) {
+        setShowBrushDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [showBrushDropdown]);
+
+  useEffect(() => {
+    if (showBrushDropdown && brushButtonRef.current) {
+      const btnRect = brushButtonRef.current.getBoundingClientRect();
+      setBrushDropdownPos({
+        left: btnRect.right + 8, // 8px de separación a la derecha del botón
+        top: btnRect.top,
+        width: 420
+      });
+    }
+  }, [showBrushDropdown]);
+
   if (!isOpen) return null;
+
+  // Overlay y modal principal
+  const modalClassName = `relative w-full ${isCanvasStep ? 'max-w-4xl md:max-w-5xl lg:max-w-6xl xl:max-w-7xl p-8 md:p-10' : 'max-w-lg p-4 md:p-6'} bg-background dark:bg-neutral-900 rounded-2xl shadow-2xl border border-border flex flex-col`;
+  const modalStyle = isCanvasStep ? { minHeight: 'min(90vh, 600px)' } : { minHeight: 'min(80vh, 400px)' };
 
   return (
     <div
-      className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+      className={`fixed inset-0 z-[99999] flex ${isCanvasStep ? 'items-start justify-center mt-16' : 'items-center justify-center'} bg-black/40 backdrop-blur-sm`}
       style={{ isolation: 'isolate' }}
       onClick={e => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
       <motion.div
-        initial={{ opacity: 0, scale: 0.96 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.96 }}
-        className={`fixed bg-background dark:bg-neutral-900 border border-border rounded-2xl shadow-2xl w-full ${isCanvasStep ? "max-w-5xl min-h-[700px]" : "max-w-lg"} mx-auto p-0 overflow-hidden flex flex-col z-[99999]`}
+        ref={modalRef}
+        initial={{ opacity: 0, scale: 0.96, y: 40 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.96, y: 40 }}
+        transition={{ duration: 0.25 }}
+        className={modalClassName}
+        style={modalStyle}
       >
         {/* Header */}
         <div className="px-8 pt-8 pb-4 border-b border-border">
@@ -1601,95 +1804,93 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
                       <h3 className="font-semibold mb-3">Herramientas</h3>
                       
                       {/* Fondo del canvas */}
-                      <div {...getBgRootProps()} className={`w-full border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition relative ${isBgDragActive ? "border-indigo-500 bg-indigo-50" : "border-border bg-muted/40"}`}>
+                      <motion.div
+                        {...getBgRootProps()}
+                        className={`w-full border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition relative ${isBgDragActive ? "border-indigo-500 bg-indigo-50" : "border-border bg-muted/40"}`}
+                        initial={{ scale: 1 }}
+                        animate={isBgDragActive ? { scale: 1.04 } : { scale: 1 }}
+                        whileHover={{ scale: 1.02 }}
+                      >
                         <input {...getBgInputProps()} />
                         {canvasBg ? (
-                          <div className="relative inline-block w-full">
+                          <motion.div
+                            className="relative inline-block w-full"
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.3 }}
+                          >
                             <img src={canvasBg} alt="bg" className="w-full max-h-32 object-contain rounded-xl border mx-auto" />
-                            <button
+                            <motion.button
                               type="button"
                               onClick={e => { e.stopPropagation(); setCanvasBg(null); }}
                               className="absolute top-2 right-2 bg-black/60 hover:bg-black/80 text-white rounded-full p-1 z-10"
                               tabIndex={-1}
                               aria-label="Eliminar fondo"
+                              whileTap={{ scale: 0.9 }}
+                              whileHover={{ scale: 1.1 }}
                             >
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                            </button>
-                          </div>
+                              <X className="h-4 w-4" />
+                            </motion.button>
+                          </motion.div>
                         ) : (
                           <span className="text-muted-foreground">Arrastra una imagen de fondo aquí o haz clic para seleccionar</span>
                         )}
-                      </div>
+                      </motion.div>
 
-                      {/* Selector de pincel */}
-                      <div className="w-full mb-3">
-                        <div className="flex gap-2 items-center overflow-x-auto px-2 max-w-full">
-                          <label className="font-medium">Pincel:</label>
-                          <select value={brushType} onChange={e => setBrushType(e.target.value)} className="rounded border-2 px-2 py-1 max-w-xs truncate w-full border-gray-300 dark:border-neutral-700">
-                            <optgroup label="Básicos">
-                              <option value="pencil">Lápiz simple</option>
-                              <option value="smooth">Lápiz suave (Bezier)</option>
-                              <option value="shadow">Sombra/Glow</option>
-                              <option value="brush">Pincel clásico</option>
-                              <option value="eraser">Borrador</option>
-                            </optgroup>
-                            <optgroup label="Artísticos">
-                              <option value="pen">Pluma (ancho variable)</option>
-                              <option value="pen2">Pluma múltiple</option>
-                              <option value="thick">Pincel grueso</option>
-                              <option value="sliced">Pincel cortado</option>
-                              <option value="multi">Múltiples líneas</option>
-                              <option value="multi_opacity">Múltiples líneas opacidad</option>
-                              <option value="carboncillo">Carboncillo</option>
-                              <option value="acuarela">Acuarela</option>
-                              <option value="tiza">Tiza</option>
-                              <option value="marcador">Marcador</option>
-                              <option value="oleo">Óleo</option>
-                              <option value="pixel">Pixel</option>
-                              <option value="neon">Neón</option>
-                              <option value="puntos">Puntos</option>
-                              <option value="lineas">Líneas</option>
-                              <option value="fuego">Fuego</option>
-                              <option value="beads">Beads (perlas)</option>
-                              <option value="wiggle">Wiggle (ondas)</option>
-                            </optgroup>
-                            <optgroup label="Estampado">
-                              <option value="stamp_circle">Estampado círculo</option>
-                              <option value="stamp_star">Estampado estrella</option>
-                            </optgroup>
-                            <optgroup label="Patrón">
-                              <option value="pattern_dots">Patrón puntos</option>
-                              <option value="pattern_lines">Patrón líneas</option>
-                              <option value="pattern_rainbow">Patrón arcoíris</option>
-                              <option value="pattern_image">Patrón imagen</option>
-                            </optgroup>
-                            <optgroup label="Spray">
-                              <option value="aerosol">Aerosol</option>
-                              <option value="spray">Spray</option>
-                              <option value="spray_time">Spray tiempo</option>
-                            </optgroup>
-                            <optgroup label="Sketch/Harmony">
-                              <option value="sketchy">Sketchy (Harmony)</option>
-                              <option value="neighbor">Neighbor points</option>
-                              <option value="fur_neighbor">Fur neighbor</option>
-                            </optgroup>
-                            <optgroup label="Especiales">
-                              <option value="rainbow_dynamic">Arcoíris dinámico</option>
-                              <option value="confetti">Confeti</option>
-                              <option value="shooting_star">Estrella fugaz</option>
-                              <option value="glitch">Glitch</option>
-                              <option value="heart_spray">Spray de corazones</option>
-                              <option value="lightning">Rayo</option>
-                              <option value="bubble">Burbuja</option>
-                              <option value="ribbon">Cinta</option>
-                              <option value="fire_realistic">Fuego realista</option>
-                              <option value="particles">Partículas</option>
-                              <option value="spray_speed">Spray velocidad</option>
-                            </optgroup>
-                          </select>
-                        </div>
+                      {/* Selector de pincel compacto con dropdown usando portal */}
+                      <div className="w-full mb-3 relative">
+                        <button
+                          ref={brushButtonRef}
+                          type="button"
+                          className="flex items-center gap-2 px-3 py-2 rounded-lg border-2 font-medium bg-muted text-foreground border-border hover:bg-gray-100 dark:hover:bg-neutral-700 w-full justify-start"
+                          onClick={() => setShowBrushDropdown((v) => !v)}
+                          aria-haspopup="listbox"
+                          aria-expanded={showBrushDropdown}
+                        >
+                          {(() => {
+                            const Icon = TOOL_ICONS[brushType] || Brush;
+                            return <Icon className="w-5 h-5" />;
+                          })()}
+                          <span className="truncate">{brushType}</span>
+                          <svg className="ml-auto w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.584l3.71-3.354a.75.75 0 111.02 1.1l-4.25 3.846a.75.75 0 01-1.02 0l-4.25-3.846a.75.75 0 01.02-1.06z" clipRule="evenodd" /></svg>
+                        </button>
+                        {showBrushDropdown && typeof window !== 'undefined' && ReactDOM.createPortal(
+                          <div ref={brushDropdownRef} className="fixed z-[999999] pointer-events-none left-0 top-0 w-screen h-screen">
+                            <motion.div
+                              initial={{ opacity: 0, scale: 0.96, y: 20 }}
+                              animate={{ opacity: 1, scale: 1, y: 0 }}
+                              exit={{ opacity: 0, scale: 0.96, y: 20 }}
+                              transition={{ duration: 0.18 }}
+                              className="absolute z-[999999] bg-background dark:bg-neutral-900 border border-border rounded-2xl shadow-2xl p-6 max-h-[80vh] overflow-y-auto animate-fade-in pointer-events-auto flex flex-col items-center"
+                              style={{ left: `${brushDropdownPos.left}px`, top: `${brushDropdownPos.top}px`, width: `${brushDropdownPos.width}px`, minWidth: 320, maxWidth: 480 }}
+                            >
+                              {BRUSH_SECTIONS.map(section => (
+                                <div key={section.label} className="mb-3 w-full">
+                                  <div className="text-xs font-bold text-gray-500 dark:text-gray-400 mb-1 px-2">{section.label}</div>
+                                  <div className="flex flex-wrap gap-3 mb-1">
+                                    {section.keys.map(key => {
+                                      const Icon = TOOL_ICONS[key] || Brush;
+                                      return (
+                                        <button
+                                          key={key}
+                                          onClick={() => { setBrushType(key); setShowBrushDropdown(false); }}
+                                          className={`flex flex-col items-center justify-center p-2 rounded-lg border-2 transition-colors text-xs font-medium w-16 h-16 ${brushType === key ? 'bg-indigo-600 text-white border-indigo-700' : 'bg-muted text-foreground border-border hover:bg-gray-100 dark:hover:bg-neutral-700'}`}
+                                          title={key}
+                                          type="button"
+                                        >
+                                          <Icon className="w-6 h-6 mb-1" />
+                                          <span className="truncate w-full text-[11px] text-center leading-tight max-w-[3.5rem]">{key}</span>
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              ))}
+                            </motion.div>
+                          </div>,
+                          document.body
+                        )}
                       </div>
 
                       {/* Color y tamaño */}
@@ -1735,18 +1936,43 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
 
                       {/* Imagen para patrón (solo si pattern_image) */}
                       {brushType === 'pattern_image' && (
-                        <div className="mb-3">
+                        <motion.div
+                          className="mb-3"
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          transition={{ duration: 0.3 }}
+                        >
                           <label className="font-medium mr-2">Imagen para patrón:</label>
                           <button type="button" className="px-3 py-1 rounded bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700" onClick={() => setShowPatternImageModal(true)}>
                             Seleccionar imagen
                           </button>
                           {patternImageUrl && (
-                            <img src={patternImageUrl} alt="pattern preview" className="mt-2 w-24 h-16 object-cover rounded border" />
+                            <motion.div
+                              className="mt-2 w-24 h-16 object-cover rounded border relative"
+                              initial={{ scale: 0.9, opacity: 0 }}
+                              animate={{ scale: 1, opacity: 1 }}
+                              exit={{ scale: 0.9, opacity: 0 }}
+                              transition={{ duration: 0.2 }}
+                            >
+                              <img src={patternImageUrl} alt="pattern preview" className="w-full h-full object-cover rounded border" />
+                              <motion.button
+                                type="button"
+                                onClick={() => setPatternImageUrl(null)}
+                                className="absolute top-1 right-1 bg-black/60 hover:bg-black/80 text-white rounded-full p-1 z-10"
+                                tabIndex={-1}
+                                aria-label="Eliminar imagen"
+                                whileTap={{ scale: 0.9 }}
+                                whileHover={{ scale: 1.1 }}
+                              >
+                                <X className="h-4 w-4" />
+                              </motion.button>
+                            </motion.div>
                           )}
                           {!patternImageReady && patternImageUrl && (
                             <div className="mt-2 text-xs text-gray-500 flex items-center gap-2"><span className="animate-spin inline-block w-4 h-4 border-2 border-gray-300 border-t-transparent rounded-full"></span> Cargando patrón...</div>
                           )}
-                        </div>
+                        </motion.div>
                       )}
 
                       {/* Modal para seleccionar imagen de patrón */}
@@ -1754,10 +1980,16 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
                         <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-black/40 backdrop-blur-sm" style={{ isolation: 'isolate' }}>
                           <div className="bg-background dark:bg-neutral-900 border border-border rounded-2xl shadow-2xl p-8 flex flex-col items-center">
                             <h3 className="font-semibold mb-4">Selecciona una imagen para el patrón</h3>
-                            <div {...getPatternImgRootProps()} className={`w-64 h-32 border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition flex items-center justify-center ${isPatternImgDragActive ? "border-indigo-500 bg-indigo-50" : "border-border bg-muted/40"}`}>
+                            <motion.div
+                              {...getPatternImgRootProps()}
+                              className={`w-64 h-32 border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition flex items-center justify-center ${isPatternImgDragActive ? "border-indigo-500 bg-indigo-50" : "border-border bg-muted/40"}`}
+                              initial={{ scale: 1 }}
+                              animate={isPatternImgDragActive ? { scale: 1.04 } : { scale: 1 }}
+                              whileHover={{ scale: 1.02 }}
+                            >
                               <input {...getPatternImgInputProps()} />
                               <span className="text-muted-foreground">Arrastra una imagen aquí o haz clic para seleccionar</span>
-                            </div>
+                            </motion.div>
                             <button type="button" className="mt-6 px-4 py-2 rounded bg-gray-200 dark:bg-neutral-800 text-gray-700 dark:text-gray-200 font-bold hover:bg-gray-300 dark:hover:bg-neutral-700 transition" onClick={() => setShowPatternImageModal(false)}>
                               Cancelar
                             </button>
@@ -1768,7 +2000,40 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
                   </div>
 
                   {/* Canvas grande */}
-                  <div className="lg:col-span-3 flex items-center justify-center">
+                  <div className="lg:col-span-3 flex flex-col items-center justify-center">
+                    {/* Botones de control arriba del canvas */}
+                    <div className="flex gap-2 mb-2 items-center">
+                      <button
+                        onClick={undo}
+                        disabled={historyIndex <= 0}
+                        title="Deshacer"
+                        className="p-2 rounded transition-colors disabled:opacity-50 bg-gray-200 hover:bg-gray-300 dark:bg-neutral-700 dark:hover:bg-neutral-600"
+                      >
+                        <Undo2 className="w-5 h-5 text-gray-800 dark:text-gray-100" />
+                      </button>
+                      <button
+                        onClick={redo}
+                        disabled={historyIndex >= canvasHistory.length - 1}
+                        title="Rehacer"
+                        className="p-2 rounded transition-colors disabled:opacity-50 bg-gray-200 hover:bg-gray-300 dark:bg-neutral-700 dark:hover:bg-neutral-600"
+                      >
+                        <Redo2 className="w-5 h-5 text-gray-800 dark:text-gray-100" />
+                      </button>
+                      <button
+                        onClick={downloadCanvas}
+                        title="Descargar imagen"
+                        className="p-2 rounded transition-colors bg-gray-200 hover:bg-gray-300 dark:bg-neutral-700 dark:hover:bg-neutral-600"
+                      >
+                        <Download className="w-5 h-5 text-gray-800 dark:text-gray-100" />
+                      </button>
+                      <button
+                        onClick={clearCanvasAndSave}
+                        title="Limpiar canvas"
+                        className="p-2 rounded transition-colors bg-red-200 hover:bg-red-400 dark:bg-red-900 dark:hover:bg-red-700"
+                      >
+                        <Trash2 className="w-5 h-5 text-red-700 dark:text-red-200" />
+                      </button>
+                    </div>
                     <div style={{ position: "relative", width: "100%", maxWidth: 900, aspectRatio: "4/3" }}>
                       <div className="absolute top-2 right-2 z-10 flex gap-2">
                         <button
