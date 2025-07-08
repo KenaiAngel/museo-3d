@@ -68,23 +68,7 @@ const LayoutContainer = ({ children }) => {
           />
         )}
       </main>
-      {useFixedFooter ? (
-        <footer
-          onMouseEnter={() => setHoveringBottom(true)}
-          onMouseLeave={() => setHoveringBottom(false)}
-          className={`hidden md:block fixed bottom-0 left-0 w-full z-[15] transition-all duration-500 ${
-            hoveringBottom
-              ? "opacity-100 translate-y-0"
-              : "opacity-0 translate-y-full pointer-events-none"
-          }`}
-        >
-          <Footer />
-        </footer>
-      ) : (
-        <footer className="block w-full z-[15]">
-          <Footer />
-        </footer>
-      )}
+      {/* Footer eliminado temporalmente para pruebas de espacio */}
     </div>
   );
 };

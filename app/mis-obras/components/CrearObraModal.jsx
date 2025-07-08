@@ -408,6 +408,31 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
   const [canvasBgColor, setCanvasBgColor] = useState("#ffffff");
   const [showBgColorPicker, setShowBgColorPicker] = useState(false);
   const [showConfirmClear, setShowConfirmClear] = useState(false);
+  const [descripcion, setDescripcion] = useState("");
+  const [autor, setAutor] = useState("");
+  const [ubicacion, setUbicacion] = useState("");
+  const [latitud, setLatitud] = useState("");
+  const [longitud, setLongitud] = useState("");
+  const [artistId, setArtistId] = useState("");
+  const [artistList, setArtistList] = useState([]);
+  const scrollYRef = useRef(0);
+
+  useEffect(() => {
+    if (isOpen) {
+      scrollYRef.current = window.scrollY;
+      document.body.style.overflow = "hidden";
+      document.body.style.position = "fixed";
+      document.body.style.width = "100vw";
+      document.body.style.top = `-${scrollYRef.current}px`;
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+      document.body.style.position = "";
+      document.body.style.width = "";
+      document.body.style.top = "";
+      window.scrollTo(0, scrollYRef.current);
+    };
+  }, [isOpen]);
 
   useEffect(() => {
     // Preparar textura para pincel "fur"
@@ -2039,6 +2064,11 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
     formData.append("anio", year ? year.toString() : "");
     formData.append("autor", session?.user?.name || "Usuario");
     formData.append("userId", session?.user?.id || "");
+    formData.append("descripcion", descripcion);
+    formData.append("ubicacion", ubicacion);
+    formData.append("latitud", latitud);
+    formData.append("longitud", longitud);
+    formData.append("artistId", artistId);
 
     try {
       const response = await fetch("/api/murales", {
@@ -2146,25 +2176,23 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
     }
   };
 
+  useEffect(() => {
+    // Cargar lista de artistas para el selector
+    fetch("/api/artists?limit=100")
+      .then((res) => res.json())
+      .then((data) => setArtistList(data.artists || []))
+      .catch(() => setArtistList([]));
+  }, []);
+
   if (!isOpen) return null;
 
   // Overlay y modal principal
-  const modalClassName = `relative w-full ${
-    isCanvasStep
-      ? "max-w-4xl md:max-w-5xl lg:max-w-6xl xl:max-w-7xl p-8 md:p-10"
-      : "max-w-lg p-4 md:p-6"
-  } bg-background dark:bg-neutral-900 rounded-2xl shadow-2xl border border-border flex flex-col`;
-  const modalStyle = isCanvasStep
-    ? { minHeight: "min(90vh, 600px)" }
-    : { minHeight: "min(80vh, 400px)" };
+  const modalClassName = `relative w-full max-w-4xl p-6 md:p-8 bg-background dark:bg-neutral-900 rounded-2xl shadow-2xl border border-border flex flex-col`;
+  const modalStyle = { minHeight: "min(90vh, 600px)" };
 
   return (
     <div
-      className={`fixed inset-0 z-[99999] flex ${
-        isCanvasStep
-          ? "items-start justify-center mt-16"
-          : "items-center justify-center"
-      } bg-black/40 backdrop-blur-sm`}
+      className="fixed inset-0 w-screen h-screen z-[120] flex items-center justify-center bg-black/60 backdrop-blur-md"
       style={{ isolation: "isolate" }}
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
@@ -2176,7 +2204,7 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: 40 }}
         transition={{ duration: 0.25 }}
-        className={modalClassName}
+        className={modalClassName + " z-[130] mt-24 md:mt-32"}
         style={modalStyle}
       >
         {/* Header */}
@@ -2230,7 +2258,13 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
               {errors.titulo && (
                 <div className="text-pink-500 text-sm">{errors.titulo}</div>
               )}
-
+              <motion.textarea
+                placeholder="Descripción (opcional)"
+                value={descripcion}
+                onChange={(e) => setDescripcion(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border-2 text-base bg-background dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                rows={3}
+              />
               <motion.input
                 type="text"
                 placeholder="Técnica"
@@ -2251,33 +2285,69 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
               {errors.tecnica && (
                 <div className="text-pink-500 text-sm">{errors.tecnica}</div>
               )}
-
-              <motion.div
-                animate={
-                  errors.year
-                    ? { x: [0, -8, 8, -6, 6, -4, 4, 0, Math.random()] }
-                    : false
-                }
-                transition={{ duration: 0.4 }}
-              >
-                <DatePicker
-                  value={year ? `${year}-01-01` : null}
-                  onChange={(dateString) => {
-                    if (dateString) {
-                      const d = new Date(dateString);
-                      setYear(d.getFullYear());
-                      if (errors.year)
-                        setErrors((prev) => ({ ...prev, year: undefined }));
-                    } else {
-                      setYear(null);
-                    }
-                  }}
-                  placeholder="Selecciona el año..."
-                />
-              </motion.div>
+              <DatePicker
+                value={year ? `${year}-01-01` : null}
+                onChange={(dateString) => {
+                  if (dateString) {
+                    const d = new Date(dateString);
+                    setYear(d.getFullYear());
+                    if (errors.year)
+                      setErrors((prev) => ({ ...prev, year: undefined }));
+                  } else {
+                    setYear(null);
+                  }
+                }}
+                placeholder="Selecciona el año..."
+              />
               {errors.year && (
                 <div className="text-pink-500 text-sm">{errors.year}</div>
               )}
+              <motion.input
+                type="text"
+                placeholder="Autor (opcional)"
+                value={autor || ""}
+                onChange={(e) => setAutor(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border-2 text-base bg-background dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+              />
+              <motion.input
+                type="text"
+                placeholder="Ubicación (opcional)"
+                value={ubicacion || ""}
+                onChange={(e) => setUbicacion(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border-2 text-base bg-background dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+              />
+              <div className="flex gap-2">
+                <motion.input
+                  type="number"
+                  step="any"
+                  placeholder="Latitud (opcional)"
+                  value={latitud || ""}
+                  onChange={(e) => setLatitud(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border-2 text-base bg-background dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                />
+                <motion.input
+                  type="number"
+                  step="any"
+                  placeholder="Longitud (opcional)"
+                  value={longitud || ""}
+                  onChange={(e) => setLongitud(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border-2 text-base bg-background dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                />
+              </div>
+              {/* Selector de artista */}
+              <select
+                value={artistId || ""}
+                onChange={(e) => setArtistId(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border-2 text-base bg-background dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+              >
+                <option value="">Selecciona un artista (opcional)</option>
+                {artistList &&
+                  artistList.map((artist) => (
+                    <option key={artist.id} value={artist.id}>
+                      {artist.user?.name || artist.id}
+                    </option>
+                  ))}
+              </select>
             </>
           )}
 

@@ -1378,6 +1378,71 @@ export default function CanvasEditor({
                       }}
                       placeholder="Selecciona el año..."
                     />
+                    <motion.input
+                      type="text"
+                      placeholder="Autor (opcional)"
+                      value={muralData.autor || ""}
+                      onChange={(e) =>
+                        setMuralData({ ...muralData, autor: e.target.value })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-neutral-700 text-foreground focus:ring-2 focus:ring-indigo-500"
+                    />
+                    <motion.input
+                      type="text"
+                      placeholder="Ubicación (opcional)"
+                      value={muralData.ubicacion || ""}
+                      onChange={(e) =>
+                        setMuralData({
+                          ...muralData,
+                          ubicacion: e.target.value,
+                        })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-neutral-700 text-foreground focus:ring-2 focus:ring-indigo-500"
+                    />
+                    <div className="flex gap-2">
+                      <motion.input
+                        type="number"
+                        step="any"
+                        placeholder="Latitud (opcional)"
+                        value={muralData.latitud || ""}
+                        onChange={(e) =>
+                          setMuralData({
+                            ...muralData,
+                            latitud: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-neutral-700 text-foreground focus:ring-2 focus:ring-indigo-500"
+                      />
+                      <motion.input
+                        type="number"
+                        step="any"
+                        placeholder="Longitud (opcional)"
+                        value={muralData.longitud || ""}
+                        onChange={(e) =>
+                          setMuralData({
+                            ...muralData,
+                            longitud: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-neutral-700 text-foreground focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                    {/* Selector de artista */}
+                    <select
+                      value={muralData.artistId || ""}
+                      onChange={(e) =>
+                        setMuralData({ ...muralData, artistId: e.target.value })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-neutral-700 text-foreground focus:ring-2 focus:ring-indigo-500"
+                    >
+                      <option value="">Selecciona un artista (opcional)</option>
+                      {artistList &&
+                        artistList.map((artist) => (
+                          <option key={artist.id} value={artist.id}>
+                            {artist.user?.name || artist.id}
+                          </option>
+                        ))}
+                    </select>
                   </div>
                 </div>
               )}

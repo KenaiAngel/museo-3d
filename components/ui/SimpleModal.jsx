@@ -1,8 +1,9 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 export function SimpleModal({ isOpen, onClose, title, children, size = "md" }) {
-  // Cerrar con ESC
+  const scrollYRef = useRef(0);
+  // Cerrar con ESC y lock scroll
   useEffect(() => {
     const handleEsc = (e) => {
       if (e.key === "Escape" && isOpen) {
@@ -12,12 +13,20 @@ export function SimpleModal({ isOpen, onClose, title, children, size = "md" }) {
 
     if (isOpen) {
       document.addEventListener("keydown", handleEsc);
+      scrollYRef.current = window.scrollY;
       document.body.style.overflow = "hidden";
+      document.body.style.position = "fixed";
+      document.body.style.width = "100vw";
+      document.body.style.top = `-${scrollYRef.current}px`;
     }
 
     return () => {
       document.removeEventListener("keydown", handleEsc);
       document.body.style.overflow = "unset";
+      document.body.style.position = "";
+      document.body.style.width = "";
+      document.body.style.top = "";
+      window.scrollTo(0, scrollYRef.current);
     };
   }, [isOpen, onClose]);
 

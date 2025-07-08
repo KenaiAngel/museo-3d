@@ -7,7 +7,11 @@ import { useMurales } from "./hooks/useMurales";
 import { useUIState } from "./hooks/useUIState";
 import CanvasEditor from "./components/CanvasEditor";
 import CrearObraModal from "./components/CrearObraModal";
-import { AnimatedBackground, LoadingScreen, UnauthorizedScreen } from "../../components/shared";
+import {
+  AnimatedBackground,
+  LoadingScreen,
+  UnauthorizedScreen,
+} from "../../components/shared";
 import FilterControls from "./components/FilterControls";
 import UploadModal from "./components/UploadModal";
 import PageHeader from "./components/PageHeader";
@@ -17,7 +21,7 @@ import MuralGrid from "./components/MuralGrid";
 export default function MisObras() {
   const { data: session, status } = useSession();
   const { user, isAuthenticated } = useAuth();
-  
+
   // Hook personalizado para manejo de murales
   const {
     murales,
@@ -29,7 +33,7 @@ export default function MisObras() {
     handleCanvasSave,
     handleDeleteMural,
     addMural,
-    getFilterOptions
+    getFilterOptions,
   } = useMurales();
 
   // Hook para manejar el estado de la UI
@@ -46,7 +50,7 @@ export default function MisObras() {
     openCanvasEditor,
     closeCanvasEditor,
     closeCreateModal,
-    closeUploadModal
+    closeUploadModal,
   } = useUIState();
 
   // Manejar guardado desde canvas con el hook
@@ -60,13 +64,13 @@ export default function MisObras() {
     openCanvasEditor(mural);
   };
 
-  if (status === 'loading' || loading) {
+  if (status === "loading" || loading) {
     return <LoadingScreen message="Cargando tus obras..." />;
   }
 
   if (!session) {
     return (
-      <UnauthorizedScreen 
+      <UnauthorizedScreen
         title="Inicia sesión para ver tus obras"
         message="Necesitas estar autenticado para crear y gestionar tus obras de arte"
       />
@@ -74,11 +78,11 @@ export default function MisObras() {
   }
 
   return (
-    <div className="relative min-h-screen">
+    <div className="relative">
       {/* Fondo animado */}
       <AnimatedBackground />
 
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-8 pt-24 md:pt-28 pb-8 md:pb-12">
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-8 pt-24 md:pt-28 pb-2 md:pb-4">
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
@@ -102,7 +106,7 @@ export default function MisObras() {
 
           {/* Contenido principal */}
           {filteredMurales.length === 0 ? (
-            <EmptyState 
+            <EmptyState
               hasAnyMurales={murales.length > 0}
               onCreateNew={openCreateModal}
             />

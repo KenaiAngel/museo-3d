@@ -8,8 +8,8 @@ export default function Footer() {
     >
       {/* Blobs animados de fondo */}
       <div className="pointer-events-none absolute inset-0 w-full h-full z-0">
-        <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-blue-300 dark:bg-blue-700 rounded-full mix-blend-multiply filter blur-2xl opacity-60 animate-blob"></div>
-        <div className="absolute -top-20 -right-24 w-96 h-96 bg-purple-200 dark:bg-purple-800 rounded-full mix-blend-multiply filter blur-2xl opacity-60 animate-blob animation-delay-2000"></div>
+        <div className="absolute -bottom-8 -left-24 w-96 h-96 bg-blue-300 dark:bg-blue-700 rounded-full mix-blend-multiply filter blur-2xl opacity-60 animate-blob"></div>
+        <div className="absolute -top-8 -right-24 w-96 h-96 bg-purple-200 dark:bg-purple-800 rounded-full mix-blend-multiply filter blur-2xl opacity-60 animate-blob animation-delay-2000"></div>
       </div>
       <div className="max-w-screen-xl mx-auto px-4 py-6 flex flex-col items-center justify-center gap-3 relative z-10">
         <div className="flex items-center gap-2 mb-2">
