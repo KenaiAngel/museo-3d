@@ -3,10 +3,7 @@
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useEffect, useState, useRef } from "react";
-import {
-  getPersonalCollection,
-  getCollectionStats,
-} from "../../lib/personalCollection.js";
+import { useCollection } from "../../providers/CollectionProvider";
 import ProtectedRoute from "../../components/ProtectedRoute";
 import {
   Card,
@@ -134,30 +131,36 @@ function ImageTooltip({ src, alt, anchorRef, show }) {
 function CollectionItem({ item, allItems }) {
   const imgRef = React.useRef(null);
   const [hovered, setHovered] = React.useState(false);
+  // Usar los campos reales del modelo Mural
+  const imageUrl = item.url_imagen || item.imagenUrl;
+  const title = item.titulo || item.title;
+  const artist = item.autor || item.artist || (item.artistName ?? "");
+  const year = item.anio || item.year;
+  const technique = item.tecnica || item.technique;
   return (
     <div className="flex items-center gap-4 border-b py-2 relative group">
-      {item.src && (
+      {imageUrl && (
         <>
           <img
             ref={imgRef}
-            src={item.src}
-            alt={item.title}
+            src={imageUrl}
+            alt={title}
             className="w-12 h-12 object-cover rounded-md cursor-pointer group-hover:ring-2 group-hover:ring-primary transition ml-2"
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
           />
           <ImageTooltip
-            src={item.src}
-            alt={item.title}
+            src={imageUrl}
+            alt={title}
             anchorRef={imgRef}
             show={hovered}
           />
         </>
       )}
       <div className="flex-1 text-left">
-        <div className="font-medium">{item.title}</div>
+        <div className="font-medium">{title}</div>
         <div className="text-xs text-muted-foreground">
-          {item.artist} · {item.year} · {item.technique}
+          {artist}{year ? ` · ${year}` : ""}{technique ? ` · ${technique}` : ""}
         </div>
       </div>
     </div>
@@ -437,8 +440,7 @@ function PerfilAvatarView({ image, name, onEdit }) {
 function PerfilContent() {
   const { data: session, status, update } = useSession();
   const [updating, setUpdating] = useState(false);
-  const [personalCollection, setPersonalCollection] = useState([]);
-  const [collectionStats, setCollectionStats] = useState({});
+  const { collection, loading: collectionLoading } = useCollection();
   const [museumStats, setMuseumStats] = useState({
     totalArtworks: 0,
     totalSalas: 0,
@@ -593,16 +595,6 @@ function PerfilContent() {
   useEffect(() => {
     console.log("museumStats updated:", museumStats);
   }, [museumStats]);
-
-  // Cargar colección personal
-  useEffect(() => {
-    if (status !== "loading" && userId) {
-      const collection = getPersonalCollection(userId);
-      const stats = getCollectionStats(userId);
-      setPersonalCollection(collection);
-      setCollectionStats(stats);
-    }
-  }, [userId, status]);
 
   // Simulación de validación de nombre (reemplazar con API real)
   async function checkNameAvailability(name) {
@@ -1162,74 +1154,22 @@ function PerfilContent() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {personalCollection.length === 0 ? (
+                  {collectionLoading ? (
+                    <div className="text-center text-muted-foreground">Cargando colección...</div>
+                  ) : collection.length === 0 ? (
                     <div className="text-center text-muted-foreground">
                       No tienes obras guardadas en tu colección.
                     </div>
                   ) : (
                     <div className="flex flex-col gap-6">
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                        <div className="text-center">
-                          <div className="flex items-center justify-center gap-2 mb-1">
-                            <MuralIcon className="w-10 h-10 text-indigo-500" />
-                            <span className="text-2xl font-bold">
-                              {collectionStats.totalArtworks}
-                            </span>
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            Obras
-                          </div>
-                        </div>
-                        <div className="text-center">
-                          <div className="flex items-center justify-center gap-2 mb-1">
-                            <ArtistaIcon className="w-10 h-10 text-rose-500" />
-                            <span className="text-2xl font-bold">
-                              {collectionStats.uniqueArtists}
-                            </span>
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            Artistas
-                          </div>
-                        </div>
-                        <div className="text-center">
-                          <div className="flex items-center justify-center gap-2 mb-1">
-                            <TecnicaIcon className="w-10 h-10 text-green-500" />
-                            <span className="text-2xl font-bold">
-                              {collectionStats.uniqueTechniques}
-                            </span>
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            Técnicas
-                          </div>
-                        </div>
-                        <div className="text-center">
-                          <div className="flex items-center justify-center gap-2 mb-1">
-                            <svg
-                              className="w-10 h-10 text-gray-500"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              viewBox="0 0 24 24"
-                            >
-                              <path d="M8 17l4 4 4-4m-4-5v9" />
-                            </svg>
-                            <span className="text-2xl font-bold">
-                              {collectionStats.oldestYear || "-"}
-                            </span>
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            Año más antiguo
-                          </div>
-                        </div>
-                      </div>
                       <div>
                         <div className="font-medium mb-2">Obras guardadas</div>
                         <div className="flex flex-col gap-2 max-h-64 overflow-y-auto">
-                          {personalCollection.map((item) => (
+                          {collection.map((item) => (
                             <CollectionItem
                               key={item.id}
                               item={item}
-                              allItems={personalCollection}
+                              allItems={collection}
                             />
                           ))}
                         </div>

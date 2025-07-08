@@ -42,7 +42,7 @@ export const CollectionProvider = ({ children }) => {
       }
 
       const data = await response.json();
-      setCollection(data.items || []);
+      setCollection(Array.isArray(data) ? data : (data.items || []));
     } catch (err) {
       console.error("Error loading collection:", err);
       setError(err.message);
@@ -68,7 +68,7 @@ export const CollectionProvider = ({ children }) => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            artworkId: artworkId.toString(),
+            muralId: Number(artworkId),
             artworkType,
             artworkData: {
               id: artworkId,
@@ -134,7 +134,7 @@ export const CollectionProvider = ({ children }) => {
   // Verificar si una obra está en la colección
   const isInCollection = useCallback(
     (artworkId) => {
-      return collection.some((item) => item.artworkId === artworkId.toString());
+      return collection.some((item) => item && item.id && item.id.toString() === artworkId.toString());
     },
     [collection]
   );

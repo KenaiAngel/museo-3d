@@ -7,7 +7,7 @@ import GalleryCarousel from "../../components/GalleryCarousel";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useCollection } from "../../providers/CollectionProvider";
-import { HeartIcon } from "../components/ui/icons/HeartIcon";
+import { Heart } from "lucide-react";
 
 // Componentes de fondo animado (copiados de acerca-de)
 function AnimatedBlobsBackground() {
@@ -415,9 +415,14 @@ export default function GaleriaPage() {
                         >
                           {/* Botón de corazón (favoritos) */}
                           <button
-                            className="absolute top-3 right-3 z-20 bg-white/80 dark:bg-black/60 rounded-full p-2 shadow-md hover:scale-110 transition-transform"
+                            className="absolute top-3 right-3 z-20 bg-white/80 dark:bg-black/60 rounded-full p-2 shadow-md transition-transform duration-200 hover:scale-125 group"
+                            disabled={!mural.id}
                             onClick={async (e) => {
                               e.stopPropagation();
+                              if (!mural.id) {
+                                toast.error("No se puede guardar: el mural no tiene ID válido");
+                                return;
+                              }
                               try {
                                 if (isInCollection(mural.id)) {
                                   await removeFromCollection(mural.id);
@@ -447,15 +452,25 @@ export default function GaleriaPage() {
                                 : "Agregar a colección"
                             }
                           >
-                            <HeartIcon
-                              filled={isInCollection(mural.id)}
-                              className={`w-7 h-7 ${
+                            <Heart
+                              fill={isInCollection(mural.id) ? `url(#heart-gradient-${mural.id})` : "none"}
+                              stroke="currentColor"
+                              strokeWidth={2.5}
+                              className={`w-7 h-7 transition-all duration-200 ${
                                 isInCollection(mural.id)
-                                  ? "text-pink-500"
-                                  : "text-gray-400"
-                              }`}
+                                  ? "text-pink-500 animate-pulse drop-shadow-[0_0_6px_#ec4899cc]"
+                                  : "text-gray-400 group-hover:text-pink-400"
+                              } group-hover:scale-125`}
                             />
                           </button>
+                          <svg width="0" height="0">
+                            <defs>
+                              <linearGradient id={`heart-gradient-${mural.id}`} x1="0" y1="0" x2="1" y2="1">
+                                <stop offset="0%" stopColor="#ec4899" />
+                                <stop offset="100%" stopColor="#f472b6" />
+                              </linearGradient>
+                            </defs>
+                          </svg>
                           {/* Glow solo detrás del contenido de la tarjeta */}
                           <div className="absolute inset-0 pointer-events-none">
                             <div className="gallery-glow" />
@@ -620,9 +635,14 @@ export default function GaleriaPage() {
                   >
                     {/* Botón de corazón (favoritos) */}
                     <button
-                      className="absolute top-3 right-3 z-20 bg-white/80 dark:bg-black/60 rounded-full p-2 shadow-md hover:scale-110 transition-transform"
+                      className="absolute top-3 right-3 z-20 bg-white/80 dark:bg-black/60 rounded-full p-2 shadow-md transition-transform duration-200 hover:scale-125 group"
+                      disabled={!mural.id}
                       onClick={async (e) => {
                         e.stopPropagation();
+                        if (!mural.id) {
+                          toast.error("No se puede guardar: el mural no tiene ID válido");
+                          return;
+                        }
                         try {
                           if (isInCollection(mural.id)) {
                             await removeFromCollection(mural.id);
@@ -644,16 +664,38 @@ export default function GaleriaPage() {
                           : "Agregar a colección"
                       }
                     >
-                      <HeartIcon
-                        filled={isInCollection(mural.id)}
-                        className={`w-7 h-7 ${
+                      <Heart
+                        fill={isInCollection(mural.id) ? `url(#heart-gradient-${mural.id})` : "none"}
+                        stroke="currentColor"
+                        strokeWidth={2.5}
+                        className={`w-6 h-6 transition-all duration-200 ${
                           isInCollection(mural.id)
-                            ? "text-pink-500"
-                            : "text-gray-400"
-                        }`}
+                            ? "text-pink-500 animate-pulse drop-shadow-[0_0_6px_#ec4899cc]"
+                            : "text-gray-400 group-hover:text-pink-400"
+                        } group-hover:scale-125`}
                       />
                     </button>
+                    <svg width="0" height="0">
+                      <defs>
+                        <linearGradient id={`heart-gradient-${mural.id}`} x1="0" y1="0" x2="1" y2="1">
+                          <stop offset="0%" stopColor="#ec4899" />
+                          <stop offset="100%" stopColor="#f472b6" />
+                        </linearGradient>
+                      </defs>
+                    </svg>
+                    {/* Año en la esquina superior izquierda */}
+                    {mural.anio && (
+                      <div className="absolute top-3 left-3 bg-background/90 rounded-full px-2 py-1 text-xs font-bold text-foreground shadow">
+                        {mural.anio}
+                      </div>
+                    )}
                     <div className="relative h-48">
+                      {/* Badge del año en la esquina superior izquierda */}
+                      {mural.anio && (
+                        <div className="absolute top-3 left-3 bg-background/90 rounded-full px-2 py-1 text-xs font-bold text-foreground shadow z-20">
+                          {mural.anio}
+                        </div>
+                      )}
                       <img
                         src={mural.url_imagen}
                         alt={mural.titulo}
@@ -662,11 +704,6 @@ export default function GaleriaPage() {
                           e.target.src = "/assets/artworks/cuadro1.webp";
                         }}
                       />
-                      {mural.anio && (
-                        <div className="absolute top-3 right-3 bg-background/90 rounded-full px-2 py-1 text-xs font-bold text-foreground">
-                          {mural.anio}
-                        </div>
-                      )}
                     </div>
                     <div className="p-4">
                       <h3 className="text-lg font-bold text-foreground mb-2 line-clamp-2">
