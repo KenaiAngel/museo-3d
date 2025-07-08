@@ -2,7 +2,16 @@
 import { useState, useEffect } from "react";
 import { useGallery } from "../providers/GalleryProvider";
 import { useModal } from "../providers/ModalProvider";
-import { Search, Filter, Grid, List, Image as ImageIcon } from "lucide-react";
+import {
+  Search,
+  Filter,
+  Grid,
+  List,
+  Image as ImageIcon,
+  Heart,
+} from "lucide-react";
+import { useSession } from "next-auth/react";
+import toast from "react-hot-toast";
 
 export default function GalleryGrid({ roomId, showFilters = true }) {
   const {
@@ -16,6 +25,9 @@ export default function GalleryGrid({ roomId, showFilters = true }) {
   } = useGallery();
 
   const { openModal } = useModal();
+  const { data: session } = useSession();
+  const userId = session?.user?.id;
+  const [favorites, setFavorites] = useState({});
 
   const [filteredArtworks, setFilteredArtworks] = useState([]);
   const [filters, setFilters] = useState({
@@ -51,6 +63,28 @@ export default function GalleryGrid({ roomId, showFilters = true }) {
 
     setFilteredArtworks(filtered);
   }, [artworks, filters, searchTerm, filterArtworks]);
+
+  // Cargar favoritos del usuario al cargar artworks
+  useEffect(() => {
+    if (!userId || !filteredArtworks.length) return;
+    // Aquí podrías hacer un fetch a un endpoint de favoritos, pero para demo, asumimos que artwork.favoritedBy existe
+    const favs = {};
+    filteredArtworks.forEach((a) => {
+      if (a.favoritedBy?.some((f) => f.userId === userId)) favs[a.id] = true;
+    });
+    setFavorites(favs);
+  }, [userId, filteredArtworks]);
+
+  const toggleFavorite = async (artworkId, isFav) => {
+    if (!userId) return;
+    setFavorites((favs) => ({ ...favs, [artworkId]: !isFav }));
+    const method = isFav ? "DELETE" : "POST";
+    await fetch(`/api/usuarios/${userId}/collection`, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ muralId: artworkId }),
+    });
+  };
 
   // Manejar click en imagen
   const handleImageClick = (artwork, index) => {
@@ -206,10 +240,40 @@ export default function GalleryGrid({ roomId, showFilters = true }) {
           {filteredArtworks.map((artwork, index) => (
             <div
               key={artwork.id}
-              className="group bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer"
-              onClick={() => handleImageClick(artwork, index)}
+              className="group bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer relative"
             >
-              <div className="aspect-square overflow-hidden">
+              {/* Botón corazón superpuesto, fuera del área clickable */}
+              <button
+                className={`absolute top-3 right-3 z-30 w-9 h-9 flex items-center justify-center rounded-full bg-black/70 border-2 border-white shadow-xl transition-colors duration-200 ${
+                  favorites[artwork.id] ? "text-pink-400" : "text-white"
+                }`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!userId) {
+                    toast("Inicia sesión para guardar en tu colección", {
+                      icon: "🔒",
+                    });
+                    return;
+                  }
+                  toggleFavorite(artwork.id, favorites[artwork.id]);
+                }}
+                aria-label={
+                  favorites[artwork.id]
+                    ? "Quitar de colección"
+                    : "Guardar en colección"
+                }
+              >
+                <Heart
+                  fill={favorites[artwork.id] ? "#ec4899" : "none"}
+                  strokeWidth={2.5}
+                  className="w-6 h-6"
+                />
+              </button>
+              {/* Imagen y área clickable */}
+              <div
+                className="aspect-square overflow-hidden relative"
+                onClick={() => handleImageClick(artwork, index)}
+              >
                 <img
                   src={
                     artwork.imagen || artwork.url || "/placeholder-image.jpg"

@@ -6,6 +6,8 @@ import { PageLoader, SectionLoader } from "../../components/LoadingSpinner";
 import GalleryCarousel from "../../components/GalleryCarousel";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { useCollection } from "../../providers/CollectionProvider";
+import { HeartIcon } from "../components/ui/icons/HeartIcon";
 
 // Componentes de fondo animado (copiados de acerca-de)
 function AnimatedBlobsBackground() {
@@ -61,6 +63,8 @@ export default function GaleriaPage() {
   const [sortBy, setSortBy] = useState("titulo");
   const cardRefs = useRef({});
   const router = useRouter();
+  const { isInCollection, addToCollection, removeFromCollection } =
+    useCollection();
 
   // Función para normalizar técnicas
   const normalizeTecnica = (tecnica) => {
@@ -399,7 +403,7 @@ export default function GaleriaPage() {
                         <motion.div
                           key={mural.id}
                           ref={(el) => (cardRefs.current[mural.id] = el)}
-                          className="gallery-card-glow bg-card rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 border border-border mb-6 cursor-pointer"
+                          className="gallery-card-glow bg-card rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 border border-border mb-6 cursor-pointer relative"
                           initial={{ opacity: 0, y: 40 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{
@@ -409,6 +413,49 @@ export default function GaleriaPage() {
                           }}
                           onClick={() => router.push(`/galeria/${mural.id}`)}
                         >
+                          {/* Botón de corazón (favoritos) */}
+                          <button
+                            className="absolute top-3 right-3 z-20 bg-white/80 dark:bg-black/60 rounded-full p-2 shadow-md hover:scale-110 transition-transform"
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              try {
+                                if (isInCollection(mural.id)) {
+                                  await removeFromCollection(mural.id);
+                                  toast.success(
+                                    "Obra removida de tu colección"
+                                  );
+                                } else {
+                                  await addToCollection(
+                                    mural.id,
+                                    "mural",
+                                    mural
+                                  );
+                                  toast.success(
+                                    "Obra guardada en tu colección"
+                                  );
+                                }
+                              } catch (err) {
+                                toast.error(
+                                  err.message ||
+                                    "Debes iniciar sesión para guardar obras"
+                                );
+                              }
+                            }}
+                            aria-label={
+                              isInCollection(mural.id)
+                                ? "Quitar de colección"
+                                : "Agregar a colección"
+                            }
+                          >
+                            <HeartIcon
+                              filled={isInCollection(mural.id)}
+                              className={`w-7 h-7 ${
+                                isInCollection(mural.id)
+                                  ? "text-pink-500"
+                                  : "text-gray-400"
+                              }`}
+                            />
+                          </button>
                           {/* Glow solo detrás del contenido de la tarjeta */}
                           <div className="absolute inset-0 pointer-events-none">
                             <div className="gallery-glow" />
@@ -568,9 +615,44 @@ export default function GaleriaPage() {
                 {filteredMurales.map((mural) => (
                   <div
                     key={mural.id}
-                    className="gallery-card-glow bg-card rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 border border-border"
+                    className="gallery-card-glow bg-card rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 border border-border relative"
                     onClick={() => router.push(`/galeria/${mural.id}`)} // Abrir modal al hacer clic
                   >
+                    {/* Botón de corazón (favoritos) */}
+                    <button
+                      className="absolute top-3 right-3 z-20 bg-white/80 dark:bg-black/60 rounded-full p-2 shadow-md hover:scale-110 transition-transform"
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        try {
+                          if (isInCollection(mural.id)) {
+                            await removeFromCollection(mural.id);
+                            toast.success("Obra removida de tu colección");
+                          } else {
+                            await addToCollection(mural.id, "mural", mural);
+                            toast.success("Obra guardada en tu colección");
+                          }
+                        } catch (err) {
+                          toast.error(
+                            err.message ||
+                              "Debes iniciar sesión para guardar obras"
+                          );
+                        }
+                      }}
+                      aria-label={
+                        isInCollection(mural.id)
+                          ? "Quitar de colección"
+                          : "Agregar a colección"
+                      }
+                    >
+                      <HeartIcon
+                        filled={isInCollection(mural.id)}
+                        className={`w-7 h-7 ${
+                          isInCollection(mural.id)
+                            ? "text-pink-500"
+                            : "text-gray-400"
+                        }`}
+                      />
+                    </button>
                     <div className="relative h-48">
                       <img
                         src={mural.url_imagen}
@@ -648,7 +730,9 @@ function ModalZoomImage({ mural, rect, onClose }) {
   // Zoom con rueda
   const handleWheel = (e) => {
     e.preventDefault();
-    setZoom((z) => Math.max(0.5, Math.min(5, z + (e.deltaY < 0 ? 0.15 : -0.15))));
+    setZoom((z) =>
+      Math.max(0.5, Math.min(5, z + (e.deltaY < 0 ? 0.15 : -0.15)))
+    );
   };
 
   // Drag para mover la imagen
@@ -715,11 +799,15 @@ function ModalZoomImage({ mural, rect, onClose }) {
           alt={mural.titulo}
           className="object-contain w-full h-full max-h-[70vh] bg-black cursor-grab"
           style={{
-            transform: `scale(${zoom}) translate(${offset.x / zoom}px, ${offset.y / zoom}px)`
+            transform: `scale(${zoom}) translate(${offset.x / zoom}px, ${
+              offset.y / zoom
+            }px)`,
           }}
           onWheel={handleWheel}
           onMouseDown={handleMouseDown}
-          onError={e => { e.target.src = '/assets/artworks/cuadro1.webp'; }}
+          onError={(e) => {
+            e.target.src = "/assets/artworks/cuadro1.webp";
+          }}
           draggable={false}
         />
         <button
@@ -746,7 +834,10 @@ function ModalZoomImage({ mural, rect, onClose }) {
           </button>
           <button
             className="text-white px-3 py-1 rounded hover:bg-white/20"
-            onClick={() => { setZoom(1); setOffset({ x: 0, y: 0 }); }}
+            onClick={() => {
+              setZoom(1);
+              setOffset({ x: 0, y: 0 });
+            }}
             title="Reset"
           >
             ⟳
@@ -754,16 +845,26 @@ function ModalZoomImage({ mural, rect, onClose }) {
         </div>
       </div>
       <div className="p-6 overflow-y-auto max-h-[30vh]">
-        <h2 className="text-2xl font-bold text-foreground mb-2">{mural.titulo}</h2>
-        <p className="text-muted-foreground mb-2">{mural.autor || 'Artista desconocido'}</p>
+        <h2 className="text-2xl font-bold text-foreground mb-2">
+          {mural.titulo}
+        </h2>
+        <p className="text-muted-foreground mb-2">
+          {mural.autor || "Artista desconocido"}
+        </p>
         {mural.tecnica && (
-          <p className="text-sm text-muted-foreground mb-2">Técnica: {mural.tecnica}</p>
+          <p className="text-sm text-muted-foreground mb-2">
+            Técnica: {mural.tecnica}
+          </p>
         )}
         {mural.anio && (
-          <p className="text-sm text-muted-foreground mb-2">Año: {mural.anio}</p>
+          <p className="text-sm text-muted-foreground mb-2">
+            Año: {mural.anio}
+          </p>
         )}
         {mural.descripcion && (
-          <p className="text-base text-muted-foreground mb-2">{mural.descripcion}</p>
+          <p className="text-base text-muted-foreground mb-2">
+            {mural.descripcion}
+          </p>
         )}
       </div>
     </motion.div>

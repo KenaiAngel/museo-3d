@@ -2,6 +2,8 @@
 import { useRouter, useParams } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
 import { motion } from "framer-motion";
+import { useSession } from "next-auth/react";
+import { Heart } from "lucide-react";
 
 export default function GaleriaDetalle() {
   const router = useRouter();
@@ -12,6 +14,9 @@ export default function GaleriaDetalle() {
   const [dragging, setDragging] = useState(false);
   const [start, setStart] = useState({ x: 0, y: 0 });
   const imgRef = useRef();
+  const { data: session } = useSession();
+  const userId = session?.user?.id;
+  const [isFavorite, setIsFavorite] = useState(false);
 
   useEffect(() => {
     // Cargar mural por id
@@ -28,6 +33,17 @@ export default function GaleriaDetalle() {
       })
       .catch(() => setMural(false));
   }, [id]);
+
+  useEffect(() => {
+    if (!userId || !mural) return;
+    // Consultar si el mural está en favoritos (puedes mejorar esto con un endpoint real)
+    fetch(`/api/usuarios/${userId}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.favoritedBy?.some(f => f.muralId === mural.id)) setIsFavorite(true);
+        else setIsFavorite(false);
+      });
+  }, [userId, mural]);
 
   // Zoom con rueda
   const handleWheel = (e) => {
@@ -72,6 +88,17 @@ export default function GaleriaDetalle() {
   // Guardar en galería personal (simulado)
   const handleGuardar = () => {
     alert("Obra guardada en tu galería personal (simulado)");
+  };
+
+  const handleToggleFavorite = async () => {
+    if (!userId || !mural) return;
+    setIsFavorite(fav => !fav);
+    const method = isFavorite ? "DELETE" : "POST";
+    await fetch(`/api/usuarios/${userId}/collection`, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ muralId: mural.id }),
+    });
   };
 
   return (
@@ -134,6 +161,15 @@ export default function GaleriaDetalle() {
             >
               ⭐
             </button>
+            {userId && (
+              <button
+                className={`text-white px-3 py-1 rounded hover:bg-white/20 flex items-center gap-1 ${isFavorite ? "text-pink-500" : "text-white"}`}
+                onClick={handleToggleFavorite}
+                title={isFavorite ? "Quitar de colección" : "Guardar en colección"}
+              >
+                <Heart fill={isFavorite ? "#ec4899" : "none"} strokeWidth={2} className="w-5 h-5" />
+              </button>
+            )}
           </div>
         </div>
         <div className="p-6 overflow-y-auto max-h-[30vh]">

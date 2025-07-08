@@ -231,68 +231,95 @@ export async function PUT(req, context) {
 // PATCH /api/usuarios/[id] - Alias de PUT para compatibilidad
 export const PATCH = PUT;
 
-// DELETE /api/usuarios/[id] - Eliminar usuario (solo admin)
-export async function DELETE(req, context) {
+// POST /api/usuarios/[id]/collection - Agregar mural a la colección personal
+export async function POST(req, context) {
   try {
     const session = await getServerSession(authOptions);
     const params = await context.params;
     const { id } = params;
-
     if (!session || !session.user) {
       return new Response(JSON.stringify({ error: "No autorizado" }), {
         status: 401,
         headers: { "Content-Type": "application/json" },
       });
     }
-
-    // Solo admin puede eliminar usuarios
-    if (session.user.role !== "ADMIN") {
-      return new Response(
-        JSON.stringify({
-          error: "Acceso denegado - Se requieren permisos de administrador",
-        }),
-        {
-          status: 403,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+    if (session.user.role !== "ADMIN" && session.user.id !== id) {
+      return new Response(JSON.stringify({ error: "Acceso denegado" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json" },
+      });
     }
-
-    // No permitir que un admin se elimine a sí mismo
-    if (session.user.id === id) {
-      return new Response(
-        JSON.stringify({ error: "No puedes eliminar tu propia cuenta" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+    const { muralId } = await req.json();
+    if (!muralId) {
+      return new Response(JSON.stringify({ error: "Falta muralId" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
-
-    await prisma.user.delete({
-      where: { id },
+    // Crear favorito si no existe
+    const existing = await prisma.userMuralFavorite.findUnique({
+      where: { userId_muralId: { userId: id, muralId } },
     });
-
-    return new Response(
-      JSON.stringify({
-        message: "Usuario eliminado exitosamente",
-      }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
+    if (existing) {
+      return new Response(
+        JSON.stringify({ message: "Ya está en la colección" }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+    const fav = await prisma.userMuralFavorite.create({
+      data: { userId: id, muralId },
+    });
+    return new Response(JSON.stringify({ success: true, fav }), {
+      status: 201,
+      headers: { "Content-Type": "application/json" },
+    });
   } catch (error) {
-    console.error("Error al eliminar usuario:", error);
-    return new Response(
-      JSON.stringify({
-        error: "Error interno del servidor al eliminar el usuario",
-        details: error.message,
-      }),
-      {
-        status: 500,
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+}
+
+// DELETE /api/usuarios/[id]/collection - Quitar mural de la colección personal
+export async function DELETE(req, context) {
+  try {
+    const session = await getServerSession(authOptions);
+    const params = await context.params;
+    const { id } = params;
+    if (!session || !session.user) {
+      return new Response(JSON.stringify({ error: "No autorizado" }), {
+        status: 401,
         headers: { "Content-Type": "application/json" },
-      }
-    );
+      });
+    }
+    if (session.user.role !== "ADMIN" && session.user.id !== id) {
+      return new Response(JSON.stringify({ error: "Acceso denegado" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    const { muralId } = await req.json();
+    if (!muralId) {
+      return new Response(JSON.stringify({ error: "Falta muralId" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    await prisma.userMuralFavorite.delete({
+      where: { userId_muralId: { userId: id, muralId } },
+    });
+    return new Response(JSON.stringify({ success: true }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (error) {
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 }
