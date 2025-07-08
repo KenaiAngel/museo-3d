@@ -10,7 +10,7 @@ import {
   Droplets,
   Sparkles,
   Square,
-  Palette,
+  Palette as PaletteIcon,
   Flame,
   Circle,
   Grid3X3,
@@ -24,6 +24,11 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { DatePicker } from "../../components/ui/date-picker-new";
+import { useDropzone } from "react-dropzone";
+import Palette from "./tools/Palette";
+import BrushSelector from "./tools/BrushSelector";
+import BackgroundSelector from "./tools/BackgroundSelector";
+import ToolActions from "./tools/ToolActions";
 
 // Estilos CSS para animaciones del cursor
 const cursorAnimationStyles = `
@@ -76,6 +81,13 @@ export default function CanvasEditor({
   });
   const [muralDataError, setMuralDataError] = useState(null);
   const [canvasZoom, setCanvasZoom] = useState(1);
+  const [canvasBg, setCanvasBg] = useState(null);
+  const [canvasBgColor, setCanvasBgColor] = useState("#ffffff");
+  const [showBgColorPicker, setShowBgColorPicker] = useState(false);
+  const [bgImageError, setBgImageError] = useState(null);
+  const [recentColors, setRecentColors] = useState(["#000000", "#ffffff"]);
+  const [prevColors, setPrevColors] = useState([]);
+  const [showBrushModal, setShowBrushModal] = useState(false);
 
   // Funciones de utilidad para manejo de colores
   const hexToRgb = (hex) => {
@@ -120,7 +132,7 @@ export default function CanvasEditor({
     { id: "acuarela", name: "Acuarela", icon: Droplets },
     { id: "tiza", name: "Tiza", icon: Square },
     { id: "marcador", name: "Marcador", icon: PaintBucket },
-    { id: "oleo", name: "Óleo", icon: Palette },
+    { id: "oleo", name: "Óleo", icon: PaletteIcon },
     { id: "pixel", name: "Pixel", icon: Grid3X3 },
     { id: "neon", name: "Neón", icon: Zap },
     { id: "puntos", name: "Puntos", icon: Target },
@@ -689,6 +701,118 @@ export default function CanvasEditor({
     }, "image/png");
   };
 
+  const applyBgColor = (color) => {
+    setCanvasBgColor(color);
+    setCanvasBg(null);
+    if (canvasRef.current) {
+      const ctx = canvasRef.current.getContext("2d");
+      ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+      ctx.fillStyle = color;
+      ctx.fillRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+      saveToHistory();
+    }
+  };
+
+  const onDropBg = (acceptedFiles) => {
+    const file = acceptedFiles[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setCanvasBg(url);
+      setBgImageError(null);
+      if (canvasRef.current) {
+        const ctx = canvasRef.current.getContext("2d");
+        const img = new window.Image();
+        img.onload = () => {
+          ctx.clearRect(
+            0,
+            0,
+            canvasRef.current.width,
+            canvasRef.current.height
+          );
+          ctx.drawImage(
+            img,
+            0,
+            0,
+            canvasRef.current.width,
+            canvasRef.current.height
+          );
+          saveToHistory();
+        };
+        img.onerror = () =>
+          setBgImageError("No se pudo cargar la imagen de fondo.");
+        img.src = url;
+      }
+    }
+  };
+
+  const bgDropzone = useDropzone({
+    onDrop: onDropBg,
+    accept: { "image/*": [] },
+    multiple: false,
+  });
+
+  const paletteColors = Array.from(
+    new Set([currentColor, ...recentColors, ...prevColors, ...colors])
+  ).slice(0, 12);
+
+  const handleSetBrushColor = (color) => {
+    setCurrentColor(color);
+    setRecentColors((prev) => {
+      const filtered = prev.filter((c) => c !== color);
+      return [color, ...filtered].slice(0, 6);
+    });
+    setPrevColors((prev) => {
+      if (prev.includes(color) || colors.includes(color)) return prev;
+      return [color, ...prev].slice(0, 6);
+    });
+  };
+
+  useEffect(() => {
+    if (canvasBg && canvasRef.current) {
+      const ctx = canvasRef.current.getContext("2d");
+      const img = new window.Image();
+      img.onload = () => {
+        ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+        ctx.drawImage(
+          img,
+          0,
+          0,
+          canvasRef.current.width,
+          canvasRef.current.height
+        );
+      };
+      img.onerror = () =>
+        setBgImageError("No se pudo cargar la imagen de fondo.");
+      img.src = canvasBg;
+    } else if (canvasRef.current) {
+      const ctx = canvasRef.current.getContext("2d");
+      ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+      ctx.fillStyle = canvasBgColor;
+      ctx.fillRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+    }
+  }, [canvasBg, canvasBgColor]);
+
+  // Descargar el canvas como imagen PNG
+  const downloadCanvas = () => {
+    const canvas = canvasRef.current;
+    const link = document.createElement("a");
+    link.download = `${muralData.titulo || "obra"}.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  };
+
+  // Sincronizar muralData con editingMural al abrir o cambiar
+  useEffect(() => {
+    if (isOpen && editingMural) {
+      setMuralData({
+        titulo: editingMural.titulo || "",
+        descripcion: editingMural.descripcion || "",
+        tecnica: editingMural.tecnica || "Digital",
+        year: editingMural.year || new Date().getFullYear(),
+      });
+    }
+  }, [isOpen, editingMural]);
+
   if (!isOpen) return null;
 
   console.log("currentTool:", currentTool);
@@ -716,146 +840,94 @@ export default function CanvasEditor({
         <div className="p-6">
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {/* Panel de herramientas */}
-            <div className="lg:col-span-1 space-y-6">
-              {/* Información del mural */}
-              <div className="bg-gray-50 dark:bg-neutral-800 rounded-lg p-4">
-                <h3 className="font-semibold mb-3">Información de la Obra</h3>
-                <div className="space-y-3">
-                  <motion.input
-                    type="text"
-                    placeholder="Título de la obra"
-                    value={muralData.titulo}
-                    onChange={(e) =>
-                      setMuralData({ ...muralData, titulo: e.target.value })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-neutral-700 text-foreground focus:ring-2 focus:ring-indigo-500"
-                  />
-                  <motion.textarea
-                    placeholder="Descripción (opcional)"
-                    value={muralData.descripcion}
-                    onChange={(e) =>
-                      setMuralData({
-                        ...muralData,
-                        descripcion: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-neutral-700 text-foreground focus:ring-2 focus:ring-indigo-500"
-                    rows={3}
-                  />
-                  <motion.input
-                    type="text"
-                    placeholder="Técnica"
-                    value={muralData.tecnica}
-                    onChange={(e) =>
-                      setMuralData({ ...muralData, tecnica: e.target.value })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-neutral-700 text-foreground focus:ring-2 focus:ring-indigo-500"
-                  />
-                  <DatePicker
-                    value={muralData.year ? `${muralData.year}-01-01` : null}
-                    onChange={(dateString) => {
-                      if (dateString) {
-                        const d = new Date(dateString);
-                        setMuralData({ ...muralData, year: d.getFullYear() });
-                      } else {
-                        setMuralData({ ...muralData, year: null });
-                      }
-                    }}
-                    placeholder="Selecciona el año..."
-                  />
-                </div>
-              </div>
-              {/* Herramientas */}
-              <div className="bg-gray-50 dark:bg-neutral-800 rounded-lg p-4">
-                <h3 className="font-semibold mb-3">Herramientas</h3>
-                <div className="mb-3 text-sm text-blue-600 font-medium">
-                  Herramienta actual: {currentTool}
-                </div>
-                <div className="space-y-2">
-                  {tools.map((tool) => {
-                    const IconComponent = tool.icon;
-                    return (
-                      <button
-                        key={tool.id}
-                        onClick={() => setCurrentTool(tool.id)}
-                        className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                          currentTool === tool.id
-                            ? "bg-indigo-600 text-white"
-                            : "bg-white dark:bg-neutral-700 hover:bg-gray-100 dark:hover:bg-neutral-600"
-                        }`}
-                      >
-                        <IconComponent className="h-4 w-4" />
-                        {tool.name}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-              {/* Colores */}
-              <div className="bg-gray-50 dark:bg-neutral-800 rounded-lg p-4">
-                <h3 className="font-semibold mb-3">Colores</h3>
-                <div className="grid grid-cols-5 gap-2 mb-3">
-                  {colors.map((color) => (
-                    <button
-                      key={color}
-                      onClick={() => setCurrentColor(color)}
-                      className={`w-8 h-8 rounded-lg border-2 transition-all ${
-                        currentColor === color
-                          ? "border-indigo-600 scale-110"
-                          : "border-gray-300 hover:scale-105"
+            <div className="lg:col-span-1">
+              {/* Card de herramientas unificado */}
+              <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md p-4 flex flex-col gap-6 w-full mx-auto mb-6">
+                <h3 className="text-lg font-bold mb-2 text-indigo-700 dark:text-indigo-200 text-center">
+                  Herramientas
+                </h3>
+                <BackgroundSelector
+                  canvasBgColor={canvasBgColor}
+                  applyBgColor={applyBgColor}
+                  showBgColorPicker={showBgColorPicker}
+                  setShowBgColorPicker={setShowBgColorPicker}
+                  bgDropzone={bgDropzone}
+                  bgImageError={bgImageError}
+                />
+                <BrushSelector
+                  brushes={tools.map((t) => ({
+                    key: t.id,
+                    icon: t.icon,
+                    label: t.name,
+                  }))}
+                  currentBrush={currentTool}
+                  onSelectBrush={setCurrentTool}
+                  onOpenModal={() => setShowBrushModal(true)}
+                />
+                {/* Eraser minimalista */}
+                <div className="flex flex-row items-center justify-center w-full mb-2">
+                  <button
+                    type="button"
+                    className={`flex items-center justify-center w-10 h-10 rounded-md border-2 shadow transition
+                      ${
+                        currentTool === "eraser"
+                          ? "bg-red-100 border-red-400 text-red-700"
+                          : "bg-white dark:bg-neutral-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-red-50 hover:border-red-400"
                       }`}
-                      style={{ backgroundColor: color }}
-                    />
-                  ))}
+                    onClick={() => setCurrentTool("eraser")}
+                    aria-label="Borrador"
+                  >
+                    <Eraser className="h-6 w-6" />
+                  </button>
                 </div>
-                <input
-                  type="color"
-                  value={currentColor}
-                  onChange={(e) => setCurrentColor(e.target.value)}
-                  className="w-full h-10 rounded-lg"
-                />
-              </div>
-              {/* Tamaño del pincel */}
-              <div className="bg-gray-50 dark:bg-neutral-800 rounded-lg p-4">
-                <h3 className="font-semibold mb-3">Tamaño del Pincel</h3>
-                <input
-                  type="range"
-                  min="1"
-                  max="50"
-                  value={brushSize}
-                  onChange={(e) => setBrushSize(parseInt(e.target.value))}
-                  className="w-full"
-                />
-                <div className="text-center mt-2 text-sm text-gray-600 dark:text-gray-400">
-                  {brushSize}px
+                {/* Tamaño del pincel */}
+                <div className="flex flex-col items-center gap-2 mt-2">
+                  <h4 className="font-semibold text-sm mb-1">
+                    Tamaño del pincel
+                  </h4>
+                  <input
+                    type="range"
+                    min="1"
+                    max="50"
+                    value={brushSize}
+                    onChange={(e) => setBrushSize(parseInt(e.target.value))}
+                    className="w-3/4 sm:w-2/3 h-3 accent-indigo-600"
+                    style={{ minWidth: 120, maxWidth: 240 }}
+                  />
+                  <div className="text-center mt-1 text-lg font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1 rounded-full shadow-sm">
+                    {brushSize}px
+                  </div>
                 </div>
-              </div>
-              {/* Acciones */}
-              <div className="space-y-2">
-                <button
-                  onClick={undo}
-                  disabled={historyIndex <= 0}
-                  className="w-full px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  Deshacer
-                </button>
-                <button
-                  onClick={redo}
-                  disabled={historyIndex >= canvasHistory.length - 1}
-                  className="w-full px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  Rehacer
-                </button>
-                <button
-                  onClick={clearCanvas}
-                  className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                >
-                  Limpiar Lienzo
-                </button>
+                {/* Paleta de colores y color picker */}
+                <div className="flex flex-col items-center gap-2 mt-2">
+                  <h4 className="font-semibold text-sm mb-1">Color</h4>
+                  <Palette
+                    colors={paletteColors}
+                    currentColor={currentColor}
+                    onSelectColor={handleSetBrushColor}
+                  />
+                  <input
+                    type="color"
+                    value={currentColor}
+                    onChange={(e) => handleSetBrushColor(e.target.value)}
+                    className="w-16 h-10 rounded-xl border-2 border-indigo-300 shadow-sm bg-white dark:bg-neutral-700"
+                    style={{ margin: "0 auto" }}
+                  />
+                </div>
               </div>
             </div>
-            {/* Canvas con controles de zoom */}
-            <div className="lg:col-span-3 flex flex-col items-center justify-center">
+            {/* Canvas con controles de zoom y acciones */}
+            <div className="lg:col-span-3 flex flex-col items-center">
+              {/* Botones de acción arriba del canvas */}
+              <ToolActions
+                undo={undo}
+                redo={redo}
+                clear={clearCanvas}
+                download={downloadCanvas}
+                save={handleSave}
+                historyIndex={historyIndex}
+                canvasHistory={canvasHistory}
+              />
               {/* Controles de zoom arriba del canvas */}
               <div className="flex gap-2 mb-2 items-center">
                 <button
@@ -885,6 +957,7 @@ export default function CanvasEditor({
                   maxWidth: 900,
                   aspectRatio: "4/3",
                 }}
+                className="mb-4"
               >
                 <canvas
                   ref={canvasRef}
@@ -1258,6 +1331,56 @@ export default function CanvasEditor({
                   </div>
                 )}
               </div>
+              {/* Info del mural debajo del canvas solo en edición */}
+              {editingMural && (
+                <div className="bg-gray-50 dark:bg-neutral-800 rounded-lg p-4 mb-4 w-full max-w-[900px] mx-auto">
+                  <h3 className="font-semibold mb-3">Información de la Obra</h3>
+                  <div className="space-y-3">
+                    <motion.input
+                      type="text"
+                      placeholder="Título de la obra"
+                      value={muralData.titulo}
+                      onChange={(e) =>
+                        setMuralData({ ...muralData, titulo: e.target.value })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-neutral-700 text-foreground focus:ring-2 focus:ring-indigo-500"
+                    />
+                    <motion.textarea
+                      placeholder="Descripción (opcional)"
+                      value={muralData.descripcion}
+                      onChange={(e) =>
+                        setMuralData({
+                          ...muralData,
+                          descripcion: e.target.value,
+                        })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-neutral-700 text-foreground focus:ring-2 focus:ring-indigo-500"
+                      rows={3}
+                    />
+                    <motion.input
+                      type="text"
+                      placeholder="Técnica"
+                      value={muralData.tecnica}
+                      onChange={(e) =>
+                        setMuralData({ ...muralData, tecnica: e.target.value })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-neutral-700 text-foreground focus:ring-2 focus:ring-indigo-500"
+                    />
+                    <DatePicker
+                      value={muralData.year ? `${muralData.year}-01-01` : null}
+                      onChange={(dateString) => {
+                        if (dateString) {
+                          const d = new Date(dateString);
+                          setMuralData({ ...muralData, year: d.getFullYear() });
+                        } else {
+                          setMuralData({ ...muralData, year: null });
+                        }
+                      }}
+                      placeholder="Selecciona el año..."
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
