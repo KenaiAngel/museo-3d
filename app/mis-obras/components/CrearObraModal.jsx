@@ -33,6 +33,10 @@ import { useTheme } from "../../../providers/ThemeProvider";
 import Stepper from "../../../components/ui/Stepper";
 import { DatePicker } from "../../components/ui/date-picker-new";
 import ReactDOM from "react-dom";
+import { SimpleModal } from "../../../components/ui/SimpleModal";
+
+// Tamaño máximo permitido para imagen de fondo (5MB)
+const MAX_BG_IMAGE_SIZE = 5 * 1024 * 1024;
 
 // Función auxiliar para obtener coordenadas escaladas en el canvas
 const getScaledCoords = (e, canvasRef, canvasZoom) => {
@@ -227,7 +231,7 @@ const BRUSH_SECTIONS = [
 ];
 
 // Definir paleta de colores rápida
-const colors = [
+const DEFAULT_COLORS = [
   "#000000",
   "#FFFFFF",
   "#FF0000",
@@ -236,13 +240,6 @@ const colors = [
   "#FFFF00",
   "#FF00FF",
   "#00FFFF",
-  "#FFA500",
-  "#800080",
-  "#FFC0CB",
-  "#A52A2A",
-  "#808080",
-  "#000080",
-  "#008000",
 ];
 
 // Diccionario de nombres amigables en español para los pinceles
@@ -294,6 +291,54 @@ const BRUSH_LABELS = {
   particles: "Partículas",
 };
 
+// Agregar función para determinar si un color es claro u oscuro
+function isColorLight(hex) {
+  hex = hex.replace("#", "");
+  if (hex.length === 3)
+    hex = hex
+      .split("")
+      .map((x) => x + x)
+      .join("");
+  const r = parseInt(hex.substr(0, 2), 16);
+  const g = parseInt(hex.substr(2, 2), 16);
+  const b = parseInt(hex.substr(4, 2), 16);
+  // Percepción de luminosidad
+  return 0.299 * r + 0.587 * g + 0.114 * b > 186;
+}
+
+// Utilidad para intentar convertir una imagen a PNG usando canvas
+async function tryConvertToPng(file, onSuccess, onFail) {
+  try {
+    const img = new window.Image();
+    img.crossOrigin = "Anonymous";
+    img.onload = function () {
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0);
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const url = URL.createObjectURL(blob);
+            onSuccess(url);
+          } else {
+            onFail("No se pudo convertir la imagen a PNG.");
+          }
+        }, "image/png");
+      } catch (err) {
+        onFail("No se pudo convertir la imagen a PNG.");
+      }
+    };
+    img.onerror = function () {
+      onFail("No se pudo cargar la imagen seleccionada.");
+    };
+    img.src = URL.createObjectURL(file);
+  } catch (err) {
+    onFail("No se pudo convertir la imagen a PNG.");
+  }
+}
+
 export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
   const { theme } = useTheme();
   const [step, setStep] = useState(0);
@@ -342,6 +387,27 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
   const [expandedBrushSection, setExpandedBrushSection] = useState(
     BRUSH_SECTIONS[0]?.label || ""
   );
+  // Paleta dinámica de colores usados
+  const [recentColors, setRecentColors] = useState(() => {
+    if (typeof window !== "undefined") {
+      const stored = window.localStorage.getItem("museo3d_recentColors");
+      if (stored) return JSON.parse(stored);
+    }
+    return [...DEFAULT_COLORS];
+  });
+  const [prevColors, setPrevColors] = useState(() => {
+    if (typeof window !== "undefined") {
+      const stored = window.localStorage.getItem("museo3d_prevColors");
+      if (stored) return JSON.parse(stored);
+    }
+    return [];
+  });
+  // Estado para error de carga de fondo
+  const [bgImageError, setBgImageError] = useState(null);
+  // Estado para el color de fondo
+  const [canvasBgColor, setCanvasBgColor] = useState("#ffffff");
+  const [showBgColorPicker, setShowBgColorPicker] = useState(false);
+  const [showConfirmClear, setShowConfirmClear] = useState(false);
 
   useEffect(() => {
     // Preparar textura para pincel "fur"
@@ -1934,16 +2000,8 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    if (canvasBg) {
-      const img = new window.Image();
-      img.onload = () => {
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        saveToHistory();
-      };
-      img.src = canvasBg;
-    } else {
-      saveToHistory();
-    }
+    setCanvasBg(null); // Eliminar la imagen de fondo
+    saveToHistory();
   };
   // Inicializar historial al abrir modal
   useEffect(() => {
@@ -2031,6 +2089,62 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
       });
     }
   }, [showBrushDropdown]);
+
+  // Cuando el usuario elige un color, agrégalo a la paleta dinámica
+  const handleSetBrushColor = (color) => {
+    setBrushColor(color);
+    setRecentColors((prev) => {
+      const filtered = prev.filter((c) => c !== color);
+      return [color, ...filtered].slice(0, 6);
+    });
+    setPrevColors((prev) => {
+      if (prev.includes(color) || DEFAULT_COLORS.includes(color)) return prev;
+      return [color, ...prev].slice(0, 6);
+    });
+  };
+
+  // Paleta combinada: color actual, recientes, previos, y por defecto, sin duplicados, hasta 12
+  const paletteColors = Array.from(
+    new Set([brushColor, ...recentColors, ...prevColors, ...DEFAULT_COLORS])
+  ).slice(0, 12);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(
+        "museo3d_recentColors",
+        JSON.stringify(recentColors)
+      );
+    }
+  }, [recentColors]);
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(
+        "museo3d_prevColors",
+        JSON.stringify(prevColors)
+      );
+    }
+  }, [prevColors]);
+
+  // Limpiar visualmente el fondo si canvasBg se elimina
+  useEffect(() => {
+    if (imgMode === "canvas" && !canvasBg && canvasRef.current) {
+      const ctx = canvasRef.current.getContext("2d");
+      ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+    }
+  }, [canvasBg, imgMode]);
+
+  // Aplicar color de fondo sólido
+  const applyBgColor = (color) => {
+    setCanvasBgColor(color);
+    setCanvasBg(null); // Elimina cualquier imagen de fondo
+    // Rellena el canvas con el color
+    if (canvasRef.current) {
+      const ctx = canvasRef.current.getContext("2d");
+      ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+      ctx.fillStyle = color;
+      ctx.fillRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -2172,9 +2286,11 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
               <div className="flex gap-0 mb-4 border-b border-border w-full max-w-md mx-auto">
                 <button
                   className={`flex-1 px-4 py-2 font-bold transition-colors border-b-2 focus:outline-none
-                    ${imgMode === "archivo"
-                      ? "border-indigo-600 text-indigo-700 bg-white dark:bg-neutral-900"
-                      : "border-transparent text-muted-foreground bg-muted hover:text-indigo-600"}
+                    ${
+                      imgMode === "archivo"
+                        ? "border-indigo-600 text-indigo-700 bg-white dark:bg-neutral-900"
+                        : "border-transparent text-muted-foreground bg-muted hover:text-indigo-600"
+                    }
                     rounded-tl-lg`}
                   style={{ borderBottomWidth: 3 }}
                   onClick={() => setImgMode("archivo")}
@@ -2184,9 +2300,11 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
                 </button>
                 <button
                   className={`flex-1 px-4 py-2 font-bold transition-colors border-b-2 focus:outline-none
-                    ${imgMode === "canvas"
-                      ? "border-indigo-600 text-indigo-700 bg-white dark:bg-neutral-900"
-                      : "border-transparent text-muted-foreground bg-muted hover:text-indigo-600"}
+                    ${
+                      imgMode === "canvas"
+                        ? "border-indigo-600 text-indigo-700 bg-white dark:bg-neutral-900"
+                        : "border-transparent text-muted-foreground bg-muted hover:text-indigo-600"
+                    }
                     rounded-tr-lg`}
                   style={{ borderBottomWidth: 3 }}
                   onClick={() => setImgMode("canvas")}
@@ -2235,35 +2353,57 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
                         : ""
                     }`}
                   >
-                    {imgMode === "canvas" && (
-                      <div className="flex flex-col items-center gap-3 mb-2 w-full">
-                        <div className="flex items-center gap-2 px-2 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-700 shadow-sm">
-                          {(() => {
-                            const Icon = TOOL_ICONS[brushType] || Brush;
-                            return (
-                              <Icon className="h-6 w-6 text-indigo-600 dark:text-indigo-300" />
-                            );
-                          })()}
-                          <span className="font-semibold text-indigo-700 dark:text-indigo-200 text-base">
-                            {BRUSH_LABELS[brushType] ||
-                              brushType.charAt(0).toUpperCase() +
-                                brushType.slice(1)}
-                          </span>
-                        </div>
-                        <button
-                          type="button"
-                          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white font-bold shadow hover:bg-indigo-700 transition text-base"
-                          onClick={() => setShowBrushModal(true)}
-                          aria-label="Seleccionar pincel"
-                        >
-                          {(() => {
-                            const Icon = TOOL_ICONS[brushType] || Brush;
-                            return <Icon className="h-6 w-6" />;
-                          })()}
-                          <span>Seleccionar pincel</span>
-                        </button>
-                      </div>
-                    )}
+                    {/* Indicador y botón de seleccionar pincel fusionados, fondo acorde al color del pincel */}
+                    <div className="flex flex-row items-center justify-center w-full my-2">
+                      <button
+                        type="button"
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold shadow border-2 transition my-2"
+                        style={{
+                          borderColor: brushColor,
+                          background: isColorLight(brushColor)
+                            ? `rgba(30,30,30,0.85)`
+                            : `${brushColor}E6`, // E6 = ~90% opacity
+                          color: "#fff",
+                          boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
+                        }}
+                        onClick={() => setShowBrushModal(true)}
+                        aria-label="Seleccionar pincel"
+                      >
+                        {(() => {
+                          const Icon = TOOL_ICONS[brushType] || Brush;
+                          return (
+                            <Icon
+                              className="h-6 w-6 mr-1"
+                              style={{ color: "#fff" }}
+                            />
+                          );
+                        })()}
+                        <span className="truncate font-semibold">
+                          {BRUSH_LABELS[brushType] ||
+                            brushType.charAt(0).toUpperCase() +
+                              brushType.slice(1)}
+                        </span>
+                        <span className="ml-2 text-sm font-normal opacity-80">
+                          Seleccionar pincel
+                        </span>
+                      </button>
+                    </div>
+                    {/* Botón de borrador en su propio row, centrado, minimalista y cuadrado */}
+                    <div className="flex flex-row items-center justify-center w-full mb-2">
+                      <button
+                        type="button"
+                        className={`flex items-center justify-center w-10 h-10 rounded-md border-2 shadow transition
+                          ${
+                            brushType === "eraser"
+                              ? "bg-red-100 border-red-400 text-red-700"
+                              : "bg-white dark:bg-neutral-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-red-50 hover:border-red-400"
+                          }`}
+                        onClick={() => setBrushType("eraser")}
+                        aria-label="Borrador"
+                      >
+                        <Eraser className="h-6 w-6" />
+                      </button>
+                    </div>
                     {/* Tamaño del pincel */}
                     <div className="flex flex-col items-center gap-2 mt-2">
                       <h4 className="font-semibold text-sm mb-1">
@@ -2286,10 +2426,10 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
                     <div className="flex flex-col items-center gap-2 mt-2">
                       <h4 className="font-semibold text-sm mb-1">Color</h4>
                       <div className="flex flex-wrap justify-center gap-2 mb-2">
-                        {colors.map((color) => (
+                        {paletteColors.map((color) => (
                           <button
                             key={color}
-                            onClick={() => setBrushColor(color)}
+                            onClick={() => handleSetBrushColor(color)}
                             className={`w-8 h-8 rounded-full border-2 transition-all ${
                               brushColor === color
                                 ? "border-indigo-600 scale-110 shadow-md"
@@ -2300,13 +2440,52 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
                           />
                         ))}
                       </div>
-                      <input
-                        type="color"
-                        value={brushColor}
-                        onChange={(e) => setBrushColor(e.target.value)}
-                        className="w-16 h-10 rounded-xl border-2 border-indigo-300 shadow-sm bg-white dark:bg-neutral-700"
-                        style={{ margin: "0 auto" }}
-                      />
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={brushColor}
+                          onChange={(e) => handleSetBrushColor(e.target.value)}
+                          className="w-16 h-10 rounded-xl border-2 border-indigo-300 shadow-sm bg-white dark:bg-neutral-700"
+                        />
+                        <div className="relative group">
+                          <button
+                            type="button"
+                            className="flex items-center justify-center w-10 h-10 rounded-full border-2 border-green-400 bg-white dark:bg-neutral-800 shadow-sm hover:bg-green-50 dark:hover:bg-green-900 transition"
+                            style={{ padding: 0 }}
+                            onClick={() => setShowBgColorPicker((v) => !v)}
+                            aria-label="Aplicar color de fondo"
+                          >
+                            <PaintBucket
+                              className="h-6 w-6"
+                              style={{
+                                color: canvasBgColor,
+                                filter:
+                                  "drop-shadow(0 0 2px #222) drop-shadow(0 0 1px #fff)",
+                                background: "transparent",
+                                margin: 0,
+                                display: "block",
+                              }}
+                            />
+                          </button>
+                          {showBgColorPicker && (
+                            <div
+                              className="absolute left-1/2 -translate-x-1/2 mt-2 z-50 bg-white dark:bg-neutral-900 p-2 rounded shadow border flex flex-col items-center"
+                              style={{ minWidth: 180 }}
+                            >
+                              <input
+                                type="color"
+                                value={canvasBgColor}
+                                onChange={(e) => applyBgColor(e.target.value)}
+                                className="w-24 h-12 rounded-xl border-2 border-green-300 shadow-sm bg-white dark:bg-neutral-700"
+                                style={{ cursor: "pointer" }}
+                              />
+                              <span className="text-xs text-gray-700 dark:text-gray-200 mt-1">
+                                Color de fondo
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
                   {/* Canvas y controles para sm/md y lg */}
@@ -2342,43 +2521,53 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
                       </div>
                     )}
                     {/* Botones de acciones principales */}
-                    <div className="flex flex-wrap gap-3 mb-4 w-full justify-center">
+                    <div className="flex flex-row gap-2 mb-4 w-full justify-center items-center">
                       <button
                         onClick={undo}
                         disabled={historyIndex <= 0}
-                        className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-semibold"
+                        className="group p-2 rounded-full bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-neutral-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                         title="Deshacer"
+                        aria-label="Deshacer"
                       >
-                        <Undo2 className="h-5 w-5" /> Deshacer
+                        <Undo2 className="h-6 w-6" />
+                        <span className="sr-only">Deshacer</span>
                       </button>
                       <button
                         onClick={redo}
                         disabled={historyIndex >= canvasHistory.length - 1}
-                        className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-semibold"
+                        className="group p-2 rounded-full bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-neutral-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                         title="Rehacer"
+                        aria-label="Rehacer"
                       >
-                        <Redo2 className="h-5 w-5" /> Rehacer
+                        <Redo2 className="h-6 w-6" />
+                        <span className="sr-only">Rehacer</span>
                       </button>
                       <button
-                        onClick={clearCanvasAndSave}
-                        className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-semibold"
+                        onClick={() => setShowConfirmClear(true)}
+                        className="group p-2 rounded-full bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-800 transition"
                         title="Limpiar lienzo"
+                        aria-label="Limpiar lienzo"
                       >
-                        <Trash2 className="h-5 w-5" /> Limpiar
+                        <Trash2 className="h-6 w-6" />
+                        <span className="sr-only">Limpiar</span>
                       </button>
                       <button
                         onClick={downloadCanvas}
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold"
+                        className="group p-2 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800 transition"
                         title="Descargar imagen"
+                        aria-label="Descargar imagen"
                       >
-                        <Download className="h-5 w-5" /> Descargar
+                        <Download className="h-6 w-6" />
+                        <span className="sr-only">Descargar</span>
                       </button>
                       <button
                         onClick={handleCreate}
-                        className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold"
+                        className="group p-2 rounded-full bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-800 transition"
                         title="Guardar obra"
+                        aria-label="Guardar obra"
                       >
-                        <Save className="h-5 w-5" /> Guardar
+                        <Save className="h-6 w-6" />
+                        <span className="sr-only">Guardar</span>
                       </button>
                     </div>
                     {/* Canvas grande y centrado */}
@@ -2463,51 +2652,115 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
                     </div>
                     {/* Panel de controles debajo del canvas en sm/md */}
                     <div className="block lg:hidden w-full mt-6 space-y-6">
-                      {/* Tamaño del pincel */}
-                      <div className="flex flex-col items-center gap-2 mt-2">
-                        <h4 className="font-semibold text-sm mb-1">
-                          Tamaño del pincel
-                        </h4>
-                        <input
-                          type="range"
-                          min="1"
-                          max="50"
-                          value={brushSize}
-                          onChange={(e) =>
-                            setBrushSize(parseInt(e.target.value))
-                          }
-                          className="w-3/4 sm:w-2/3 h-3 accent-indigo-600"
-                          style={{ minWidth: 120, maxWidth: 240 }}
-                        />
-                        <div className="text-center mt-1 text-lg font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1 rounded-full shadow-sm">
-                          {brushSize}px
+                      {/* SECCIÓN DE HERRAMIENTAS */}
+                      <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md p-4 flex flex-col gap-6">
+                        <h3 className="text-lg font-bold mb-2 text-indigo-700 dark:text-indigo-200 text-center">
+                          Herramientas
+                        </h3>
+                        {/* Tamaño del pincel */}
+                        <div className="flex flex-col items-center gap-2 mt-2">
+                          <h4 className="font-semibold text-sm mb-1">
+                            Tamaño del pincel
+                          </h4>
+                          <input
+                            type="range"
+                            min="1"
+                            max="50"
+                            value={brushSize}
+                            onChange={(e) =>
+                              setBrushSize(parseInt(e.target.value))
+                            }
+                            className="w-3/4 sm:w-2/3 h-3 accent-indigo-600"
+                            style={{ minWidth: 120, maxWidth: 240 }}
+                          />
+                          <div className="text-center mt-1 text-lg font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1 rounded-full shadow-sm">
+                            {brushSize}px
+                          </div>
                         </div>
-                      </div>
-                      {/* Colores */}
-                      <div className="flex flex-col items-center gap-2 mt-2">
-                        <h4 className="font-semibold text-sm mb-1">Color</h4>
-                        <div className="flex flex-wrap justify-center gap-2 mb-2">
-                          {colors.map((color) => (
-                            <button
-                              key={color}
-                              onClick={() => setBrushColor(color)}
-                              className={`w-8 h-8 rounded-full border-2 transition-all ${
-                                brushColor === color
-                                  ? "border-indigo-600 scale-110 shadow-md"
-                                  : "border-gray-300 hover:scale-105"
-                              }`}
-                              style={{ backgroundColor: color }}
-                              aria-label={`Color ${color}`}
+                        {/* Colores */}
+                        <div className="flex flex-col items-center gap-2 mt-2">
+                          <h4 className="font-semibold text-sm mb-1">Color</h4>
+                          <div className="flex flex-wrap justify-center gap-2 mb-2">
+                            {paletteColors.map((color) => (
+                              <button
+                                key={color}
+                                onClick={() => handleSetBrushColor(color)}
+                                className={`w-8 h-8 rounded-full border-2 transition-all ${
+                                  brushColor === color
+                                    ? "border-indigo-600 scale-110 shadow-md"
+                                    : "border-gray-300 hover:scale-105"
+                                }`}
+                                style={{ backgroundColor: color }}
+                                aria-label={`Color ${color}`}
+                              />
+                            ))}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="color"
+                              value={brushColor}
+                              onChange={(e) =>
+                                handleSetBrushColor(e.target.value)
+                              }
+                              className="w-16 h-10 rounded-xl border-2 border-indigo-300 shadow-sm bg-white dark:bg-neutral-700"
                             />
-                          ))}
+                            <div className="relative group">
+                              <button
+                                type="button"
+                                className="flex items-center justify-center w-10 h-10 rounded-full border-2 border-green-400 bg-white dark:bg-neutral-800 shadow-sm hover:bg-green-50 dark:hover:bg-green-900 transition"
+                                style={{ padding: 0 }}
+                                onClick={() => setShowBgColorPicker((v) => !v)}
+                                aria-label="Aplicar color de fondo"
+                              >
+                                <PaintBucket
+                                  className="h-6 w-6"
+                                  style={{
+                                    color: canvasBgColor,
+                                    filter:
+                                      "drop-shadow(0 0 2px #222) drop-shadow(0 0 1px #fff)",
+                                    background: "transparent",
+                                    margin: 0,
+                                    display: "block",
+                                  }}
+                                />
+                              </button>
+                              {showBgColorPicker && (
+                                <div
+                                  className="absolute left-1/2 -translate-x-1/2 mt-2 z-50 bg-white dark:bg-neutral-900 p-2 rounded shadow border flex flex-col items-center"
+                                  style={{ minWidth: 180 }}
+                                >
+                                  <input
+                                    type="color"
+                                    value={canvasBgColor}
+                                    onChange={(e) =>
+                                      applyBgColor(e.target.value)
+                                    }
+                                    className="w-24 h-12 rounded-xl border-2 border-green-300 shadow-sm bg-white dark:bg-neutral-700"
+                                    style={{ cursor: "pointer" }}
+                                  />
+                                  <span className="text-xs text-gray-700 dark:text-gray-200 mt-1">
+                                    Color de fondo
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                        <input
-                          type="color"
-                          value={brushColor}
-                          onChange={(e) => setBrushColor(e.target.value)}
-                          className="w-16 h-10 rounded-xl border-2 border-indigo-300 shadow-sm bg-white dark:bg-neutral-700"
-                          style={{ margin: "0 auto" }}
-                        />
+                        {/* Selector de pincel en mobile */}
+                        <div className="flex flex-col items-center gap-3 mb-2 w-full">
+                          <button
+                            type="button"
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white font-bold shadow hover:bg-indigo-700 transition text-base w-full justify-center"
+                            onClick={() => setShowBrushModal(true)}
+                            aria-label="Seleccionar pincel"
+                          >
+                            {(() => {
+                              const Icon = TOOL_ICONS[brushType] || Brush;
+                              return <Icon className="h-6 w-6" />;
+                            })()}
+                            <span>Seleccionar pincel</span>
+                          </button>
+                        </div>
                       </div>
                     </div>
                     {/* Modal de pinceles */}
@@ -2517,7 +2770,7 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
                           initial={{ opacity: 0, scale: 0.95 }}
                           animate={{ opacity: 1, scale: 1 }}
                           exit={{ opacity: 0, scale: 0.95 }}
-                          className="fixed inset-0 z-[9999999] flex items-center justify-center pointer-events-none"
+                          className="fixed inset-0 z-[9999999] flex items-center justify-center bg-black/40 backdrop-blur-sm pointer-events-auto"
                           onClick={(e) => {
                             if (e.target === e.currentTarget)
                               setShowBrushModal(false);
@@ -2638,36 +2891,98 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
                   </div>
 
                   {/* Botones de acción */}
-                  <div className="flex gap-2 mb-3">
-                    <button
-                      type="button"
-                      onClick={() => setCanvasBg("/assets/textures/wall.jpg")}
-                      className="px-3 py-1 rounded bg-gray-300 text-gray-800 text-xs font-bold hover:bg-gray-400"
-                    >
-                      Fondo muro
-                    </button>
-                    <button
-                      onClick={() => {
-                        const canvas = canvasRef.current;
-                        const ctx = canvas.getContext("2d");
-                        ctx.clearRect(0, 0, canvas.width, canvas.height);
-                        if (canvasBg) {
-                          const img = new window.Image();
-                          img.onload = () =>
-                            ctx.drawImage(
-                              img,
-                              0,
-                              0,
-                              canvas.width,
-                              canvas.height
-                            );
-                          img.src = canvasBg;
+                  <div className="flex flex-col gap-2 mb-6 items-center">
+                    <div className="flex w-full gap-2">
+                      <button
+                        type="button"
+                        className="flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-blue-600 text-white text-base font-bold shadow-lg hover:bg-blue-700 transition border-2 border-blue-700 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                        title="Selecciona una imagen para el fondo del mural"
+                        onClick={() =>
+                          document.getElementById("bg-image-input").click()
+                        }
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-6 w-6"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M4 16l4-4a3 3 0 014 0l4 4M4 8h16M4 8v8a2 2 0 002 2h12a2 2 0 002-2V8"
+                          />
+                        </svg>
+                        Fondo personalizado
+                      </button>
+                    </div>
+                    <input
+                      id="bg-image-input"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={async (e) => {
+                        try {
+                          const file = e.target.files[0];
+                          if (file) {
+                            if (!file.type.startsWith("image/")) {
+                              toast.error(
+                                "Solo se permiten archivos de imagen."
+                              );
+                              return;
+                            }
+                            if (file.size > MAX_BG_IMAGE_SIZE) {
+                              toast.error(
+                                "La imagen es demasiado grande (máx 5MB)."
+                              );
+                              return;
+                            }
+                            const url = URL.createObjectURL(file);
+                            setCanvasBg(url);
+                            setBgImageError(null);
+                            console.log("BG image URL:", url);
+                            // Probar si la imagen se puede cargar
+                            const testImg = new window.Image();
+                            testImg.onload = () => {
+                              // Todo bien
+                            };
+                            testImg.onerror = () => {
+                              // Intentar conversión automática a PNG
+                              tryConvertToPng(
+                                file,
+                                (pngUrl) => {
+                                  setCanvasBg(pngUrl);
+                                  setBgImageError(null);
+                                  toast.success(
+                                    "Imagen convertida automáticamente a PNG."
+                                  );
+                                },
+                                (msg) => {
+                                  setBgImageError(
+                                    "No se pudo cargar ni convertir la imagen. Por favor, usa un editor para convertirla a JPG estándar o PNG."
+                                  );
+                                  toast.error(
+                                    "No se pudo cargar ni convertir la imagen. Usa un editor para convertirla a JPG estándar o PNG."
+                                  );
+                                }
+                              );
+                            };
+                            testImg.src = url;
+                          }
+                        } catch (err) {
+                          toast.error(
+                            "Error al cargar la imagen: " +
+                              (err?.message || err)
+                          );
                         }
                       }}
-                      className="px-3 py-1 rounded bg-red-600 text-white text-xs font-bold hover:bg-red-700"
-                    >
-                      Limpiar
-                    </button>
+                    />
+                    <span className="text-xs text-blue-700 mt-1">
+                      Puedes subir una imagen o elegir un color sólido para el
+                      fondo del mural
+                    </span>
                   </div>
 
                   {/* Imagen para patrón (solo si pattern_image) */}
@@ -2831,6 +3146,37 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
           </div>
         </div>
       </motion.div>
+      {/* Modal de confirmación para limpiar */}
+      <SimpleModal
+        isOpen={showConfirmClear}
+        onClose={() => setShowConfirmClear(false)}
+        title="¿Limpiar lienzo y fondo?"
+      >
+        <div className="flex flex-col gap-4 items-center">
+          <p className="text-center text-lg">
+            ¿Seguro que quieres limpiar el lienzo y eliminar el fondo?
+            <br />
+            Esta acción no se puede deshacer.
+          </p>
+          <div className="flex gap-4 justify-center mt-2">
+            <button
+              className="px-4 py-2 rounded-lg bg-gray-200 text-gray-800 font-bold hover:bg-gray-300 transition"
+              onClick={() => setShowConfirmClear(false)}
+            >
+              Cancelar
+            </button>
+            <button
+              className="px-4 py-2 rounded-lg bg-red-600 text-white font-bold hover:bg-red-700 transition"
+              onClick={() => {
+                clearCanvasAndSave();
+                setShowConfirmClear(false);
+              }}
+            >
+              Limpiar
+            </button>
+          </div>
+        </div>
+      </SimpleModal>
     </div>
   );
 }
