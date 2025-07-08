@@ -3,12 +3,7 @@
 import { motion } from "framer-motion";
 import { Edit3, Trash2 } from "lucide-react";
 
-const MuralCard = ({ 
-  mural, 
-  view = 'grid', 
-  onEdit, 
-  onDelete 
-}) => {
+const MuralCard = ({ mural, view = "grid", onEdit, onDelete }) => {
   const handleEdit = () => {
     onEdit(mural);
   };
@@ -17,7 +12,7 @@ const MuralCard = ({
     onDelete(mural.id);
   };
 
-  if (view === 'list') {
+  if (view === "list") {
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
