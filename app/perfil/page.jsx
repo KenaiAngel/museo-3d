@@ -137,6 +137,7 @@ function CollectionItem({ item, allItems }) {
   const artist = item.autor || item.artist || (item.artistName ?? "");
   const year = item.anio || item.year;
   const technique = item.tecnica || item.technique;
+  const autores = parseAutores(artist);
   return (
     <div className="flex items-center gap-4 border-b py-2 relative group">
       {imageUrl && (
@@ -159,8 +160,17 @@ function CollectionItem({ item, allItems }) {
       )}
       <div className="flex-1 text-left">
         <div className="font-medium">{title}</div>
+        <div className="flex flex-wrap gap-1 mb-1">
+          {autores.length > 0
+            ? autores.map((autor, idx) => (
+                <span key={idx} className="inline-block bg-pink-100 dark:bg-pink-900/40 text-pink-700 dark:text-pink-200 px-2 py-0.5 rounded-full text-xs font-semibold">
+                  {autor}
+                </span>
+              ))
+            : <span className="text-muted-foreground">Artista desconocido</span>}
+        </div>
         <div className="text-xs text-muted-foreground">
-          {artist}{year ? ` · ${year}` : ""}{technique ? ` · ${technique}` : ""}
+          {year ? ` · ${year}` : ""}{technique ? ` · ${technique}` : ""}
         </div>
       </div>
     </div>

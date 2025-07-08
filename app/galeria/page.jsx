@@ -8,6 +8,8 @@ import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useCollection } from "../../providers/CollectionProvider";
 import { Heart } from "lucide-react";
+import ReactDOM from "react-dom";
+import { Tooltip, TooltipTrigger, TooltipContent } from "../../components/ui/tooltip";
 
 // Componentes de fondo animado (copiados de acerca-de)
 function AnimatedBlobsBackground() {
@@ -48,6 +50,50 @@ function DotsPattern() {
   );
 }
 
+// Agrega la función utilitaria al inicio del archivo:
+function parseAutores(autorString) {
+  return autorString
+    ? autorString.split(",").map((a) => a.trim()).filter(Boolean)
+    : [];
+}
+
+// Agrega la función utilitaria para colaboradores al inicio del archivo:
+function parseColaboradores(colabString) {
+  return colabString
+    ? colabString.split(",").map((c) => c.trim()).filter(Boolean)
+    : [];
+}
+
+// Agrega el componente AutoresTooltip al inicio del archivo:
+function AutoresTooltip({ anchorRef, autores, show }) {
+  const [pos, setPos] = useState({ top: 0, left: 0 });
+  useEffect(() => {
+    if (show && anchorRef.current) {
+      const rect = anchorRef.current.getBoundingClientRect();
+      setPos({
+        top: rect.bottom + window.scrollY + 8,
+        left: rect.left + rect.width / 2 + window.scrollX,
+      });
+    }
+  }, [show, anchorRef]);
+  if (!show) return null;
+  return ReactDOM.createPortal(
+    <div
+      style={{
+        position: "absolute",
+        top: pos.top,
+        left: pos.left,
+        transform: "translateX(-50%)",
+        zIndex: 99999,
+      }}
+      className="bg-white dark:bg-neutral-900 border-2 border-pink-400 dark:border-pink-700 rounded-xl shadow-xl p-2 text-xs min-w-[140px] max-w-xs whitespace-pre-line pointer-events-auto backdrop-blur-md"
+    >
+      {autores.join("\n")}
+    </div>,
+    typeof window !== "undefined" ? document.body : null
+  );
+}
+
 export default function GaleriaPage() {
   const { data: session } = useSession();
   const [salas, setSalas] = useState([]);
@@ -65,6 +111,8 @@ export default function GaleriaPage() {
   const router = useRouter();
   const { isInCollection, addToCollection, removeFromCollection } =
     useCollection();
+  const [showTooltipIdx, setShowTooltipIdx] = useState(null);
+  const [tooltipAnchor, setTooltipAnchor] = useState(null);
 
   // Función para normalizar técnicas
   const normalizeTecnica = (tecnica) => {
@@ -399,117 +447,179 @@ export default function GaleriaPage() {
                     <SectionLoader text="Cargando murales..." />
                   ) : murales.length > 0 ? (
                     <div className="gallery-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {murales.map((mural, idx) => (
-                        <motion.div
-                          key={mural.id}
-                          ref={(el) => (cardRefs.current[mural.id] = el)}
-                          className="gallery-card-glow bg-card rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 border border-border mb-6 cursor-pointer relative"
-                          initial={{ opacity: 0, y: 40 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{
-                            delay: 0.08 * idx,
-                            duration: 0.6,
-                            ease: [0.25, 0.46, 0.45, 0.94],
-                          }}
-                          onClick={() => router.push(`/galeria/${mural.id}`)}
-                        >
-                          {/* Botón de corazón (favoritos) */}
-                          <button
-                            className="absolute top-3 right-3 z-20 bg-white/80 dark:bg-black/60 rounded-full p-2 shadow-md transition-transform duration-200 hover:scale-125 group"
-                            disabled={!mural.id}
-                            onClick={async (e) => {
-                              e.stopPropagation();
-                              if (!mural.id) {
-                                toast.error("No se puede guardar: el mural no tiene ID válido");
-                                return;
-                              }
-                              try {
-                                if (isInCollection(mural.id)) {
-                                  await removeFromCollection(mural.id);
-                                  toast.success(
-                                    "Obra removida de tu colección"
-                                  );
-                                } else {
-                                  await addToCollection(
-                                    mural.id,
-                                    "mural",
-                                    mural
-                                  );
-                                  toast.success(
-                                    "Obra guardada en tu colección"
+                      {murales.map((mural, idx) => {
+                        console.log('MURAL', mural);
+                        const autores = parseAutores(mural.autor);
+                        const extraAutores = autores.length > 3 ? autores.slice(3) : [];
+                        const colaboradores = parseColaboradores(mural.colaboradores);
+                        const extraColabs = colaboradores.length > 3 ? colaboradores.slice(3) : [];
+                        return (
+                          <motion.div
+                            key={mural.id}
+                            ref={(el) => (cardRefs.current[mural.id] = el)}
+                            className="gallery-card-glow bg-card rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 border border-border mb-6 cursor-pointer relative"
+                            initial={{ opacity: 0, y: 40 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{
+                              delay: 0.08 * idx,
+                              duration: 0.6,
+                              ease: [0.25, 0.46, 0.45, 0.94],
+                            }}
+                            onClick={() => router.push(`/galeria/${mural.id}`)}
+                          >
+                            {/* Botón de corazón (favoritos) */}
+                            <button
+                              className="absolute top-3 right-3 z-20 bg-white/80 dark:bg-black/60 rounded-full p-2 shadow-md transition-transform duration-200 hover:scale-125 group"
+                              disabled={!mural.id}
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                if (!mural.id) {
+                                  toast.error("No se puede guardar: el mural no tiene ID válido");
+                                  return;
+                                }
+                                try {
+                                  if (isInCollection(mural.id)) {
+                                    await removeFromCollection(mural.id);
+                                    toast.success(
+                                      "Obra removida de tu colección"
+                                    );
+                                  } else {
+                                    await addToCollection(
+                                      mural.id,
+                                      "mural",
+                                      mural
+                                    );
+                                    toast.success(
+                                      "Obra guardada en tu colección"
+                                    );
+                                  }
+                                } catch (err) {
+                                  toast.error(
+                                    err.message ||
+                                      "Debes iniciar sesión para guardar obras"
                                   );
                                 }
-                              } catch (err) {
-                                toast.error(
-                                  err.message ||
-                                    "Debes iniciar sesión para guardar obras"
-                                );
-                              }
-                            }}
-                            aria-label={
-                              isInCollection(mural.id)
-                                ? "Quitar de colección"
-                                : "Agregar a colección"
-                            }
-                          >
-                            <Heart
-                              fill={isInCollection(mural.id) ? `url(#heart-gradient-${mural.id})` : "none"}
-                              stroke="currentColor"
-                              strokeWidth={2.5}
-                              className={`w-7 h-7 transition-all duration-200 ${
-                                isInCollection(mural.id)
-                                  ? "text-pink-500 animate-pulse drop-shadow-[0_0_6px_#ec4899cc]"
-                                  : "text-gray-400 group-hover:text-pink-400"
-                              } group-hover:scale-125`}
-                            />
-                          </button>
-                          <svg width="0" height="0">
-                            <defs>
-                              <linearGradient id={`heart-gradient-${mural.id}`} x1="0" y1="0" x2="1" y2="1">
-                                <stop offset="0%" stopColor="#ec4899" />
-                                <stop offset="100%" stopColor="#f472b6" />
-                              </linearGradient>
-                            </defs>
-                          </svg>
-                          {/* Glow solo detrás del contenido de la tarjeta */}
-                          <div className="absolute inset-0 pointer-events-none">
-                            <div className="gallery-glow" />
-                          </div>
-                          <div className="relative h-48">
-                            <img
-                              src={mural.url_imagen}
-                              alt={mural.titulo}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                e.target.src = "/assets/artworks/cuadro1.webp";
                               }}
-                            />
-                          </div>
-                          <div className="p-6">
-                            <h3 className="text-xl font-bold text-foreground mb-2">
-                              {mural.titulo}
-                            </h3>
-                            <p className="text-muted-foreground mb-3">
-                              {mural.autor || "Artista desconocido"}
-                            </p>
-                            {mural.tecnica && (
-                              <p className="text-sm text-muted-foreground mb-2">
-                                Técnica: {mural.tecnica}
-                              </p>
-                            )}
-                            {mural.anio && (
-                              <p className="text-sm text-muted-foreground mb-2">
-                                Año: {mural.anio}
-                              </p>
-                            )}
-                            {mural.descripcion && (
-                              <p className="text-sm text-muted-foreground line-clamp-3">
-                                {mural.descripcion}
-                              </p>
-                            )}
-                          </div>
-                        </motion.div>
-                      ))}
+                              aria-label={
+                                isInCollection(mural.id)
+                                  ? "Quitar de colección"
+                                  : "Agregar a colección"
+                              }
+                            >
+                              <Heart
+                                fill={isInCollection(mural.id) ? `url(#heart-gradient-${mural.id})` : "none"}
+                                stroke="currentColor"
+                                strokeWidth={2.5}
+                                className={`w-7 h-7 transition-all duration-200 ${
+                                  isInCollection(mural.id)
+                                    ? "text-pink-500 animate-pulse drop-shadow-[0_0_6px_#ec4899cc]"
+                                    : "text-gray-400 group-hover:text-pink-400"
+                                } group-hover:scale-125`}
+                              />
+                            </button>
+                            <svg width="0" height="0">
+                              <defs>
+                                <linearGradient id={`heart-gradient-${mural.id}`} x1="0" y1="0" x2="1" y2="1">
+                                  <stop offset="0%" stopColor="#ec4899" />
+                                  <stop offset="100%" stopColor="#f472b6" />
+                                </linearGradient>
+                              </defs>
+                            </svg>
+                            {/* Glow solo detrás del contenido de la tarjeta */}
+                            <div className="absolute inset-0 pointer-events-none">
+                              <div className="gallery-glow" />
+                            </div>
+                            <div className="relative h-48">
+                              <img
+                                src={mural.url_imagen}
+                                alt={mural.titulo}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.target.src = "/assets/artworks/cuadro1.webp";
+                                }}
+                              />
+                            </div>
+                            <div className="p-6">
+                              <h3 className="text-xl font-bold text-foreground mb-2">
+                                {mural.titulo}
+                              </h3>
+                              <div className="flex flex-wrap gap-1 mb-2 items-center">
+                                {autores.slice(0, 3).map((autor, idx) => (
+                                  <span key={idx} className="inline-block bg-pink-100 dark:bg-pink-900/40 text-pink-700 dark:text-pink-200 px-2 py-0.5 rounded-full text-xs font-semibold">
+                                    {autor}
+                                  </span>
+                                ))}
+                                {extraAutores.length > 0 && (
+                                  <Tooltip>
+                                    <TooltipTrigger>
+                                      <span
+                                        ref={el => {
+                                          if (showTooltipIdx === mural.id) setTooltipAnchor(el);
+                                        }}
+                                        className="inline-block bg-pink-200 dark:bg-pink-800/60 text-pink-900 dark:text-pink-100 px-2 py-0.5 rounded-full text-xs font-semibold cursor-pointer relative"
+                                        tabIndex={0}
+                                        aria-label="Ver todos los autores"
+                                        onMouseEnter={() => setShowTooltipIdx(mural.id)}
+                                        onMouseLeave={() => setShowTooltipIdx(null)}
+                                      >
+                                        ...
+                                      </span>
+                                    </TooltipTrigger>
+                                    <TooltipContent anchorRef={{ current: tooltipAnchor }} side="top" open={showTooltipIdx === mural.id}>
+                                      {extraAutores.join("\n")}
+                                    </TooltipContent>
+                                  </Tooltip>
+                                )}
+                              </div>
+                              {colaboradores.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mb-2 items-center">
+                                  {colaboradores.slice(0, 3).map((colab, idx) => (
+                                    <span key={idx} className="inline-block bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-200 px-2 py-0.5 rounded-full text-xs font-semibold">
+                                      {colab}
+                                    </span>
+                                  ))}
+                                  {extraColabs.length > 0 && (
+                                    <Tooltip>
+                                      <TooltipTrigger>
+                                        <span
+                                          ref={el => {
+                                            if (showTooltipIdx === mural.id + '-colab') setTooltipAnchor(el);
+                                          }}
+                                          className="inline-block bg-blue-200 dark:bg-blue-800/60 text-blue-900 dark:text-blue-100 px-2 py-0.5 rounded-full text-xs font-semibold cursor-pointer relative"
+                                          tabIndex={0}
+                                          aria-label="Ver todos los colaboradores"
+                                          onMouseEnter={() => setShowTooltipIdx(mural.id + '-colab')}
+                                          onMouseLeave={() => setShowTooltipIdx(null)}
+                                        >
+                                          ...
+                                        </span>
+                                      </TooltipTrigger>
+                                      <TooltipContent anchorRef={{ current: tooltipAnchor }} side="top" open={showTooltipIdx === mural.id + '-colab'}>
+                                        {extraColabs.join("\n")}
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  )}
+                                </div>
+                              )}
+                              {mural.tecnica && (
+                                <p className="text-sm text-muted-foreground mb-2">
+                                  Técnica: {mural.tecnica}
+                                </p>
+                              )}
+                              {mural.anio && (
+                                <p className="text-sm text-muted-foreground mb-2">
+                                  Año: {mural.anio}
+                                </p>
+                              )}
+                              {mural.descripcion && (
+                                <p className="text-sm text-muted-foreground line-clamp-3">
+                                  {mural.descripcion}
+                                </p>
+                              )}
+                            </div>
+                          </motion.div>
+                        );
+                      })}
                     </div>
                   ) : (
                     <div className="bg-card rounded-2xl shadow-lg p-12 text-center border border-border">
@@ -627,109 +737,170 @@ export default function GaleriaPage() {
             {/* Lista de murales */}
             {filteredMurales.length > 0 ? (
               <div className="gallery-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {filteredMurales.map((mural) => (
-                  <div
-                    key={mural.id}
-                    className="gallery-card-glow bg-card rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 border border-border relative"
-                    onClick={() => router.push(`/galeria/${mural.id}`)} // Abrir modal al hacer clic
-                  >
-                    {/* Botón de corazón (favoritos) */}
-                    <button
-                      className="absolute top-3 right-3 z-20 bg-white/80 dark:bg-black/60 rounded-full p-2 shadow-md transition-transform duration-200 hover:scale-125 group"
-                      disabled={!mural.id}
-                      onClick={async (e) => {
-                        e.stopPropagation();
-                        if (!mural.id) {
-                          toast.error("No se puede guardar: el mural no tiene ID válido");
-                          return;
-                        }
-                        try {
-                          if (isInCollection(mural.id)) {
-                            await removeFromCollection(mural.id);
-                            toast.success("Obra removida de tu colección");
-                          } else {
-                            await addToCollection(mural.id, "mural", mural);
-                            toast.success("Obra guardada en tu colección");
-                          }
-                        } catch (err) {
-                          toast.error(
-                            err.message ||
-                              "Debes iniciar sesión para guardar obras"
-                          );
-                        }
-                      }}
-                      aria-label={
-                        isInCollection(mural.id)
-                          ? "Quitar de colección"
-                          : "Agregar a colección"
-                      }
+                {filteredMurales.map((mural) => {
+                  const autores = parseAutores(mural.autor);
+                  const extraAutores = autores.length > 3 ? autores.slice(3) : [];
+                  const colaboradores = parseColaboradores(mural.colaboradores);
+                  const extraColabs = colaboradores.length > 3 ? colaboradores.slice(3) : [];
+                  return (
+                    <div
+                      key={mural.id}
+                      className="gallery-card-glow bg-card rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 border border-border relative"
+                      onClick={() => router.push(`/galeria/${mural.id}`)} // Abrir modal al hacer clic
                     >
-                      <Heart
-                        fill={isInCollection(mural.id) ? `url(#heart-gradient-${mural.id})` : "none"}
-                        stroke="currentColor"
-                        strokeWidth={2.5}
-                        className={`w-6 h-6 transition-all duration-200 ${
+                      {/* Botón de corazón (favoritos) */}
+                      <button
+                        className="absolute top-3 right-3 z-20 bg-white/80 dark:bg-black/60 rounded-full p-2 shadow-md transition-transform duration-200 hover:scale-125 group"
+                        disabled={!mural.id}
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          if (!mural.id) {
+                            toast.error("No se puede guardar: el mural no tiene ID válido");
+                            return;
+                          }
+                          try {
+                            if (isInCollection(mural.id)) {
+                              await removeFromCollection(mural.id);
+                              toast.success("Obra removida de tu colección");
+                            } else {
+                              await addToCollection(mural.id, "mural", mural);
+                              toast.success("Obra guardada en tu colección");
+                            }
+                          } catch (err) {
+                            toast.error(
+                              err.message ||
+                                "Debes iniciar sesión para guardar obras"
+                            );
+                          }
+                        }}
+                        aria-label={
                           isInCollection(mural.id)
-                            ? "text-pink-500 animate-pulse drop-shadow-[0_0_6px_#ec4899cc]"
-                            : "text-gray-400 group-hover:text-pink-400"
-                        } group-hover:scale-125`}
-                      />
-                    </button>
-                    <svg width="0" height="0">
-                      <defs>
-                        <linearGradient id={`heart-gradient-${mural.id}`} x1="0" y1="0" x2="1" y2="1">
-                          <stop offset="0%" stopColor="#ec4899" />
-                          <stop offset="100%" stopColor="#f472b6" />
-                        </linearGradient>
-                      </defs>
-                    </svg>
-                    {/* Año en la esquina superior izquierda */}
-                    {mural.anio && (
-                      <div className="absolute top-3 left-3 bg-background/90 rounded-full px-2 py-1 text-xs font-bold text-foreground shadow">
-                        {mural.anio}
-                      </div>
-                    )}
-                    <div className="relative h-48">
-                      {/* Badge del año en la esquina superior izquierda */}
+                            ? "Quitar de colección"
+                            : "Agregar a colección"
+                        }
+                      >
+                        <Heart
+                          fill={isInCollection(mural.id) ? `url(#heart-gradient-${mural.id})` : "none"}
+                          stroke="currentColor"
+                          strokeWidth={2.5}
+                          className={`w-6 h-6 transition-all duration-200 ${
+                            isInCollection(mural.id)
+                              ? "text-pink-500 animate-pulse drop-shadow-[0_0_6px_#ec4899cc]"
+                              : "text-gray-400 group-hover:text-pink-400"
+                          } group-hover:scale-125`}
+                        />
+                      </button>
+                      <svg width="0" height="0">
+                        <defs>
+                          <linearGradient id={`heart-gradient-${mural.id}`} x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0%" stopColor="#ec4899" />
+                            <stop offset="100%" stopColor="#f472b6" />
+                          </linearGradient>
+                        </defs>
+                      </svg>
+                      {/* Año en la esquina superior izquierda */}
                       {mural.anio && (
-                        <div className="absolute top-3 left-3 bg-background/90 rounded-full px-2 py-1 text-xs font-bold text-foreground shadow z-20">
+                        <div className="absolute top-3 left-3 bg-background/90 rounded-full px-2 py-1 text-xs font-bold text-foreground shadow">
                           {mural.anio}
                         </div>
                       )}
-                      <img
-                        src={mural.url_imagen}
-                        alt={mural.titulo}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          e.target.src = "/assets/artworks/cuadro1.webp";
-                        }}
-                      />
+                      <div className="relative h-48">
+                        {/* Badge del año en la esquina superior izquierda */}
+                        {mural.anio && (
+                          <div className="absolute top-3 left-3 bg-background/90 rounded-full px-2 py-1 text-xs font-bold text-foreground shadow z-20">
+                            {mural.anio}
+                          </div>
+                        )}
+                        <img
+                          src={mural.url_imagen}
+                          alt={mural.titulo}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.src = "/assets/artworks/cuadro1.webp";
+                          }}
+                        />
+                      </div>
+                      <div className="p-4">
+                        <h3 className="text-lg font-bold text-foreground mb-2 line-clamp-2">
+                          {mural.titulo}
+                        </h3>
+                        <div className="flex flex-wrap gap-1 mb-2 items-center">
+                          {autores.slice(0, 3).map((autor, idx) => (
+                            <span key={idx} className="inline-block bg-pink-100 dark:bg-pink-900/40 text-pink-700 dark:text-pink-200 px-2 py-0.5 rounded-full text-xs font-semibold">
+                              {autor}
+                            </span>
+                          ))}
+                          {extraAutores.length > 0 && (
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <span
+                                  ref={el => {
+                                    if (showTooltipIdx === mural.id) setTooltipAnchor(el);
+                                  }}
+                                  className="inline-block bg-pink-200 dark:bg-pink-800/60 text-pink-900 dark:text-pink-100 px-2 py-0.5 rounded-full text-xs font-semibold cursor-pointer relative"
+                                  tabIndex={0}
+                                  aria-label="Ver todos los autores"
+                                  onMouseEnter={() => setShowTooltipIdx(mural.id)}
+                                  onMouseLeave={() => setShowTooltipIdx(null)}
+                                >
+                                  ...
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent anchorRef={{ current: tooltipAnchor }} side="top" open={showTooltipIdx === mural.id}>
+                                {extraAutores.join("\n")}
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
+                        </div>
+                        {colaboradores.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mb-2 items-center">
+                            {colaboradores.slice(0, 3).map((colab, idx) => (
+                              <span key={idx} className="inline-block bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-200 px-2 py-0.5 rounded-full text-xs font-semibold">
+                                {colab}
+                              </span>
+                            ))}
+                            {extraColabs.length > 0 && (
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <span
+                                    ref={el => {
+                                      if (showTooltipIdx === mural.id + '-colab') setTooltipAnchor(el);
+                                    }}
+                                    className="inline-block bg-blue-200 dark:bg-blue-800/60 text-blue-900 dark:text-blue-100 px-2 py-0.5 rounded-full text-xs font-semibold cursor-pointer relative"
+                                    tabIndex={0}
+                                    aria-label="Ver todos los colaboradores"
+                                    onMouseEnter={() => setShowTooltipIdx(mural.id + '-colab')}
+                                    onMouseLeave={() => setShowTooltipIdx(null)}
+                                  >
+                                    ...
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent anchorRef={{ current: tooltipAnchor }} side="top" open={showTooltipIdx === mural.id + '-colab'}>
+                                  {extraColabs.join("\n")}
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                          </div>
+                        )}
+                        {mural.tecnica && (
+                          <p className="text-sm text-muted-foreground mb-2">
+                            {mural.tecnica}
+                          </p>
+                        )}
+                        {mural.descripcion && (
+                          <p className="text-sm text-muted-foreground line-clamp-3">
+                            {mural.descripcion}
+                          </p>
+                        )}
+                        {mural.ubicacion && (
+                          <p className="text-xs text-muted-foreground mt-2">
+                            📍 {mural.ubicacion}
+                          </p>
+                        )}{" "}
+                      </div>
                     </div>
-                    <div className="p-4">
-                      <h3 className="text-lg font-bold text-foreground mb-2 line-clamp-2">
-                        {mural.titulo}
-                      </h3>
-                      <p className="text-muted-foreground mb-2">
-                        {mural.autor || "Artista desconocido"}
-                      </p>
-                      {mural.tecnica && (
-                        <p className="text-sm text-muted-foreground mb-2">
-                          {mural.tecnica}
-                        </p>
-                      )}
-                      {mural.descripcion && (
-                        <p className="text-sm text-muted-foreground line-clamp-3">
-                          {mural.descripcion}
-                        </p>
-                      )}
-                      {mural.ubicacion && (
-                        <p className="text-xs text-muted-foreground mt-2">
-                          📍 {mural.ubicacion}
-                        </p>
-                      )}{" "}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="bg-card rounded-2xl shadow-lg p-12 text-center border border-border">
@@ -885,9 +1056,63 @@ function ModalZoomImage({ mural, rect, onClose }) {
         <h2 className="text-2xl font-bold text-foreground mb-2">
           {mural.titulo}
         </h2>
-        <p className="text-muted-foreground mb-2">
-          {mural.autor || "Artista desconocido"}
-        </p>
+        <div className="flex flex-wrap gap-1 mb-2 items-center">
+          {parseAutores(mural.autor).length > 0
+            ? parseAutores(mural.autor).slice(0, 3).map((autor, idx) => (
+                <span key={idx} className="inline-block bg-pink-100 dark:bg-pink-900/40 text-pink-700 dark:text-pink-200 px-2 py-0.5 rounded-full text-xs font-semibold">
+                  {autor}
+                </span>
+              ))
+            : <span className="text-muted-foreground">Artista desconocido</span>}
+          {parseAutores(mural.autor).length > 3 && (
+            <Tooltip>
+              <TooltipTrigger>
+                <span
+                  className="inline-block bg-pink-200 dark:bg-pink-800/60 text-pink-900 dark:text-pink-100 px-2 py-0.5 rounded-full text-xs font-semibold cursor-pointer relative"
+                  tabIndex={0}
+                  aria-label="Ver todos los autores"
+                  ref={cardRefs.current[mural.id]}
+                >
+                  ...
+                </span>
+              </TooltipTrigger>
+              <TooltipContent anchorRef={cardRefs.current[mural.id]} side="top" open={showTooltipIdx === mural.id}>
+                {parseAutores(mural.autor).slice(3).join("\n")}
+              </TooltipContent>
+            </Tooltip>
+          )}
+          {parseAutores(mural.autor).length === 0 && <span className="text-muted-foreground">Artista desconocido</span>}
+        </div>
+        {colaboradores.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-2 items-center">
+            {colaboradores.slice(0, 3).map((colab, idx) => (
+              <span key={idx} className="inline-block bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-200 px-2 py-0.5 rounded-full text-xs font-semibold">
+                {colab}
+              </span>
+            ))}
+            {extraColabs.length > 0 && (
+              <Tooltip>
+                <TooltipTrigger>
+                  <span
+                    ref={el => {
+                      if (showTooltipIdx === mural.id + '-colab') setTooltipAnchor(el);
+                    }}
+                    className="inline-block bg-blue-200 dark:bg-blue-800/60 text-blue-900 dark:text-blue-100 px-2 py-0.5 rounded-full text-xs font-semibold cursor-pointer relative"
+                    tabIndex={0}
+                    aria-label="Ver todos los colaboradores"
+                    onMouseEnter={() => setShowTooltipIdx(mural.id + '-colab')}
+                    onMouseLeave={() => setShowTooltipIdx(null)}
+                  >
+                    ...
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent anchorRef={{ current: tooltipAnchor }} side="top" open={showTooltipIdx === mural.id + '-colab'}>
+                  {extraColabs.join("\n")}
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </div>
+        )}
         {mural.tecnica && (
           <p className="text-sm text-muted-foreground mb-2">
             Técnica: {mural.tecnica}
