@@ -12,7 +12,7 @@ export default function GalleryImageModal() {
     navigateImage,
   } = useGallery();
 
-  console.log("GalleryImageModal renderizando:", {
+
     isImageModalOpen,
     selectedArtwork,
     currentImageIndex,

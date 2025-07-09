@@ -144,7 +144,7 @@ export default function ImageModalSimple({
 
   if (!isOpen || !artwork) return null;
 
-  console.log("ImageModalSimple renderizando:", { isOpen, artwork });
+
 
   return (
     <div

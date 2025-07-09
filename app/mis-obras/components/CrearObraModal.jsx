@@ -2994,8 +2994,6 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session, asP
                             const url = URL.createObjectURL(file);
                             setCanvasBg(url);
                             setBgImageError(null);
-                            console.log("BG image URL:", url);
-                            // Probar si la imagen se puede cargar
                             const testImg = new window.Image();
                             testImg.onload = () => {
                               // Todo bien
@@ -4030,9 +4028,7 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session, asP
                             const url = URL.createObjectURL(file);
                             setCanvasBg(url);
                             setBgImageError(null);
-                            console.log("BG image URL:", url);
                             // Probar si la imagen se puede cargar
-                            const testImg = new window.Image();
                             testImg.onload = () => {
                               // Todo bien
                             };

@@ -189,9 +189,6 @@ function HomeContent() {
   }, [isClient, current]);
   const side = current % 2 === 0 ? "left" : "right";
 
-  // Debug logging
-  console.log("Current:", current, "Side:", side, "IsMobile:", isMobile);
-
   const scrollToSection = (index) => {
     if (!containerRef.current) return;
     const sectionHeight = containerRef.current.clientHeight;

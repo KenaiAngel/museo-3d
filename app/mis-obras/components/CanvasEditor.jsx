@@ -150,7 +150,6 @@ export default function CanvasEditor({
 
   useEffect(() => {
     if (isOpen && canvasRef.current) {
-      console.log("CanvasEditor montado y abierto");
       const canvas = canvasRef.current;
       const ctx = canvas.getContext("2d");
       canvas.width = 800;
@@ -232,7 +231,6 @@ export default function CanvasEditor({
 
   // Sistema de coordenadas y handlers
   const handleMouseMove = (e) => {
-    console.log("handleMouseMove");
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
     const cssX = e.clientX - rect.left;
@@ -246,21 +244,21 @@ export default function CanvasEditor({
   };
 
   const handleMouseLeave = () => {
-    console.log("handleMouseLeave");
+
     setCursorPos(null);
     setIsDrawing(false);
     setLastPoint(null);
   };
 
   const handleMouseUp = () => {
-    console.log("handleMouseUp");
+
     setIsDrawing(false);
     setLastPoint(null);
     saveToHistory();
   };
 
   const handleMouseDown = (e) => {
-    console.log("handleMouseDown");
+
     setIsDrawing(true);
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
@@ -306,7 +304,7 @@ export default function CanvasEditor({
     const rgb = hexToRgb(brushColor);
 
     // Log de depuración para saber qué pincel se está usando
-    console.log("drawAt type:", type);
+
 
     // Cada pincel tiene su propio efecto visual
     switch (type) {
@@ -823,7 +821,7 @@ export default function CanvasEditor({
 
   if (!isOpen) return null;
 
-  console.log("currentTool:", currentTool);
+
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">

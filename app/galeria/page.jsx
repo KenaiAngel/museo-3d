@@ -448,7 +448,6 @@ export default function GaleriaPage() {
                   ) : murales.length > 0 ? (
                     <div className="gallery-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                       {murales.map((mural, idx) => {
-                        console.log('MURAL', mural);
                         const autores = parseAutores(mural.autor);
                         const extraAutores = autores.length > 3 ? autores.slice(3) : [];
                         const colaboradores = parseColaboradores(mural.colaboradores);

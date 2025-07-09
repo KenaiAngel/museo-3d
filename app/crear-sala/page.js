@@ -439,7 +439,6 @@ export default function CrearSala() {
   // Validar y avanzar de step SOLO con los campos del paso actual
   const handleNextStep = async () => {
     let data = { nombre, descripcion, murales, ...salaConfig };
-    console.log("DEBUG handleNextStep - data:", data);
     try {
       if (step === 0) {
         await schemaStep1.validate(data, { abortEarly: false });
@@ -452,7 +451,6 @@ export default function CrearSala() {
       }
       setErrors({});
       setStep(step + 1);
-      console.log("DEBUG handleNextStep - validation passed, advancing step");
     } catch (err) {
       if (err.inner) {
         const newErrors = {};
@@ -460,9 +458,7 @@ export default function CrearSala() {
           newErrors[e.path] = e.message;
         });
         setErrors(newErrors);
-        console.log("DEBUG handleNextStep - validation errors:", newErrors);
       } else {
-        console.log("DEBUG handleNextStep - unknown error:", err);
       }
     }
   };
@@ -485,9 +481,7 @@ export default function CrearSala() {
           newErrors[e.path] = e.message;
         });
         setErrors(newErrors);
-        console.log("DEBUG handleSubmit - validation errors:", newErrors);
       } else {
-        console.log("DEBUG handleSubmit - unknown error:", err);
       }
     }
     setIsSubmitting(false);
