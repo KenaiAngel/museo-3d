@@ -17,10 +17,13 @@ import UploadModal from "./components/UploadModal";
 import PageHeader from "./components/PageHeader";
 import EmptyState from "./components/EmptyState";
 import MuralGrid from "./components/MuralGrid";
+import { Badge } from "../components/ui/badge";
+import { useCollection } from "../../providers/CollectionProvider";
 
 export default function MisObras() {
   const { data: session, status } = useSession();
   const { user, isAuthenticated } = useAuth();
+  const { collection = [] } = useCollection();
 
   // Hook personalizado para manejo de murales
   const {
@@ -64,6 +67,44 @@ export default function MisObras() {
     openCanvasEditor(mural);
   };
 
+  // Estrategia: 'Mis obras' = murales donde autor === session.user.name
+  const propios = murales
+    .filter((m) => session?.user?.name && m.autor === session.user.name)
+    .map((m) => ({ ...m, editable: true, fromCollection: false }));
+
+  // Colección: favoritos (no editables)
+  const favoritos = (collection || [])
+    .filter((fav) => !propios.some((m) => m.id === fav.id))
+    .map((fav) => ({ ...fav, editable: false, fromCollection: true }));
+
+  // Filtros por separado
+  const propiosFiltrados = propios.filter((mural) => {
+    if (
+      filters.search &&
+      !mural.titulo?.toLowerCase().includes(filters.search.toLowerCase()) &&
+      !mural.autor?.toLowerCase().includes(filters.search.toLowerCase()) &&
+      !mural.tecnica?.toLowerCase().includes(filters.search.toLowerCase())
+    ) {
+      return false;
+    }
+    if (filters.tecnica && mural.tecnica !== filters.tecnica) return false;
+    if (filters.year && mural.year !== filters.year) return false;
+    return true;
+  });
+  const favoritosFiltrados = favoritos.filter((mural) => {
+    if (
+      filters.search &&
+      !mural.titulo?.toLowerCase().includes(filters.search.toLowerCase()) &&
+      !mural.autor?.toLowerCase().includes(filters.search.toLowerCase()) &&
+      !mural.tecnica?.toLowerCase().includes(filters.search.toLowerCase())
+    ) {
+      return false;
+    }
+    if (filters.tecnica && mural.tecnica !== filters.tecnica) return false;
+    if (filters.year && mural.year !== filters.year) return false;
+    return true;
+  });
+
   if (status === "loading" || loading) {
     return <LoadingScreen message="Cargando tus obras..." />;
   }
@@ -102,22 +143,55 @@ export default function MisObras() {
               setShowFilters={setShowFilters}
               view={view}
               setView={setView}
-              resultsCount={filteredMurales.length}
+              resultsCount={propiosFiltrados.length + favoritosFiltrados.length}
             />
           </div>
 
           {/* Contenido principal */}
-          {filteredMurales.length === 0 ? (
+          {/* Sección: Mis obras */}
+          {propiosFiltrados.length > 0 && (
+            <div className="mb-16">
+              <div className="flex items-center gap-2 mb-4">
+                <h2 className="text-xl font-bold text-foreground">Mis obras</h2>
+                <Badge variant="default">Editables</Badge>
+              </div>
+              <MuralGrid
+                murales={propiosFiltrados}
+                view={view}
+                onEditMural={handleEditMural}
+                onDeleteMural={handleDeleteMural}
+              />
+            </div>
+          )}
+
+          {/* Divider visual */}
+          {propiosFiltrados.length > 0 && favoritosFiltrados.length > 0 && (
+            <div className="w-full flex justify-center my-8">
+              <div className="h-1 w-32 bg-gradient-to-r from-pink-400 via-indigo-400 to-blue-400 rounded-full opacity-40" />
+            </div>
+          )}
+
+          {/* Sección: Mi colección */}
+          {favoritosFiltrados.length > 0 && (
+            <div className="mb-8">
+              <div className="flex items-center gap-2 mb-4">
+                <h2 className="text-xl font-bold text-foreground">Mi colección</h2>
+                <Badge variant="pink">Favoritos</Badge>
+              </div>
+              <MuralGrid
+                murales={favoritosFiltrados}
+                view={view}
+                onEditMural={() => {}}
+                onDeleteMural={() => {}}
+              />
+            </div>
+          )}
+
+          {/* Si no hay nada, mostrar empty state */}
+          {propiosFiltrados.length === 0 && favoritosFiltrados.length === 0 && (
             <EmptyState
-              hasAnyMurales={murales.length > 0}
+              hasAnyMurales={propios.length + favoritos.length > 0}
               onCreateNew={openCreateModal}
-            />
-          ) : (
-            <MuralGrid
-              murales={filteredMurales}
-              view={view}
-              onEditMural={handleEditMural}
-              onDeleteMural={handleDeleteMural}
             />
           )}
         </motion.div>

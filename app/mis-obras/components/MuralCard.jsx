@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Edit3, Trash2 } from "lucide-react";
+import { Edit3, Trash2, Ban } from "lucide-react";
 
 const MuralCard = ({ mural, view = "grid", onEdit, onDelete }) => {
   const handleEdit = () => {
@@ -43,15 +43,24 @@ const MuralCard = ({ mural, view = "grid", onEdit, onDelete }) => {
         <div className="flex items-center gap-2">
           <button
             onClick={handleEdit}
-            className="p-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+            className="p-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors relative"
             title="Editar"
+            disabled={!mural.editable}
+            style={{ opacity: mural.editable ? 1 : 0.5, cursor: mural.editable ? 'pointer' : 'not-allowed' }}
           >
             <Edit3 className="h-4 w-4" />
+            {!mural.editable && (
+              <span className="absolute -top-2 -right-2 bg-red-600 rounded-full p-0.5 flex items-center justify-center">
+                <Ban className="h-3 w-3 text-white" />
+              </span>
+            )}
           </button>
           <button
             onClick={handleDelete}
             className="p-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
             title="Eliminar"
+            disabled={!mural.editable}
+            style={{ opacity: mural.editable ? 1 : 0.5, cursor: mural.editable ? 'pointer' : 'not-allowed' }}
           >
             <Trash2 className="h-4 w-4" />
           </button>
@@ -78,15 +87,24 @@ const MuralCard = ({ mural, view = "grid", onEdit, onDelete }) => {
           <div className="flex gap-2">
             <button
               onClick={handleEdit}
-              className="p-2 bg-white/90 text-gray-800 rounded-lg hover:bg-white transition-colors"
+              className="p-2 bg-white/90 text-gray-800 rounded-lg hover:bg-white transition-colors relative"
               title="Editar"
+              disabled={!mural.editable}
+              style={{ opacity: mural.editable ? 1 : 0.5, cursor: mural.editable ? 'pointer' : 'not-allowed' }}
             >
               <Edit3 className="h-4 w-4" />
+              {!mural.editable && (
+                <span className="absolute -top-2 -right-2 bg-red-600 rounded-full p-0.5 flex items-center justify-center">
+                  <Ban className="h-3 w-3 text-white" />
+                </span>
+              )}
             </button>
             <button
               onClick={handleDelete}
               className="p-2 bg-red-500/90 text-white rounded-lg hover:bg-red-600 transition-colors"
               title="Eliminar"
+              disabled={!mural.editable}
+              style={{ opacity: mural.editable ? 1 : 0.5, cursor: mural.editable ? 'pointer' : 'not-allowed' }}
             >
               <Trash2 className="h-4 w-4" />
             </button>
