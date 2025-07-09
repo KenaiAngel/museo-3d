@@ -19,11 +19,13 @@ import EmptyState from "./components/EmptyState";
 import MuralGrid from "./components/MuralGrid";
 import { Badge } from "../components/ui/badge";
 import { useCollection } from "../../providers/CollectionProvider";
+import { useRouter } from "next/navigation";
 
 export default function MisObras() {
   const { data: session, status } = useSession();
   const { user, isAuthenticated } = useAuth();
   const { collection = [] } = useCollection();
+  const router = useRouter();
 
   // Hook personalizado para manejo de murales
   const {
@@ -130,7 +132,7 @@ export default function MisObras() {
           transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
         >
           {/* Header */}
-          <PageHeader onCreateNew={openCreateModal} />
+          <PageHeader onCreateNew={() => router.push("/mis-obras/crear")} />
 
           {/* Controles de vista y filtros */}
           <div className="mb-16 md:mb-20">

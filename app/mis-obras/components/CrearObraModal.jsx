@@ -339,7 +339,7 @@ async function tryConvertToPng(file, onSuccess, onFail) {
   }
 }
 
-export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
+export default function CrearObraModal({ isOpen, onClose, onCreate, session, asPage = false }) {
   const { theme } = useTheme();
   const [step, setStep] = useState(0);
   const [titulo, setTitulo] = useState("");
@@ -2184,7 +2184,1022 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
       .catch(() => setArtistList([]));
   }, []);
 
-  if (!isOpen) return null;
+  if (!isOpen && !asPage) return null;
+
+  // Si es modo página, no usar backdrop ni fixed ni max-h/overflow
+  if (asPage) {
+    return (
+      <div className="w-full max-w-7xl mx-auto px-0 md:px-8 bg-background dark:bg-neutral-900 rounded-2xl shadow-2xl border border-border flex flex-col min-h-[80vh]">
+        {/* Header */}
+        <div className="px-8 pt-10 pb-6 border-b border-border">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-2xl font-bold text-foreground">Crear nueva obra</h2>
+            {onClose && (
+              <button
+                onClick={onClose}
+                className="p-2 rounded hover:bg-muted transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            )}
+          </div>
+          {/* Stepper */}
+          <div className="flex items-center justify-center gap-4 mb-4 mt-2">
+            <Stepper
+              steps={["Datos", "Imagen", "Confirmar"]}
+              activeStep={step}
+              color="indigo"
+              className="mb-8"
+              onStepClick={(i) => {
+                if (i < step) setStep(i);
+              }}
+            />
+          </div>
+        </div>
+        {/* Contenido principal */}
+        <div className="flex-1 w-full py-8 px-2 md:px-8 flex flex-col gap-12">
+          {step === 0 && (
+            <>
+              <motion.input
+                type="text"
+                placeholder="Título de la obra"
+                value={titulo}
+                onChange={(e) => {
+                  setTitulo(e.target.value);
+                  if (errors.titulo)
+                    setErrors((prev) => ({ ...prev, titulo: undefined }));
+                }}
+                className="w-full px-4 py-3 rounded-xl border-2 text-base bg-background dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                animate={
+                  errors.titulo
+                    ? { x: [0, -8, 8, -6, 6, -4, 4, 0, Math.random()] }
+                    : false
+                }
+                transition={{ duration: 0.4 }}
+              />
+              {errors.titulo && (
+                <div className="text-pink-500 text-sm">{errors.titulo}</div>
+              )}
+              <motion.textarea
+                placeholder="Descripción (opcional)"
+                value={descripcion}
+                onChange={(e) => setDescripcion(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border-2 text-base bg-background dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                rows={3}
+              />
+              <motion.input
+                type="text"
+                placeholder="Técnica"
+                value={tecnica}
+                onChange={(e) => {
+                  setTecnica(e.target.value);
+                  if (errors.tecnica)
+                    setErrors((prev) => ({ ...prev, tecnica: undefined }));
+                }}
+                className="w-full px-4 py-3 rounded-xl border-2 text-base bg-background dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                animate={
+                  errors.tecnica
+                    ? { x: [0, -8, 8, -6, 6, -4, 4, 0, Math.random()] }
+                    : false
+                }
+                transition={{ duration: 0.4 }}
+              />
+              {errors.tecnica && (
+                <div className="text-pink-500 text-sm">{errors.tecnica}</div>
+              )}
+              <DatePicker
+                value={year ? `${year}-01-01` : null}
+                onChange={(dateString) => {
+                  if (dateString) {
+                    const d = new Date(dateString);
+                    setYear(d.getFullYear());
+                    if (errors.year)
+                      setErrors((prev) => ({ ...prev, year: undefined }));
+                  } else {
+                    setYear(null);
+                  }
+                }}
+                placeholder="Selecciona el año..."
+              />
+              {errors.year && (
+                <div className="text-pink-500 text-sm">{errors.year}</div>
+              )}
+              <motion.input
+                type="text"
+                placeholder="Autor (opcional)"
+                value={autor || ""}
+                onChange={(e) => setAutor(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border-2 text-base bg-background dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+              />
+              <motion.input
+                type="text"
+                placeholder="Ubicación (opcional)"
+                value={ubicacion || ""}
+                onChange={(e) => setUbicacion(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border-2 text-base bg-background dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+              />
+              <div className="flex gap-2">
+                <motion.input
+                  type="number"
+                  step="any"
+                  placeholder="Latitud (opcional)"
+                  value={latitud || ""}
+                  onChange={(e) => setLatitud(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border-2 text-base bg-background dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                />
+                <motion.input
+                  type="number"
+                  step="any"
+                  placeholder="Longitud (opcional)"
+                  value={longitud || ""}
+                  onChange={(e) => setLongitud(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border-2 text-base bg-background dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                />
+              </div>
+              {/* Selector de artista */}
+              <select
+                value={artistId || ""}
+                onChange={(e) => setArtistId(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border-2 text-base bg-background dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+              >
+                <option value="">Selecciona un artista (opcional)</option>
+                {artistList &&
+                  artistList.map((artist) => (
+                    <option key={artist.id} value={artist.id}>
+                      {artist.user?.name || artist.id}
+                    </option>
+                  ))}
+              </select>
+            </>
+          )}
+
+          {step === 1 && (
+            <>
+              <div className="flex gap-0 mb-4 border-b border-border w-full max-w-md mx-auto">
+                <button
+                  className={`flex-1 px-4 py-2 font-bold transition-colors border-b-2 focus:outline-none
+                    ${
+                      imgMode === "archivo"
+                        ? "border-indigo-600 text-indigo-700 bg-white dark:bg-neutral-900"
+                        : "border-transparent text-muted-foreground bg-muted hover:text-indigo-600"
+                    }
+                    rounded-tl-lg`}
+                  style={{ borderBottomWidth: 3 }}
+                  onClick={() => setImgMode("archivo")}
+                  type="button"
+                >
+                  Subir archivo
+                </button>
+                <button
+                  className={`flex-1 px-4 py-2 font-bold transition-colors border-b-2 focus:outline-none
+                    ${
+                      imgMode === "canvas"
+                        ? "border-indigo-600 text-indigo-700 bg-white dark:bg-neutral-900"
+                        : "border-transparent text-muted-foreground bg-muted hover:text-indigo-600"
+                    }
+                    rounded-tr-lg`}
+                  style={{ borderBottomWidth: 3 }}
+                  onClick={() => setImgMode("canvas")}
+                  type="button"
+                >
+                  Crear en canvas
+                </button>
+              </div>
+
+              {imgMode === "archivo" && (
+                <>
+                  <div
+                    {...getRootProps()}
+                    className={`w-full border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition ${
+                      isDragActive
+                        ? "border-indigo-500 bg-indigo-50"
+                        : "border-border bg-muted/40"
+                    }`}
+                  >
+                    <input {...getInputProps()} />
+                    {imagen ? (
+                      <img
+                        src={URL.createObjectURL(imagen)}
+                        alt="preview"
+                        className="w-full max-h-64 object-contain rounded-xl border mt-2 mx-auto"
+                      />
+                    ) : (
+                      <span className="text-muted-foreground">
+                        Arrastra una imagen aquí o haz clic para seleccionar
+                      </span>
+                    )}
+                  </div>
+                  {errors.imagen && (
+                    <div className="text-pink-500 text-sm">{errors.imagen}</div>
+                  )}
+                </>
+              )}
+
+              {imgMode === "canvas" && (
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                  {/* Panel lateral solo en lg, solo en modo canvas */}
+                  <div
+                    className={`hidden lg:flex lg:flex-col lg:col-span-1 space-y-6 ${
+                      imgMode !== "canvas"
+                        ? "opacity-30 pointer-events-none select-none"
+                        : ""
+                    }`}
+                  >
+                    {/* Indicador y botón de seleccionar pincel fusionados, fondo acorde al color del pincel */}
+                    <div className="flex flex-row items-center justify-center w-full my-2">
+                      <button
+                        type="button"
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold shadow border-2 transition my-2"
+                        style={{
+                          borderColor: brushColor,
+                          background: isColorLight(brushColor)
+                            ? `rgba(30,30,30,0.85)`
+                            : `${brushColor}E6`, // E6 = ~90% opacity
+                          color: "#fff",
+                          boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
+                        }}
+                        onClick={() => setShowBrushModal(true)}
+                        aria-label="Seleccionar pincel"
+                      >
+                        {(() => {
+                          const Icon = TOOL_ICONS[brushType] || Brush;
+                          return (
+                            <Icon
+                              className="h-6 w-6 mr-1"
+                              style={{ color: "#fff" }}
+                            />
+                          );
+                        })()}
+                        <span className="truncate font-semibold">
+                          {BRUSH_LABELS[brushType] ||
+                            brushType.charAt(0).toUpperCase() +
+                              brushType.slice(1)}
+                        </span>
+                        <span className="ml-2 text-sm font-normal opacity-80">
+                          Seleccionar pincel
+                        </span>
+                      </button>
+                    </div>
+                    {/* Botón de borrador en su propio row, centrado, minimalista y cuadrado */}
+                    <div className="flex flex-row items-center justify-center w-full mb-2">
+                      <button
+                        type="button"
+                        className={`flex items-center justify-center w-10 h-10 rounded-md border-2 shadow transition
+                          ${
+                            brushType === "eraser"
+                              ? "bg-red-100 border-red-400 text-red-700"
+                              : "bg-white dark:bg-neutral-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-red-50 hover:border-red-400"
+                          }`}
+                        onClick={() => setBrushType("eraser")}
+                        aria-label="Borrador"
+                      >
+                        <Eraser className="h-6 w-6" />
+                      </button>
+                    </div>
+                    {/* Tamaño del pincel */}
+                    <div className="flex flex-col items-center gap-2 mt-2">
+                      <h4 className="font-semibold text-sm mb-1">
+                        Tamaño del pincel
+                      </h4>
+                      <input
+                        type="range"
+                        min="1"
+                        max="50"
+                        value={brushSize}
+                        onChange={(e) => setBrushSize(parseInt(e.target.value))}
+                        className="w-3/4 sm:w-2/3 h-3 accent-indigo-600"
+                        style={{ minWidth: 120, maxWidth: 240 }}
+                      />
+                      <div className="text-center mt-1 text-lg font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1 rounded-full shadow-sm">
+                        {brushSize}px
+                      </div>
+                    </div>
+                    {/* Colores */}
+                    <div className="flex flex-col items-center gap-2 mt-2">
+                      <h4 className="font-semibold text-sm mb-1">Color</h4>
+                      <div className="flex flex-wrap justify-center gap-2 mb-2">
+                        {paletteColors.map((color) => (
+                          <button
+                            key={color}
+                            onClick={() => handleSetBrushColor(color)}
+                            className={`w-8 h-8 rounded-full border-2 transition-all ${
+                              brushColor === color
+                                ? "border-indigo-600 scale-110 shadow-md"
+                                : "border-gray-300 hover:scale-105"
+                            }`}
+                            style={{ backgroundColor: color }}
+                            aria-label={`Color ${color}`}
+                          />
+                        ))}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={brushColor}
+                          onChange={(e) => handleSetBrushColor(e.target.value)}
+                          className="w-16 h-10 rounded-xl border-2 border-indigo-300 shadow-sm bg-white dark:bg-neutral-700"
+                        />
+                        <div className="relative group">
+                          <button
+                            type="button"
+                            className="flex items-center justify-center w-10 h-10 rounded-full border-2 border-green-400 bg-white dark:bg-neutral-800 shadow-sm hover:bg-green-50 dark:hover:bg-green-900 transition"
+                            style={{ padding: 0 }}
+                            onClick={() => setShowBgColorPicker((v) => !v)}
+                            aria-label="Aplicar color de fondo"
+                          >
+                            <PaintBucket
+                              className="h-6 w-6"
+                              style={{
+                                color: canvasBgColor,
+                                filter:
+                                  "drop-shadow(0 0 2px #222) drop-shadow(0 0 1px #fff)",
+                                background: "transparent",
+                                margin: 0,
+                                display: "block",
+                              }}
+                            />
+                          </button>
+                          {showBgColorPicker && (
+                            <div
+                              className="absolute left-1/2 -translate-x-1/2 mt-2 z-50 bg-white dark:bg-neutral-900 p-2 rounded shadow border flex flex-col items-center"
+                              style={{ minWidth: 180 }}
+                            >
+                              <input
+                                type="color"
+                                value={canvasBgColor}
+                                onChange={(e) => applyBgColor(e.target.value)}
+                                className="w-24 h-12 rounded-xl border-2 border-green-300 shadow-sm bg-white dark:bg-neutral-700"
+                                style={{ cursor: "pointer" }}
+                              />
+                              <span className="text-xs text-gray-700 dark:text-gray-200 mt-1">
+                                Color de fondo
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Canvas y controles para sm/md y lg */}
+                  <div className="col-span-1 lg:col-span-3 flex flex-col items-center justify-center w-full">
+                    {/* Indicador y botón de pincel juntos en sm/md, solo en modo canvas */}
+                    {imgMode === "canvas" && (
+                      <div className="flex flex-col items-center gap-3 mb-4 w-full lg:hidden">
+                        <div className="flex items-center gap-2 px-2 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-700 shadow-sm">
+                          {(() => {
+                            const Icon = TOOL_ICONS[brushType] || Brush;
+                            return (
+                              <Icon className="h-6 w-6 text-indigo-600 dark:text-indigo-300" />
+                            );
+                          })()}
+                          <span className="font-semibold text-indigo-700 dark:text-indigo-200 text-base">
+                            {BRUSH_LABELS[brushType] ||
+                              brushType.charAt(0).toUpperCase() +
+                                brushType.slice(1)}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white font-bold shadow hover:bg-indigo-700 transition text-base"
+                          onClick={() => setShowBrushModal(true)}
+                          aria-label="Seleccionar pincel"
+                        >
+                          {(() => {
+                            const Icon = TOOL_ICONS[brushType] || Brush;
+                            return <Icon className="h-6 w-6" />;
+                          })()}
+                          <span>Seleccionar pincel</span>
+                        </button>
+                      </div>
+                    )}
+                    {/* Botones de acciones principales */}
+                    <div className="flex flex-row gap-2 mb-4 w-full justify-center items-center">
+                      <button
+                        onClick={undo}
+                        disabled={historyIndex <= 0}
+                        className="group p-2 rounded-full bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-neutral-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Deshacer"
+                        aria-label="Deshacer"
+                      >
+                        <Undo2 className="h-6 w-6" />
+                        <span className="sr-only">Deshacer</span>
+                      </button>
+                      <button
+                        onClick={redo}
+                        disabled={historyIndex >= canvasHistory.length - 1}
+                        className="group p-2 rounded-full bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-neutral-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Rehacer"
+                        aria-label="Rehacer"
+                      >
+                        <Redo2 className="h-6 w-6" />
+                        <span className="sr-only">Rehacer</span>
+                      </button>
+                      <button
+                        onClick={() => setShowConfirmClear(true)}
+                        className="group p-2 rounded-full bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-800 transition"
+                        title="Limpiar lienzo"
+                        aria-label="Limpiar lienzo"
+                      >
+                        <Trash2 className="h-6 w-6" />
+                        <span className="sr-only">Limpiar</span>
+                      </button>
+                      <button
+                        onClick={downloadCanvas}
+                        className="group p-2 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800 transition"
+                        title="Descargar imagen"
+                        aria-label="Descargar imagen"
+                      >
+                        <Download className="h-6 w-6" />
+                        <span className="sr-only">Descargar</span>
+                      </button>
+                      <button
+                        onClick={handleCreate}
+                        className="group p-2 rounded-full bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-800 transition"
+                        title="Guardar obra"
+                        aria-label="Guardar obra"
+                      >
+                        <Save className="h-6 w-6" />
+                        <span className="sr-only">Guardar</span>
+                      </button>
+                    </div>
+                    {/* Canvas grande y centrado */}
+                    <div
+                      style={{
+                        position: "relative",
+                        width: "100%",
+                        maxWidth: 900,
+                        aspectRatio: "4/3",
+                      }}
+                      className="mx-auto"
+                    >
+                      <div className="absolute top-2 right-2 z-10 flex gap-2">
+                        <button
+                          type="button"
+                          className="px-2 py-1 rounded bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs font-bold"
+                          onClick={() =>
+                            setCanvasZoom((z) => Math.max(0.5, z - 0.1))
+                          }
+                          title="Zoom -"
+                        >
+                          -
+                        </button>
+                        <span className="px-2 text-xs font-mono bg-white/80 rounded border border-gray-300 text-black">
+                          {(canvasZoom * 100).toFixed(0)}%
+                        </span>
+                        <button
+                          type="button"
+                          className="px-2 py-1 rounded bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs font-bold"
+                          onClick={() =>
+                            setCanvasZoom((z) => Math.min(2, z + 0.1))
+                          }
+                          title="Zoom +"
+                        >
+                          +
+                        </button>
+                      </div>
+                      <canvas
+                        ref={canvasRef}
+                        width={800}
+                        height={600}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          display: "block",
+                          background: "#fff",
+                          borderRadius: 12,
+                          border: "2px solid #d1d5db",
+                          cursor: "crosshair",
+                          transform: `scale(${canvasZoom})`,
+                          transformOrigin: "center center",
+                        }}
+                        onMouseDown={startDrawing}
+                        onMouseMove={(e) => {
+                          const rect =
+                            canvasRef.current.getBoundingClientRect();
+                          setCursorPos({
+                            x: e.clientX - rect.left,
+                            y: e.clientY - rect.top,
+                          });
+                          handleMouseMove(e);
+                        }}
+                        onMouseUp={stopDrawing}
+                        onMouseLeave={handleMouseLeave}
+                      />
+                      {brushType === "eraser" && cursorPos && (
+                        <div
+                          style={{
+                            position: "absolute",
+                            left: `calc(${cursorPos.x}px - ${brushSize / 2}px)`,
+                            top: `calc(${cursorPos.y}px - ${brushSize / 2}px)`,
+                            width: brushSize,
+                            height: brushSize,
+                            borderRadius: "50%",
+                            background: "rgba(200,200,200,0.3)",
+                            border: "2px solid #888",
+                            pointerEvents: "none",
+                            zIndex: 20,
+                          }}
+                        />
+                      )}
+                    </div>
+                    {/* Panel de controles debajo del canvas en sm/md */}
+                    <div className="block lg:hidden w-full mt-6 space-y-6">
+                      {/* SECCIÓN DE HERRAMIENTAS */}
+                      <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md p-4 flex flex-col gap-6">
+                        <h3 className="text-lg font-bold mb-2 text-indigo-700 dark:text-indigo-200 text-center">
+                          Herramientas
+                        </h3>
+                        {/* Tamaño del pincel */}
+                        <div className="flex flex-col items-center gap-2 mt-2">
+                          <h4 className="font-semibold text-sm mb-1">
+                            Tamaño del pincel
+                          </h4>
+                          <input
+                            type="range"
+                            min="1"
+                            max="50"
+                            value={brushSize}
+                            onChange={(e) =>
+                              setBrushSize(parseInt(e.target.value))
+                            }
+                            className="w-3/4 sm:w-2/3 h-3 accent-indigo-600"
+                            style={{ minWidth: 120, maxWidth: 240 }}
+                          />
+                          <div className="text-center mt-1 text-lg font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1 rounded-full shadow-sm">
+                            {brushSize}px
+                          </div>
+                        </div>
+                        {/* Colores */}
+                        <div className="flex flex-col items-center gap-2 mt-2">
+                          <h4 className="font-semibold text-sm mb-1">Color</h4>
+                          <div className="flex flex-wrap justify-center gap-2 mb-2">
+                            {paletteColors.map((color) => (
+                              <button
+                                key={color}
+                                onClick={() => handleSetBrushColor(color)}
+                                className={`w-8 h-8 rounded-full border-2 transition-all ${
+                                  brushColor === color
+                                    ? "border-indigo-600 scale-110 shadow-md"
+                                    : "border-gray-300 hover:scale-105"
+                                }`}
+                                style={{ backgroundColor: color }}
+                                aria-label={`Color ${color}`}
+                              />
+                            ))}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="color"
+                              value={brushColor}
+                              onChange={(e) =>
+                                handleSetBrushColor(e.target.value)
+                              }
+                              className="w-16 h-10 rounded-xl border-2 border-indigo-300 shadow-sm bg-white dark:bg-neutral-700"
+                            />
+                            <div className="relative group">
+                              <button
+                                type="button"
+                                className="flex items-center justify-center w-10 h-10 rounded-full border-2 border-green-400 bg-white dark:bg-neutral-800 shadow-sm hover:bg-green-50 dark:hover:bg-green-900 transition"
+                                style={{ padding: 0 }}
+                                onClick={() => setShowBgColorPicker((v) => !v)}
+                                aria-label="Aplicar color de fondo"
+                              >
+                                <PaintBucket
+                                  className="h-6 w-6"
+                                  style={{
+                                    color: canvasBgColor,
+                                    filter:
+                                      "drop-shadow(0 0 2px #222) drop-shadow(0 0 1px #fff)",
+                                    background: "transparent",
+                                    margin: 0,
+                                    display: "block",
+                                  }}
+                                />
+                              </button>
+                              {showBgColorPicker && (
+                                <div
+                                  className="absolute left-1/2 -translate-x-1/2 mt-2 z-50 bg-white dark:bg-neutral-900 p-2 rounded shadow border flex flex-col items-center"
+                                  style={{ minWidth: 180 }}
+                                >
+                                  <input
+                                    type="color"
+                                    value={canvasBgColor}
+                                    onChange={(e) =>
+                                      applyBgColor(e.target.value)
+                                    }
+                                    className="w-24 h-12 rounded-xl border-2 border-green-300 shadow-sm bg-white dark:bg-neutral-700"
+                                    style={{ cursor: "pointer" }}
+                                  />
+                                  <span className="text-xs text-gray-700 dark:text-gray-200 mt-1">
+                                    Color de fondo
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        {/* Selector de pincel en mobile */}
+                        <div className="flex flex-col items-center gap-3 mb-2 w-full">
+                          <button
+                            type="button"
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white font-bold shadow hover:bg-indigo-700 transition text-base w-full justify-center"
+                            onClick={() => setShowBrushModal(true)}
+                            aria-label="Seleccionar pincel"
+                          >
+                            {(() => {
+                              const Icon = TOOL_ICONS[brushType] || Brush;
+                              return <Icon className="h-6 w-6" />;
+                            })()}
+                            <span>Seleccionar pincel</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    {/* Modal de pinceles */}
+                    <AnimatePresence>
+                      {showBrushModal && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.95 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.95 }}
+                          className="fixed inset-0 z-[9999999] flex items-center justify-center bg-black/40 backdrop-blur-sm pointer-events-auto"
+                          onClick={(e) => {
+                            if (e.target === e.currentTarget)
+                              setShowBrushModal(false);
+                          }}
+                        >
+                          <div className="pointer-events-auto bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 p-8 max-w-2xl w-full flex flex-col items-center relative max-h-[80vh] overflow-y-auto">
+                            {/* Botón de cerrar (X) */}
+                            <button
+                              type="button"
+                              className="absolute top-4 right-4 p-2 rounded-full bg-gray-200 dark:bg-neutral-800 hover:bg-gray-300 dark:hover:bg-neutral-700 text-gray-700 dark:text-gray-200 z-10"
+                              onClick={() => setShowBrushModal(false)}
+                              aria-label="Cerrar"
+                            >
+                              <X className="h-5 w-5" />
+                            </button>
+                            <h3 className="font-semibold text-lg mb-4">
+                              Selecciona un pincel
+                            </h3>
+                            <div className="w-full max-w-2xl space-y-4 mb-6">
+                              {BRUSH_SECTIONS.map((section) => (
+                                <div
+                                  key={section.label}
+                                  className="bg-gray-50 dark:bg-neutral-800 rounded-xl mb-2 border-b border-gray-200 dark:border-gray-700"
+                                >
+                                  <button
+                                    type="button"
+                                    className="w-full flex items-center justify-between px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-400 rounded-xl"
+                                    onClick={() =>
+                                      setExpandedBrushSection(
+                                        expandedBrushSection === section.label
+                                          ? ""
+                                          : section.label
+                                      )
+                                    }
+                                    aria-expanded={
+                                      expandedBrushSection === section.label
+                                    }
+                                  >
+                                    <span className="font-bold text-sm text-indigo-700 dark:text-indigo-300 tracking-wide uppercase">
+                                      {section.label}
+                                    </span>
+                                    <span className="ml-2 text-indigo-400">
+                                      {expandedBrushSection === section.label
+                                        ? "▲"
+                                        : "▼"}
+                                    </span>
+                                  </button>
+                                  <AnimatePresence initial={false}>
+                                    {expandedBrushSection === section.label && (
+                                      <motion.div
+                                        initial={{ height: 0, opacity: 0 }}
+                                        animate={{ height: "auto", opacity: 1 }}
+                                        exit={{ height: 0, opacity: 0 }}
+                                        transition={{ duration: 0.2 }}
+                                        className="overflow-hidden"
+                                      >
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-5 gap-8 p-4">
+                                          {section.keys.map((key) => {
+                                            const IconComponent =
+                                              TOOL_ICONS[key] || Brush;
+                                            const label =
+                                              BRUSH_LABELS[key] ||
+                                              key.charAt(0).toUpperCase() +
+                                                key.slice(1);
+                                            return (
+                                              <button
+                                                key={key}
+                                                onClick={() => {
+                                                  setBrushType(key);
+                                                  setShowBrushModal(false);
+                                                }}
+                                                className={`m-3 flex flex-col items-center justify-center w-20 h-20 rounded-xl border-2 transition-all text-xs font-medium shadow-sm
+                                                  ${
+                                                    brushType === key
+                                                      ? "border-indigo-600 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-200 scale-110 shadow-lg ring-4 ring-indigo-400"
+                                                      : "border-gray-200 dark:border-gray-700 bg-white dark:bg-neutral-700 hover:border-indigo-400 hover:bg-gray-50 dark:hover:bg-neutral-800"
+                                                  }
+                                                `}
+                                                title={label}
+                                                style={{
+                                                  fontWeight:
+                                                    brushType === key
+                                                      ? "bold"
+                                                      : "normal",
+                                                }}
+                                              >
+                                                <IconComponent
+                                                  className={`h-7 w-7 mb-2 ${
+                                                    brushType === key
+                                                      ? "scale-125"
+                                                      : ""
+                                                  }`}
+                                                />
+                                                <span className="text-sm px-2 whitespace-normal leading-tight text-center w-full">
+                                                  {label}
+                                                </span>
+                                              </button>
+                                            );
+                                          })}
+                                        </div>
+                                      </motion.div>
+                                    )}
+                                  </AnimatePresence>
+                                </div>
+                              ))}
+                            </div>
+                            <button
+                              type="button"
+                              className="mt-2 px-4 py-2 rounded-lg bg-gray-200 dark:bg-neutral-800 text-gray-700 dark:text-gray-200 font-bold hover:bg-gray-300 dark:hover:bg-neutral-700 transition"
+                              onClick={() => setShowBrushModal(false)}
+                            >
+                              Cancelar
+                            </button>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+
+                  {/* Botones de acción */}
+                  <div className="flex flex-col gap-2 mb-6 items-center">
+                    <div className="flex w-full gap-2">
+                      <button
+                        type="button"
+                        className="flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-blue-600 text-white text-base font-bold shadow-lg hover:bg-blue-700 transition border-2 border-blue-700 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                        title="Selecciona una imagen para el fondo del mural"
+                        onClick={() =>
+                          document.getElementById("bg-image-input").click()
+                        }
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-6 w-6"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M4 16l4-4a3 3 0 014 0l4 4M4 8h16M4 8v8a2 2 0 002 2h12a2 2 0 002-2V8"
+                          />
+                        </svg>
+                        Fondo personalizado
+                      </button>
+                    </div>
+                    <input
+                      id="bg-image-input"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={async (e) => {
+                        try {
+                          const file = e.target.files[0];
+                          if (file) {
+                            if (!file.type.startsWith("image/")) {
+                              toast.error(
+                                "Solo se permiten archivos de imagen."
+                              );
+                              return;
+                            }
+                            if (file.size > MAX_BG_IMAGE_SIZE) {
+                              toast.error(
+                                "La imagen es demasiado grande (máx 5MB)."
+                              );
+                              return;
+                            }
+                            const url = URL.createObjectURL(file);
+                            setCanvasBg(url);
+                            setBgImageError(null);
+                            console.log("BG image URL:", url);
+                            // Probar si la imagen se puede cargar
+                            const testImg = new window.Image();
+                            testImg.onload = () => {
+                              // Todo bien
+                            };
+                            testImg.onerror = () => {
+                              // Intentar conversión automática a PNG
+                              tryConvertToPng(
+                                file,
+                                (pngUrl) => {
+                                  setCanvasBg(pngUrl);
+                                  setBgImageError(null);
+                                  toast.success(
+                                    "Imagen convertida automáticamente a PNG."
+                                  );
+                                },
+                                (msg) => {
+                                  setBgImageError(
+                                    "No se pudo cargar ni convertir la imagen. Por favor, usa un editor para convertirla a JPG estándar o PNG."
+                                  );
+                                  toast.error(
+                                    "No se pudo cargar ni convertir la imagen. Usa un editor para convertirla a JPG estándar o PNG."
+                                  );
+                                }
+                              );
+                            };
+                            testImg.src = url;
+                          }
+                        } catch (err) {
+                          toast.error(
+                            "Error al cargar la imagen: " +
+                              (err?.message || err)
+                          );
+                        }
+                      }}
+                    />
+                    <span className="text-xs text-blue-700 mt-1">
+                      Puedes subir una imagen o elegir un color sólido para el
+                      fondo del mural
+                    </span>
+                  </div>
+
+                  {/* Imagen para patrón (solo si pattern_image) */}
+                  {brushType === "pattern_image" && (
+                    <motion.div
+                      className="mb-3"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <label className="font-medium mr-2">
+                        Imagen para patrón:
+                      </label>
+                      <button
+                        type="button"
+                        className="px-3 py-1 rounded bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700"
+                        onClick={() => setShowPatternImageModal(true)}
+                      >
+                        Seleccionar imagen
+                      </button>
+                      {patternImageUrl && (
+                        <motion.div
+                          className="mt-2 w-24 h-16 object-cover rounded border relative"
+                          initial={{ scale: 0.9, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          exit={{ scale: 0.9, opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <img
+                            src={patternImageUrl}
+                            alt="pattern preview"
+                            className="w-full h-full object-cover rounded border"
+                          />
+                          <motion.button
+                            type="button"
+                            onClick={() => setPatternImageUrl(null)}
+                            className="absolute top-1 right-1 bg-black/60 hover:bg-black/80 text-white rounded-full p-1 z-10"
+                            tabIndex={-1}
+                            aria-label="Eliminar imagen"
+                            whileTap={{ scale: 0.9 }}
+                            whileHover={{ scale: 1.1 }}
+                          >
+                            <X className="h-4 w-4" />
+                          </motion.button>
+                        </motion.div>
+                      )}
+                      {!patternImageReady && patternImageUrl && (
+                        <div className="mt-2 text-xs text-gray-500 flex items-center gap-2">
+                          <span className="animate-spin inline-block w-4 h-4 border-2 border-gray-300 border-t-transparent rounded-full"></span>{" "}
+                          Cargando patrón...
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+
+                  {/* Modal para seleccionar imagen de patrón */}
+                  {showPatternImageModal && (
+                    <div
+                      className="fixed inset-0 z-[999999] flex items-center justify-center bg-black/40 backdrop-blur-sm"
+                      style={{ isolation: "isolate" }}
+                    >
+                      <div className="bg-background dark:bg-neutral-900 border border-border rounded-2xl shadow-2xl p-8 flex flex-col items-center">
+                        <h3 className="font-semibold mb-4">
+                          Selecciona una imagen para el patrón
+                        </h3>
+                        <motion.div
+                          {...getPatternImgRootProps()}
+                          className={`w-64 h-32 border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition flex items-center justify-center ${
+                            isPatternImgDragActive
+                              ? "border-indigo-500 bg-indigo-50"
+                              : "border-border bg-muted/40"
+                          }`}
+                          initial={{ scale: 1 }}
+                          animate={
+                            isPatternImgDragActive
+                              ? { scale: 1.04 }
+                              : { scale: 1 }
+                          }
+                          whileHover={{ scale: 1.02 }}
+                        >
+                          <input {...getPatternImgInputProps()} />
+                          <span className="text-muted-foreground">
+                            Arrastra una imagen aquí o haz clic para seleccionar
+                          </span>
+                        </motion.div>
+                        <button
+                          type="button"
+                          className="mt-6 px-4 py-2 rounded bg-gray-200 dark:bg-neutral-800 text-gray-700 dark:text-gray-200 font-bold hover:bg-gray-300 dark:hover:bg-neutral-700 transition"
+                          onClick={() => setShowPatternImageModal(false)}
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+
+          {step === 2 && (
+            <div className="space-y-4">
+              <div className="text-lg font-semibold text-foreground">
+                ¿Listo para crear tu obra?
+              </div>
+              <div className="flex flex-col gap-2">
+                <div>
+                  <span className="font-medium">Título:</span> {titulo}
+                </div>
+                <div>
+                  <span className="font-medium">Técnica:</span> {tecnica}
+                </div>
+                <div>
+                  <span className="font-medium">Año:</span> {year}
+                </div>
+                {imagen && (
+                  <img
+                    src={URL.createObjectURL(imagen)}
+                    alt="preview"
+                    className="w-full max-h-40 object-contain rounded-xl border"
+                  />
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between gap-4 px-8 py-4 border-t border-border bg-muted/40">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded-lg bg-gray-200 dark:bg-neutral-800 text-gray-700 dark:text-gray-200 font-bold hover:bg-gray-300 dark:hover:bg-neutral-700 transition"
+          >
+            Cancelar
+          </button>
+          <div className="flex gap-2">
+            {step > 0 && (
+              <button
+                onClick={handleBack}
+                className="px-4 py-2 rounded-lg bg-muted text-foreground font-bold hover:bg-gray-100 dark:hover:bg-neutral-700 transition"
+              >
+                Atrás
+              </button>
+            )}
+            {step < 2 ? (
+              <button
+                onClick={handleNext}
+                className="px-4 py-2 rounded-lg bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition"
+              >
+                Siguiente
+              </button>
+            ) : (
+              <button
+                onClick={handleCreate}
+                className="px-4 py-2 rounded-lg bg-green-600 text-white font-bold hover:bg-green-700 transition"
+              >
+                Crear obra
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Overlay y modal principal
   const modalClassName = `relative w-full max-w-4xl p-6 md:p-8 bg-background dark:bg-neutral-900 rounded-2xl shadow-2xl border border-border flex flex-col`;
@@ -2192,20 +3207,23 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session }) {
 
   return (
     <div
-      className="fixed inset-0 w-screen h-screen z-[120] flex items-center justify-center bg-black/60 backdrop-blur-md"
+      className="fixed inset-0 w-full h-full z-[9999] flex items-center justify-center p-4 min-h-screen"
       style={{ isolation: "isolate" }}
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
+      {/* Backdrop */}
+      <div className="absolute inset-0 w-full h-full bg-black/60 backdrop-blur-md z-0" />
       <motion.div
         ref={modalRef}
         initial={{ opacity: 0, scale: 0.96, y: 40 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: 40 }}
         transition={{ duration: 0.25 }}
-        className={modalClassName + " z-[130] mt-24 md:mt-32"}
+        className={modalClassName + " z-10 max-h-[90vh] overflow-y-auto m-0"}
         style={modalStyle}
+        onClick={e => e.stopPropagation()}
       >
         {/* Header */}
         <div className="px-8 pt-8 pb-4 border-b border-border">

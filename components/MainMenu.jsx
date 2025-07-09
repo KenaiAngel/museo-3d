@@ -451,18 +451,18 @@ export default function MainMenu({ onSubirArchivo }) {
                             </div>
                             <NavigationMenuLink asChild>
                               <Link
-                                href="/admin/configuracion"
-                                className="block px-3 py-2 rounded-md hover:bg-muted hover:text-primary transition-all text-sm"
-                              >
-                                Configuración del Sistema
-                              </Link>
-                            </NavigationMenuLink>
-                            <NavigationMenuLink asChild>
-                              <Link
                                 href="/admin/logs"
                                 className="block px-3 py-2 rounded-md hover:bg-muted hover:text-primary transition-all text-sm"
                               >
                                 Ver Logs
+                              </Link>
+                            </NavigationMenuLink>
+                            <NavigationMenuLink asChild>
+                              <Link
+                                href="/admin/healthcheck"
+                                className="block px-3 py-2 rounded-md hover:bg-muted hover:text-primary transition-all text-sm"
+                              >
+                                Estado del sistema
                               </Link>
                             </NavigationMenuLink>
                           </>
