@@ -1322,3 +1322,14 @@ export default function Perfil() {
     </ProtectedRoute>
   );
 }
+
+function parseAutores(autorString) {
+  return autorString
+    ? autorString.split(",").map((a) => a.trim()).filter(Boolean)
+    : [];
+}
+function parseColaboradores(colabString) {
+  return colabString
+    ? colabString.split(",").map((c) => c.trim()).filter(Boolean)
+    : [];
+}

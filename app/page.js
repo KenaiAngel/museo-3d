@@ -9,6 +9,7 @@ import { useUser } from "../providers/UserProvider";
 import { useSessionData } from "../providers/SessionProvider";
 import { useGallery } from "../providers/GalleryProvider";
 import useIsMobile from "./hooks/useIsMobile";
+import AnimatedBackground from "../components/shared/AnimatedBackground";
 
 const steps = [
   {
@@ -201,62 +202,7 @@ function HomeContent() {
     });
   };
 
-  // Ejemplo de uso del GalleryProvider
-  const showGalleryExample = () => {
-    openModal("info", {
-      title: "Ejemplo de GalleryProvider",
-      content: (
-        <div className="space-y-4">
-          <p>
-            El <strong>GalleryProvider</strong> está integrado globalmente y
-            proporciona:
-          </p>
-          <ul className="list-disc list-inside space-y-2 text-sm">
-            <li>
-              <strong>Gestión de obras de arte:</strong> Carga y filtra obras
-              por sala
-            </li>
-            <li>
-              <strong>Modal de imagen:</strong> Visualización mejorada con zoom,
-              rotación y navegación
-            </li>
-            <li>
-              <strong>Filtros avanzados:</strong> Por artista, técnica y año
-            </li>
-            <li>
-              <strong>Estadísticas:</strong> Información detallada de la
-              colección
-            </li>
-            <li>
-              <strong>Vistas múltiples:</strong> Grid y lista
-            </li>
-          </ul>
-          <div className="mt-4 p-3 bg-primary/10 rounded-lg">
-            <p className="text-sm">
-              <strong>¿Cómo usar?</strong> Ve a la página de{" "}
-              <a href="/galeria" className="text-primary underline">
-                Galería
-              </a>{" "}
-              para ver el GalleryProvider en acción.
-            </p>
-          </div>
-        </div>
-      ),
-    });
-  };
-
-  // Probar modal de imagen
-  const testImageModal = () => {
-    const testArtwork = {
-      id: "test-1",
-      titulo: "Obra de Arte de Prueba",
-      artista: "Artista Ejemplo",
-      tecnica: "Pintura Digital",
-      año: "2024",
-      imagen: "/assets/artworks/cuadro1.webp",
-    };
-    openImageModal(testArtwork, 0);
-  };
+  // Elimina todos los botones y funciones de ejemplo, test, demo o prueba del home.
 
   // Evitar renderizado hasta que el cliente esté listo
   if (!isClient) {
@@ -280,15 +226,13 @@ function HomeContent() {
   }
 
   return (
-    <div className="home-page">
+    <div className="relative w-full min-h-screen">
+      {isMobile && <AnimatedBackground />}
       <div
         ref={containerRef}
-        className="h-screen w-full overflow-y-scroll parallax-container relative"
-        style={{
-          height: "100vh",
-          maxHeight: "100vh",
-          overflow: "hidden auto", // Solo scroll vertical
-        }}
+        className={`home-scroll-container w-full h-screen overflow-y-auto transition-all duration-300 ${
+          isMobile ? "bg-transparent z-10" : ""
+        }`}
       >
         {/* Fondos con parallax absolutos */}
         {steps.map((step, index) => {
@@ -467,81 +411,6 @@ function HomeContent() {
           {current + 1} / {steps.length}
         </span>
       </div>
-      {/* Botón de ejemplo para ModalProvider */}
-      <button
-        onClick={() =>
-          openModal("info-modal", {
-            title: "Información del Museo",
-            content:
-              "Este es un ejemplo de cómo usar el ModalProvider en cualquier parte de la aplicación.",
-          })
-        }
-        className="fixed top-4 right-4 z-[60] bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors shadow-lg"
-      >
-        ℹ️ Info
-      </button>
-      {/* Botón de ejemplo para UserProvider */}
-      {isAuthenticated && (
-        <button
-          onClick={() =>
-            openModal("user-info-modal", {
-              user,
-              userProfile,
-              role: getUserRole(),
-              isAdmin,
-              isModerator,
-            })
-          }
-          className="fixed top-4 right-20 z-[60] bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors shadow-lg"
-        >
-          �� Usuario
-        </button>
-      )}
-      {/* Botón para mostrar ejemplo de GalleryProvider */}
-      <button
-        onClick={showGalleryExample}
-        className="fixed top-4 right-52 z-[60] bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors shadow-lg"
-      >
-        🖼️ GalleryProvider
-      </button>
-      {/* Botón para probar modal de imagen */}
-      <button
-        onClick={testImageModal}
-        className="fixed top-4 right-80 z-[60] bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors shadow-lg"
-      >
-        🖼️ Test Modal
-      </button>
-      {/* Botón para probar modal de colección */}
-      <button
-        onClick={() =>
-          openModal("collection-stats", {
-            stats: {
-              totalArtworks: 25,
-              uniqueArtists: 15,
-              uniqueTechniques: 8,
-              oldestYear: 1990,
-              newestYear: 2024,
-            },
-            collection: [],
-          })
-        }
-        className="fixed top-4 right-96 z-[60] bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors shadow-lg"
-      >
-        📊 Test Collection
-      </button>
-      {/* Botón para probar modal de información */}
-      <button
-        onClick={() =>
-          openModal("info-modal", {
-            title: "Modal de Prueba",
-            content:
-              "Este es un modal de prueba para verificar el centrado correcto.",
-          })
-        }
-        className="fixed top-4 right-112 z-[60] bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors shadow-lg"
-      >
-        ℹ️ Test Info
-      </button>
     </div>
   );
 }

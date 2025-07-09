@@ -92,17 +92,19 @@ export default function MisObras() {
           <PageHeader onCreateNew={openCreateModal} />
 
           {/* Controles de vista y filtros */}
-          <FilterControls
-            filters={filters}
-            setFilters={setFilters}
-            resetFilters={resetFilters}
-            getFilterOptions={getFilterOptions}
-            showFilters={showFilters}
-            setShowFilters={setShowFilters}
-            view={view}
-            setView={setView}
-            resultsCount={filteredMurales.length}
-          />
+          <div className="mb-16 md:mb-20">
+            <FilterControls
+              filters={filters}
+              setFilters={setFilters}
+              resetFilters={resetFilters}
+              getFilterOptions={getFilterOptions}
+              showFilters={showFilters}
+              setShowFilters={setShowFilters}
+              view={view}
+              setView={setView}
+              resultsCount={filteredMurales.length}
+            />
+          </div>
 
           {/* Contenido principal */}
           {filteredMurales.length === 0 ? (

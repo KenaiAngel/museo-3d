@@ -88,6 +88,14 @@ export default function CanvasEditor({
   const [recentColors, setRecentColors] = useState(["#000000", "#ffffff"]);
   const [prevColors, setPrevColors] = useState([]);
   const [showBrushModal, setShowBrushModal] = useState(false);
+  const [artistList, setArtistList] = useState([]);
+
+  useEffect(() => {
+    fetch("/api/artists?limit=100")
+      .then((res) => res.json())
+      .then((data) => setArtistList(data.artists || []))
+      .catch(() => setArtistList([]));
+  }, []);
 
   // Funciones de utilidad para manejo de colores
   const hexToRgb = (hex) => {
