@@ -28,10 +28,13 @@ export async function POST(request) {
     );
 
     if (existingUserResponse.ok) {
-      return NextResponse.json(
-        { error: "El usuario ya existe" },
-        { status: 409 }
-      );
+      const existingUserData = await existingUserResponse.json();
+      if (existingUserData.exists) {
+        return NextResponse.json(
+          { error: "El usuario ya existe" },
+          { status: 409 }
+        );
+      }
     }
 
     // Hash de la contraseña

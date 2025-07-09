@@ -154,19 +154,84 @@ export async function GET(req) {
   }
 }
 
-// POST /api/usuarios - Crear usuario (solo admin)
+// POST /api/usuarios - Crear usuario (admin o registro público)
 export async function POST(req) {
   try {
     const session = await getServerSession(authOptions);
+    const data = await req.json();
+    console.log("Datos recibidos para crear usuario:", data);
 
-    if (!session || !session.user) {
+    // Permitir registro público si no hay sesión
+    if (!session) {
+      if (!data.email || !data.name) {
+        console.log("Datos incompletos (registro público)");
+        return new Response(
+          JSON.stringify({
+            error: "Datos incompletos",
+            message: "email y name son requeridos",
+          }),
+          {
+            status: 400,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+      }
+      const existingUser = await prisma.user.findUnique({
+        where: { email: data.email },
+      });
+      if (existingUser) {
+        console.log("Usuario ya existe (registro público):", data.email);
+        return new Response(
+          JSON.stringify({
+            error: "Usuario ya existe",
+            message: "Ya existe un usuario con ese email",
+          }),
+          {
+            status: 409,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+      }
+      // Crear usuario público
+      const usuario = await prisma.user.create({
+        data: {
+          name: data.name,
+          email: data.email,
+          password: data.password, // Puede venir hasheada desde el registro
+          role: "USER",
+          image: data.image,
+          settings: data.settings || {},
+          emailVerified: data.emailVerified || null,
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          image: true,
+        },
+      });
+      console.log("Usuario creado (registro público):", usuario);
+      return new Response(
+        JSON.stringify({
+          message: "Usuario creado exitosamente",
+          usuario,
+        }),
+        {
+          status: 201,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Si hay sesión, solo admin puede crear
+    if (!session.user) {
       console.log("No autorizado");
       return new Response(JSON.stringify({ error: "No autorizado" }), {
         status: 401,
         headers: { "Content-Type": "application/json" },
       });
     }
-
     if (session.user.role !== "ADMIN") {
       console.log("Acceso denegado - No es admin");
       return new Response(
@@ -179,9 +244,6 @@ export async function POST(req) {
         }
       );
     }
-
-    const data = await req.json();
-    console.log("Datos recibidos para crear usuario:", data);
 
     if (!data.email || !data.name) {
       console.log("Datos incompletos");
