@@ -2076,7 +2076,13 @@ export default function CrearObraModal({
     formData.append("titulo", titulo);
     formData.append("tecnica", tecnica);
     formData.append("anio", year ? year.toString() : "");
-    formData.append("autor", session?.user?.name || "Usuario");
+    // Al guardar la obra, usar el nombre real del usuario logueado
+    const autorNombre = session?.user?.name || "";
+    if (!autorNombre) {
+      toast.error("No se pudo obtener el nombre del usuario. Inicia sesión nuevamente.");
+      return;
+    }
+    formData.append("autor", autorNombre);
     formData.append("userId", session?.user?.id || "");
     formData.append("descripcion", descripcion);
     formData.append("artistId", artistId);
@@ -2293,22 +2299,6 @@ export default function CrearObraModal({
                 </div>
                 <div className="mb-2">
                   <Label
-                    htmlFor="descripcion"
-                    className="mb-1 inline-flex items-center gap-1"
-                  >
-                    Descripción (opcional)
-                  </Label>
-                  <textarea
-                    id="descripcion"
-                    placeholder="Descripción de la obra"
-                    value={descripcion}
-                    onChange={(e) => setDescripcion(e.target.value)}
-                    rows={4}
-                    className="w-full px-4 py-3 rounded-md border-2 text-base bg-background dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-indigo-400 focus:border-indigo-500 hover:border-indigo-400 resize-y min-h-[96px] transition-all"
-                  />
-                </div>
-                <div className="mb-2">
-                  <Label
                     htmlFor="tecnica"
                     className="mb-1 inline-flex items-center gap-1"
                   >
@@ -2407,6 +2397,22 @@ export default function CrearObraModal({
                 </div>
                 <div className="mb-2">
                   <Label
+                    htmlFor="descripcion"
+                    className="mb-1 inline-flex items-center gap-1"
+                  >
+                    Descripción (opcional)
+                  </Label>
+                  <textarea
+                    id="descripcion"
+                    placeholder="Descripción de la obra"
+                    value={descripcion}
+                    onChange={(e) => setDescripcion(e.target.value)}
+                    rows={4}
+                    className="w-full px-4 py-3 rounded-md border-2 text-base bg-background dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-indigo-400 focus:border-indigo-500 hover:border-indigo-400 resize-y min-h-[96px] transition-all"
+                  />
+                </div>
+                <div className="mb-2">
+                  <Label
                     htmlFor="artistId"
                     className="mb-1 inline-flex items-center gap-1"
                   >
@@ -2468,23 +2474,44 @@ export default function CrearObraModal({
                 <>
                   <div
                     {...getRootProps()}
-                    className={`w-full border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition ${
+                    className={`w-full max-w-xl mx-auto border-4 border-dashed rounded-2xl p-12 text-center cursor-pointer transition-all duration-200 shadow-lg bg-white dark:bg-neutral-900/80 flex flex-col items-center justify-center min-h-[180px] ${
                       isDragActive
-                        ? "border-indigo-500 bg-indigo-50"
-                        : "border-border bg-muted/40"
+                        ? "border-indigo-600 bg-indigo-50 dark:bg-indigo-900/30"
+                        : "border-gray-400 dark:border-gray-600 hover:border-indigo-500 hover:bg-gray-50 dark:hover:bg-neutral-800"
                     }`}
                   >
                     <input {...getInputProps()} />
                     {imagen ? (
-                      <img
-                        src={URL.createObjectURL(imagen)}
-                        alt="preview"
-                        className="w-full max-h-64 object-contain rounded-xl border mt-2 mx-auto"
-                      />
+                      <>
+                        <img
+                          src={URL.createObjectURL(imagen)}
+                          alt="preview"
+                          className="w-full max-h-64 object-contain rounded-xl border mt-2 mx-auto"
+                        />
+                        <div className="flex flex-col items-center mt-3 gap-1 w-full">
+                          <div className="flex items-center justify-center gap-3 w-full">
+                            <span className="text-sm text-foreground font-medium truncate max-w-[180px]" title={imagen.name}>{imagen.name}</span>
+                            <span className="text-xs text-muted-foreground">{(imagen.size / 1024 < 1024 ? (imagen.size / 1024).toFixed(1) + ' KB' : (imagen.size / 1024 / 1024).toFixed(2) + ' MB')}</span>
+                            <button
+                              type="button"
+                              onClick={e => { e.stopPropagation(); setImagen(null); }}
+                              className="ml-2 p-1 rounded-full bg-red-100 hover:bg-red-300 text-red-700 transition"
+                              title="Eliminar imagen"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </>
                     ) : (
-                      <span className="text-muted-foreground">
-                        Arrastra una imagen aquí o haz clic para seleccionar
-                      </span>
+                      <>
+                        <span className="block text-2xl text-indigo-700 dark:text-indigo-300 mb-2 font-semibold">
+                          Arrastra una imagen aquí o haz clic para seleccionar
+                        </span>
+                        <span className="text-sm text-muted-foreground">
+                          Formatos soportados: JPG, PNG, GIF, WebP. Tamaño máximo 5MB.
+                        </span>
+                      </>
                     )}
                   </div>
                   {errors.imagen && (
@@ -3249,27 +3276,36 @@ export default function CrearObraModal({
           )}
 
           {step === 2 && (
-            <div className="space-y-4">
-              <div className="text-lg font-semibold text-foreground">
-                ¿Listo para crear tu obra?
-              </div>
-              <div className="flex flex-col gap-2">
-                <div>
-                  <span className="font-medium">Título:</span> {titulo}
-                </div>
-                <div>
-                  <span className="font-medium">Técnica:</span> {tecnica}
-                </div>
-                <div>
-                  <span className="font-medium">Año:</span> {year}
-                </div>
-                {imagen && (
+            <div className="flex flex-col md:flex-row gap-8 items-center justify-center py-8">
+              {/* Vista previa de la imagen */}
+              <div className="flex-shrink-0 flex flex-col items-center">
+                {imagen ? (
                   <img
                     src={URL.createObjectURL(imagen)}
                     alt="preview"
-                    className="w-full max-h-40 object-contain rounded-xl border"
+                    className="w-[320px] h-[320px] object-contain rounded-2xl border-4 border-indigo-400 shadow-lg bg-white dark:bg-neutral-900"
                   />
+                ) : (
+                  <div className="w-[320px] h-[320px] flex items-center justify-center rounded-2xl border-4 border-dashed border-gray-300 bg-gray-50 dark:bg-neutral-800 text-gray-400 text-lg">
+                    Sin imagen
+                  </div>
                 )}
+              </div>
+              {/* Datos del mural */}
+              <div className="flex-1 max-w-md w-full flex flex-col justify-center items-center h-full">
+                <div className="w-full max-w-xs mx-auto flex flex-col justify-center">
+                  <h3 className="text-2xl font-bold mb-4 text-foreground text-center">Datos de la obra</h3>
+                  <div className="space-y-3 text-base w-full">
+                    <div className="flex gap-2 justify-start"><span className="font-semibold w-28 text-right">Título:</span> <span className="truncate text-left">{titulo}</span></div>
+                    <div className="flex gap-2 justify-start"><span className="font-semibold w-28 text-right">Técnica:</span> <span className="text-left">{tecnica}</span></div>
+                    <div className="flex gap-2 justify-start"><span className="font-semibold w-28 text-right">Año:</span> <span className="text-left">{year}</span></div>
+                    <div className="flex gap-2 justify-start"><span className="font-semibold w-28 text-right">Autor(es):</span> <span className="text-left">{autor || <span className="italic text-gray-400">No especificado</span>}</span></div>
+                    <div className="flex gap-2 justify-start"><span className="font-semibold w-28 text-right">Artista:</span> <span className="text-left">{artistList.find(a => a.id === artistId)?.user?.name || <span className="italic text-gray-400">No especificado</span>}</span></div>
+                    {descripcion && (
+                      <div className="flex gap-2 items-start justify-start"><span className="font-semibold w-28 text-right">Descripción:</span> <span className="whitespace-pre-line text-left">{descripcion}</span></div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -3414,22 +3450,6 @@ export default function CrearObraModal({
                 </div>
                 <div className="mb-2">
                   <Label
-                    htmlFor="descripcion"
-                    className="mb-1 inline-flex items-center gap-1"
-                  >
-                    Descripción (opcional)
-                  </Label>
-                  <textarea
-                    id="descripcion"
-                    placeholder="Descripción de la obra"
-                    value={descripcion}
-                    onChange={(e) => setDescripcion(e.target.value)}
-                    rows={4}
-                    className="w-full px-4 py-3 rounded-md border-2 text-base bg-background dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-indigo-400 focus:border-indigo-500 hover:border-indigo-400 resize-y min-h-[96px] transition-all"
-                  />
-                </div>
-                <div className="mb-2">
-                  <Label
                     htmlFor="tecnica"
                     className="mb-1 inline-flex items-center gap-1"
                   >
@@ -3528,6 +3548,22 @@ export default function CrearObraModal({
                 </div>
                 <div className="mb-2">
                   <Label
+                    htmlFor="descripcion"
+                    className="mb-1 inline-flex items-center gap-1"
+                  >
+                    Descripción (opcional)
+                  </Label>
+                  <textarea
+                    id="descripcion"
+                    placeholder="Descripción de la obra"
+                    value={descripcion}
+                    onChange={(e) => setDescripcion(e.target.value)}
+                    rows={4}
+                    className="w-full px-4 py-3 rounded-md border-2 text-base bg-background dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-indigo-400 focus:border-indigo-500 hover:border-indigo-400 resize-y min-h-[96px] transition-all"
+                  />
+                </div>
+                <div className="mb-2">
+                  <Label
                     htmlFor="artistId"
                     className="mb-1 inline-flex items-center gap-1"
                   >
@@ -3589,23 +3625,44 @@ export default function CrearObraModal({
                 <>
                   <div
                     {...getRootProps()}
-                    className={`w-full border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition ${
+                    className={`w-full max-w-xl mx-auto border-4 border-dashed rounded-2xl p-12 text-center cursor-pointer transition-all duration-200 shadow-lg bg-white dark:bg-neutral-900/80 flex flex-col items-center justify-center min-h-[180px] ${
                       isDragActive
-                        ? "border-indigo-500 bg-indigo-50"
-                        : "border-border bg-muted/40"
+                        ? "border-indigo-600 bg-indigo-50 dark:bg-indigo-900/30"
+                        : "border-gray-400 dark:border-gray-600 hover:border-indigo-500 hover:bg-gray-50 dark:hover:bg-neutral-800"
                     }`}
                   >
                     <input {...getInputProps()} />
                     {imagen ? (
-                      <img
-                        src={URL.createObjectURL(imagen)}
-                        alt="preview"
-                        className="w-full max-h-64 object-contain rounded-xl border mt-2 mx-auto"
-                      />
+                      <>
+                        <img
+                          src={URL.createObjectURL(imagen)}
+                          alt="preview"
+                          className="w-full max-h-64 object-contain rounded-xl border mt-2 mx-auto"
+                        />
+                        <div className="flex flex-col items-center mt-3 gap-1 w-full">
+                          <div className="flex items-center justify-center gap-3 w-full">
+                            <span className="text-sm text-foreground font-medium truncate max-w-[180px]" title={imagen.name}>{imagen.name}</span>
+                            <span className="text-xs text-muted-foreground">{(imagen.size / 1024 < 1024 ? (imagen.size / 1024).toFixed(1) + ' KB' : (imagen.size / 1024 / 1024).toFixed(2) + ' MB')}</span>
+                            <button
+                              type="button"
+                              onClick={e => { e.stopPropagation(); setImagen(null); }}
+                              className="ml-2 p-1 rounded-full bg-red-100 hover:bg-red-300 text-red-700 transition"
+                              title="Eliminar imagen"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </>
                     ) : (
-                      <span className="text-muted-foreground">
-                        Arrastra una imagen aquí o haz clic para seleccionar
-                      </span>
+                      <>
+                        <span className="block text-2xl text-indigo-700 dark:text-indigo-300 mb-2 font-semibold">
+                          Arrastra una imagen aquí o haz clic para seleccionar
+                        </span>
+                        <span className="text-sm text-muted-foreground">
+                          Formatos soportados: JPG, PNG, GIF, WebP. Tamaño máximo 5MB.
+                        </span>
+                      </>
                     )}
                   </div>
                   {errors.imagen && (
@@ -4370,27 +4427,36 @@ export default function CrearObraModal({
           )}
 
           {step === 2 && (
-            <div className="space-y-4">
-              <div className="text-lg font-semibold text-foreground">
-                ¿Listo para crear tu obra?
-              </div>
-              <div className="flex flex-col gap-2">
-                <div>
-                  <span className="font-medium">Título:</span> {titulo}
-                </div>
-                <div>
-                  <span className="font-medium">Técnica:</span> {tecnica}
-                </div>
-                <div>
-                  <span className="font-medium">Año:</span> {year}
-                </div>
-                {imagen && (
+            <div className="flex flex-col md:flex-row gap-8 items-center justify-center py-8">
+              {/* Vista previa de la imagen */}
+              <div className="flex-shrink-0 flex flex-col items-center">
+                {imagen ? (
                   <img
                     src={URL.createObjectURL(imagen)}
                     alt="preview"
-                    className="w-full max-h-40 object-contain rounded-xl border"
+                    className="w-[320px] h-[320px] object-contain rounded-2xl border-4 border-indigo-400 shadow-lg bg-white dark:bg-neutral-900"
                   />
+                ) : (
+                  <div className="w-[320px] h-[320px] flex items-center justify-center rounded-2xl border-4 border-dashed border-gray-300 bg-gray-50 dark:bg-neutral-800 text-gray-400 text-lg">
+                    Sin imagen
+                  </div>
                 )}
+              </div>
+              {/* Datos del mural */}
+              <div className="flex-1 max-w-md w-full flex flex-col justify-center items-center h-full">
+                <div className="w-full max-w-xs mx-auto flex flex-col justify-center">
+                  <h3 className="text-2xl font-bold mb-4 text-foreground text-center">Datos de la obra</h3>
+                  <div className="space-y-3 text-base w-full">
+                    <div className="flex gap-2 justify-start"><span className="font-semibold w-28 text-right">Título:</span> <span className="truncate text-left">{titulo}</span></div>
+                    <div className="flex gap-2 justify-start"><span className="font-semibold w-28 text-right">Técnica:</span> <span className="text-left">{tecnica}</span></div>
+                    <div className="flex gap-2 justify-start"><span className="font-semibold w-28 text-right">Año:</span> <span className="text-left">{year}</span></div>
+                    <div className="flex gap-2 justify-start"><span className="font-semibold w-28 text-right">Autor(es):</span> <span className="text-left">{autor || <span className="italic text-gray-400">No especificado</span>}</span></div>
+                    <div className="flex gap-2 justify-start"><span className="font-semibold w-28 text-right">Artista:</span> <span className="text-left">{artistList.find(a => a.id === artistId)?.user?.name || <span className="italic text-gray-400">No especificado</span>}</span></div>
+                    {descripcion && (
+                      <div className="flex gap-2 items-start justify-start"><span className="font-semibold w-28 text-right">Descripción:</span> <span className="whitespace-pre-line text-left">{descripcion}</span></div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           )}

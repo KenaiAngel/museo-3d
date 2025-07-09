@@ -7,10 +7,12 @@ import { motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
 import ProtectedRoute from "../../../components/ProtectedRoute";
 import { Button } from "../../components/ui/button";
+import { useUser } from '../../../providers/UserProvider';
 
 export default function CrearObraPage() {
   const router = useRouter();
   const [created, setCreated] = useState(false);
+  const { user, userProfile } = useUser();
 
   return (
     <ProtectedRoute>
@@ -31,7 +33,7 @@ export default function CrearObraPage() {
                   setCreated(true);
                   setTimeout(() => router.push("/mis-obras"), 1200);
                 }}
-                session={null}
+                session={{ user: userProfile || user }}
                 hideClose={true}
               />
             </div>
