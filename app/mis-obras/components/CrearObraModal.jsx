@@ -26,6 +26,7 @@ import {
   Heart,
   Image,
   Save,
+  ArrowLeft,
 } from "lucide-react";
 import { useDropzone } from "react-dropzone";
 import toast from "react-hot-toast";
@@ -34,6 +35,15 @@ import Stepper from "../../../components/ui/Stepper";
 import { DatePicker } from "../../components/ui/date-picker-new";
 import ReactDOM from "react-dom";
 import { SimpleModal } from "../../../components/ui/SimpleModal";
+import { Input } from "../../components/ui/input";
+import { Label } from "../../components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
 
 // Tamaño máximo permitido para imagen de fondo (5MB)
 const MAX_BG_IMAGE_SIZE = 5 * 1024 * 1024;
@@ -339,7 +349,14 @@ async function tryConvertToPng(file, onSuccess, onFail) {
   }
 }
 
-export default function CrearObraModal({ isOpen, onClose, onCreate, session, asPage = false }) {
+export default function CrearObraModal({
+  isOpen,
+  onClose,
+  onCreate,
+  session,
+  asPage = false,
+  hideClose = false,
+}) {
   const { theme } = useTheme();
   const [step, setStep] = useState(0);
   const [titulo, setTitulo] = useState("");
@@ -410,9 +427,6 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session, asP
   const [showConfirmClear, setShowConfirmClear] = useState(false);
   const [descripcion, setDescripcion] = useState("");
   const [autor, setAutor] = useState("");
-  const [ubicacion, setUbicacion] = useState("");
-  const [latitud, setLatitud] = useState("");
-  const [longitud, setLongitud] = useState("");
   const [artistId, setArtistId] = useState("");
   const [artistList, setArtistList] = useState([]);
   const scrollYRef = useRef(0);
@@ -2065,9 +2079,6 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session, asP
     formData.append("autor", session?.user?.name || "Usuario");
     formData.append("userId", session?.user?.id || "");
     formData.append("descripcion", descripcion);
-    formData.append("ubicacion", ubicacion);
-    formData.append("latitud", latitud);
-    formData.append("longitud", longitud);
     formData.append("artistId", artistId);
 
     try {
@@ -2192,9 +2203,9 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session, asP
       <div className="w-full max-w-7xl mx-auto px-0 md:px-8 bg-background dark:bg-neutral-900 rounded-2xl shadow-2xl border border-border flex flex-col min-h-[80vh]">
         {/* Header */}
         <div className="px-8 pt-10 pb-6 border-b border-border">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-2xl font-bold text-foreground">Crear nueva obra</h2>
-            {onClose && (
+          <div className="flex items-center justify-between mb-6">
+            <div />
+            {!hideClose && (
               <button
                 onClick={onClose}
                 className="p-2 rounded hover:bg-muted transition-colors"
@@ -2203,6 +2214,22 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session, asP
               </button>
             )}
           </div>
+          {asPage && (
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => window.history.back()}
+                className="text-muted-foreground hover:text-foreground"
+                aria-label="Volver a mis obras"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <h2 className="text-3xl font-bold text-foreground">
+                Crear nueva obra
+              </h2>
+            </div>
+          )}
           {/* Stepper */}
           <div className="flex items-center justify-center gap-4 mb-4 mt-2">
             <Stepper
@@ -2219,118 +2246,189 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session, asP
         {/* Contenido principal */}
         <div className="flex-1 w-full py-8 px-2 md:px-8 flex flex-col gap-12">
           {step === 0 && (
-            <>
-              <motion.input
-                type="text"
-                placeholder="Título de la obra"
-                value={titulo}
-                onChange={(e) => {
-                  setTitulo(e.target.value);
-                  if (errors.titulo)
-                    setErrors((prev) => ({ ...prev, titulo: undefined }));
-                }}
-                className="w-full px-4 py-3 rounded-xl border-2 text-base bg-background dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
-                animate={
-                  errors.titulo
-                    ? { x: [0, -8, 8, -6, 6, -4, 4, 0, Math.random()] }
-                    : false
-                }
-                transition={{ duration: 0.4 }}
-              />
-              {errors.titulo && (
-                <div className="text-pink-500 text-sm">{errors.titulo}</div>
-              )}
-              <motion.textarea
-                placeholder="Descripción (opcional)"
-                value={descripcion}
-                onChange={(e) => setDescripcion(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border-2 text-base bg-background dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
-                rows={3}
-              />
-              <motion.input
-                type="text"
-                placeholder="Técnica"
-                value={tecnica}
-                onChange={(e) => {
-                  setTecnica(e.target.value);
-                  if (errors.tecnica)
-                    setErrors((prev) => ({ ...prev, tecnica: undefined }));
-                }}
-                className="w-full px-4 py-3 rounded-xl border-2 text-base bg-background dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
-                animate={
-                  errors.tecnica
-                    ? { x: [0, -8, 8, -6, 6, -4, 4, 0, Math.random()] }
-                    : false
-                }
-                transition={{ duration: 0.4 }}
-              />
-              {errors.tecnica && (
-                <div className="text-pink-500 text-sm">{errors.tecnica}</div>
-              )}
-              <DatePicker
-                value={year ? `${year}-01-01` : null}
-                onChange={(dateString) => {
-                  if (dateString) {
-                    const d = new Date(dateString);
-                    setYear(d.getFullYear());
-                    if (errors.year)
-                      setErrors((prev) => ({ ...prev, year: undefined }));
-                  } else {
-                    setYear(null);
-                  }
-                }}
-                placeholder="Selecciona el año..."
-              />
-              {errors.year && (
-                <div className="text-pink-500 text-sm">{errors.year}</div>
-              )}
-              <motion.input
-                type="text"
-                placeholder="Autor (opcional)"
-                value={autor || ""}
-                onChange={(e) => setAutor(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border-2 text-base bg-background dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
-              />
-              <motion.input
-                type="text"
-                placeholder="Ubicación (opcional)"
-                value={ubicacion || ""}
-                onChange={(e) => setUbicacion(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border-2 text-base bg-background dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
-              />
-              <div className="flex gap-2">
-                <motion.input
-                  type="number"
-                  step="any"
-                  placeholder="Latitud (opcional)"
-                  value={latitud || ""}
-                  onChange={(e) => setLatitud(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border-2 text-base bg-background dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
-                />
-                <motion.input
-                  type="number"
-                  step="any"
-                  placeholder="Longitud (opcional)"
-                  value={longitud || ""}
-                  onChange={(e) => setLongitud(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border-2 text-base bg-background dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
-                />
-              </div>
-              {/* Selector de artista */}
-              <select
-                value={artistId || ""}
-                onChange={(e) => setArtistId(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border-2 text-base bg-background dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
-              >
-                <option value="">Selecciona un artista (opcional)</option>
-                {artistList &&
-                  artistList.map((artist) => (
-                    <option key={artist.id} value={artist.id}>
-                      {artist.user?.name || artist.id}
-                    </option>
-                  ))}
-              </select>
-            </>
+            <Card className="max-w-xl mx-auto w-full bg-white/80 dark:bg-neutral-900/80 shadow-lg border border-gray-200 dark:border-neutral-700">
+              <CardHeader>
+                <CardTitle>Datos de la obra</CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-4">
+                <div className="mb-2">
+                  <Label
+                    htmlFor="titulo"
+                    className="mb-1 inline-flex items-center gap-1"
+                  >
+                    Título de la obra <span className="text-pink-600">*</span>
+                  </Label>
+                  <Input
+                    id="titulo"
+                    type="text"
+                    placeholder="Título de la obra"
+                    value={titulo}
+                    onChange={(e) => {
+                      setTitulo(e.target.value);
+                      if (errors.titulo)
+                        setErrors((prev) => ({ ...prev, titulo: undefined }));
+                    }}
+                    aria-invalid={!!errors.titulo}
+                    className="transition-all focus:ring-2 focus:ring-indigo-400 focus:border-indigo-500 hover:border-indigo-400"
+                  />
+                  {errors.titulo && (
+                    <div className="flex items-center gap-2 text-pink-600 text-base font-semibold mt-2 mb-3 text-left">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5 flex-shrink-0"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      {errors.titulo}
+                    </div>
+                  )}
+                </div>
+                <div className="mb-2">
+                  <Label
+                    htmlFor="descripcion"
+                    className="mb-1 inline-flex items-center gap-1"
+                  >
+                    Descripción (opcional)
+                  </Label>
+                  <textarea
+                    id="descripcion"
+                    placeholder="Descripción de la obra"
+                    value={descripcion}
+                    onChange={(e) => setDescripcion(e.target.value)}
+                    rows={4}
+                    className="w-full px-4 py-3 rounded-md border-2 text-base bg-background dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-indigo-400 focus:border-indigo-500 hover:border-indigo-400 resize-y min-h-[96px] transition-all"
+                  />
+                </div>
+                <div className="mb-2">
+                  <Label
+                    htmlFor="tecnica"
+                    className="mb-1 inline-flex items-center gap-1"
+                  >
+                    Técnica <span className="text-pink-600">*</span>
+                  </Label>
+                  <Input
+                    id="tecnica"
+                    type="text"
+                    placeholder="Técnica"
+                    value={tecnica}
+                    onChange={(e) => {
+                      setTecnica(e.target.value);
+                      if (errors.tecnica)
+                        setErrors((prev) => ({ ...prev, tecnica: undefined }));
+                    }}
+                    aria-invalid={!!errors.tecnica}
+                    className="transition-all focus:ring-2 focus:ring-indigo-400 focus:border-indigo-500 hover:border-indigo-400"
+                  />
+                  {errors.tecnica && (
+                    <div className="flex items-center gap-2 text-pink-600 text-base font-semibold mt-2 mb-3 text-left">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5 flex-shrink-0"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      {errors.tecnica}
+                    </div>
+                  )}
+                </div>
+                <div className="mb-2">
+                  <Label
+                    htmlFor="year"
+                    className="mb-1 inline-flex items-center gap-1"
+                  >
+                    Año <span className="text-pink-600">*</span>
+                  </Label>
+                  <DatePicker
+                    value={year ? `${year}-01-01` : null}
+                    onChange={(dateString) => {
+                      if (dateString) {
+                        const d = new Date(dateString);
+                        setYear(d.getFullYear());
+                        if (errors.year)
+                          setErrors((prev) => ({ ...prev, year: undefined }));
+                      } else {
+                        setYear(null);
+                      }
+                    }}
+                    placeholder="Selecciona el año..."
+                    className="transition-all focus:ring-2 focus:ring-indigo-400 focus:border-indigo-500 hover:border-indigo-400"
+                  />
+                  {errors.year && (
+                    <div className="flex items-center gap-2 text-pink-600 text-base font-semibold mt-2 mb-3 text-left">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5 flex-shrink-0"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      {errors.year}
+                    </div>
+                  )}
+                </div>
+                <div className="mb-2">
+                  <Label
+                    htmlFor="autor"
+                    className="mb-1 inline-flex items-center gap-1"
+                  >
+                    Autor (opcional)
+                  </Label>
+                  <Input
+                    id="autor"
+                    type="text"
+                    placeholder="Autor (opcional)"
+                    value={autor || ""}
+                    onChange={(e) => setAutor(e.target.value)}
+                    className="transition-all focus:ring-2 focus:ring-indigo-400 focus:border-indigo-500 hover:border-indigo-400"
+                  />
+                </div>
+                <div className="mb-2">
+                  <Label
+                    htmlFor="artistId"
+                    className="mb-1 inline-flex items-center gap-1"
+                  >
+                    Artista <span className="text-pink-600">*</span>
+                  </Label>
+                  <select
+                    id="artistId"
+                    value={artistId || ""}
+                    onChange={(e) => setArtistId(e.target.value)}
+                    className="w-full px-4 py-3 rounded-md border-2 text-base bg-background dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] transition-all focus:ring-2 focus:ring-indigo-400 focus:border-indigo-500 hover:border-indigo-400"
+                  >
+                    <option value="">Selecciona un artista (opcional)</option>
+                    {artistList &&
+                      artistList.map((artist) => (
+                        <option key={artist.id} value={artist.id}>
+                          {artist.user?.name || artist.id}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              </CardContent>
+            </Card>
           )}
 
           {step === 1 && (
@@ -2390,7 +2488,23 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session, asP
                     )}
                   </div>
                   {errors.imagen && (
-                    <div className="text-pink-500 text-sm">{errors.imagen}</div>
+                    <div className="flex items-center gap-2 text-pink-600 text-base font-semibold mt-2 mb-3 text-left">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5 flex-shrink-0"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      {errors.imagen}
+                    </div>
                   )}
                 </>
               )}
@@ -3221,20 +3335,20 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session, asP
         transition={{ duration: 0.25 }}
         className={modalClassName + " z-10 max-h-[90vh] overflow-y-auto m-0"}
         style={modalStyle}
-        onClick={e => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="px-8 pt-8 pb-4 border-b border-border">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-xl font-bold text-foreground">
-              Crear nueva obra
-            </h2>
-            <button
-              onClick={onClose}
-              className="p-2 rounded hover:bg-muted transition-colors"
-            >
-              <X className="h-5 w-5" />
-            </button>
+          <div className="flex items-center justify-between mb-6">
+            <div />
+            {!hideClose && (
+              <button
+                onClick={onClose}
+                className="p-2 rounded hover:bg-muted transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            )}
           </div>
           {/* Stepper */}
           <div className="flex items-center justify-center gap-4 mb-2">
@@ -3253,118 +3367,189 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session, asP
         {/* Contenido principal */}
         <div className="flex-1 px-8 py-6 flex flex-col gap-6 justify-center">
           {step === 0 && (
-            <>
-              <motion.input
-                type="text"
-                placeholder="Título de la obra"
-                value={titulo}
-                onChange={(e) => {
-                  setTitulo(e.target.value);
-                  if (errors.titulo)
-                    setErrors((prev) => ({ ...prev, titulo: undefined }));
-                }}
-                className="w-full px-4 py-3 rounded-xl border-2 text-base bg-background dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
-                animate={
-                  errors.titulo
-                    ? { x: [0, -8, 8, -6, 6, -4, 4, 0, Math.random()] }
-                    : false
-                }
-                transition={{ duration: 0.4 }}
-              />
-              {errors.titulo && (
-                <div className="text-pink-500 text-sm">{errors.titulo}</div>
-              )}
-              <motion.textarea
-                placeholder="Descripción (opcional)"
-                value={descripcion}
-                onChange={(e) => setDescripcion(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border-2 text-base bg-background dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
-                rows={3}
-              />
-              <motion.input
-                type="text"
-                placeholder="Técnica"
-                value={tecnica}
-                onChange={(e) => {
-                  setTecnica(e.target.value);
-                  if (errors.tecnica)
-                    setErrors((prev) => ({ ...prev, tecnica: undefined }));
-                }}
-                className="w-full px-4 py-3 rounded-xl border-2 text-base bg-background dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
-                animate={
-                  errors.tecnica
-                    ? { x: [0, -8, 8, -6, 6, -4, 4, 0, Math.random()] }
-                    : false
-                }
-                transition={{ duration: 0.4 }}
-              />
-              {errors.tecnica && (
-                <div className="text-pink-500 text-sm">{errors.tecnica}</div>
-              )}
-              <DatePicker
-                value={year ? `${year}-01-01` : null}
-                onChange={(dateString) => {
-                  if (dateString) {
-                    const d = new Date(dateString);
-                    setYear(d.getFullYear());
-                    if (errors.year)
-                      setErrors((prev) => ({ ...prev, year: undefined }));
-                  } else {
-                    setYear(null);
-                  }
-                }}
-                placeholder="Selecciona el año..."
-              />
-              {errors.year && (
-                <div className="text-pink-500 text-sm">{errors.year}</div>
-              )}
-              <motion.input
-                type="text"
-                placeholder="Autor (opcional)"
-                value={autor || ""}
-                onChange={(e) => setAutor(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border-2 text-base bg-background dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
-              />
-              <motion.input
-                type="text"
-                placeholder="Ubicación (opcional)"
-                value={ubicacion || ""}
-                onChange={(e) => setUbicacion(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border-2 text-base bg-background dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
-              />
-              <div className="flex gap-2">
-                <motion.input
-                  type="number"
-                  step="any"
-                  placeholder="Latitud (opcional)"
-                  value={latitud || ""}
-                  onChange={(e) => setLatitud(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border-2 text-base bg-background dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
-                />
-                <motion.input
-                  type="number"
-                  step="any"
-                  placeholder="Longitud (opcional)"
-                  value={longitud || ""}
-                  onChange={(e) => setLongitud(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border-2 text-base bg-background dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
-                />
-              </div>
-              {/* Selector de artista */}
-              <select
-                value={artistId || ""}
-                onChange={(e) => setArtistId(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border-2 text-base bg-background dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
-              >
-                <option value="">Selecciona un artista (opcional)</option>
-                {artistList &&
-                  artistList.map((artist) => (
-                    <option key={artist.id} value={artist.id}>
-                      {artist.user?.name || artist.id}
-                    </option>
-                  ))}
-              </select>
-            </>
+            <Card className="max-w-xl mx-auto w-full bg-white/80 dark:bg-neutral-900/80 shadow-lg border border-gray-200 dark:border-neutral-700">
+              <CardHeader>
+                <CardTitle>Datos de la obra</CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-4">
+                <div className="mb-2">
+                  <Label
+                    htmlFor="titulo"
+                    className="mb-1 inline-flex items-center gap-1"
+                  >
+                    Título de la obra <span className="text-pink-600">*</span>
+                  </Label>
+                  <Input
+                    id="titulo"
+                    type="text"
+                    placeholder="Título de la obra"
+                    value={titulo}
+                    onChange={(e) => {
+                      setTitulo(e.target.value);
+                      if (errors.titulo)
+                        setErrors((prev) => ({ ...prev, titulo: undefined }));
+                    }}
+                    aria-invalid={!!errors.titulo}
+                    className="transition-all focus:ring-2 focus:ring-indigo-400 focus:border-indigo-500 hover:border-indigo-400"
+                  />
+                  {errors.titulo && (
+                    <div className="flex items-center gap-2 text-pink-600 text-base font-semibold mt-2 mb-3 text-left">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5 flex-shrink-0"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      {errors.titulo}
+                    </div>
+                  )}
+                </div>
+                <div className="mb-2">
+                  <Label
+                    htmlFor="descripcion"
+                    className="mb-1 inline-flex items-center gap-1"
+                  >
+                    Descripción (opcional)
+                  </Label>
+                  <textarea
+                    id="descripcion"
+                    placeholder="Descripción de la obra"
+                    value={descripcion}
+                    onChange={(e) => setDescripcion(e.target.value)}
+                    rows={4}
+                    className="w-full px-4 py-3 rounded-md border-2 text-base bg-background dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-indigo-400 focus:border-indigo-500 hover:border-indigo-400 resize-y min-h-[96px] transition-all"
+                  />
+                </div>
+                <div className="mb-2">
+                  <Label
+                    htmlFor="tecnica"
+                    className="mb-1 inline-flex items-center gap-1"
+                  >
+                    Técnica <span className="text-pink-600">*</span>
+                  </Label>
+                  <Input
+                    id="tecnica"
+                    type="text"
+                    placeholder="Técnica"
+                    value={tecnica}
+                    onChange={(e) => {
+                      setTecnica(e.target.value);
+                      if (errors.tecnica)
+                        setErrors((prev) => ({ ...prev, tecnica: undefined }));
+                    }}
+                    aria-invalid={!!errors.tecnica}
+                    className="transition-all focus:ring-2 focus:ring-indigo-400 focus:border-indigo-500 hover:border-indigo-400"
+                  />
+                  {errors.tecnica && (
+                    <div className="flex items-center gap-2 text-pink-600 text-base font-semibold mt-2 mb-3 text-left">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5 flex-shrink-0"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      {errors.tecnica}
+                    </div>
+                  )}
+                </div>
+                <div className="mb-2">
+                  <Label
+                    htmlFor="year"
+                    className="mb-1 inline-flex items-center gap-1"
+                  >
+                    Año <span className="text-pink-600">*</span>
+                  </Label>
+                  <DatePicker
+                    value={year ? `${year}-01-01` : null}
+                    onChange={(dateString) => {
+                      if (dateString) {
+                        const d = new Date(dateString);
+                        setYear(d.getFullYear());
+                        if (errors.year)
+                          setErrors((prev) => ({ ...prev, year: undefined }));
+                      } else {
+                        setYear(null);
+                      }
+                    }}
+                    placeholder="Selecciona el año..."
+                    className="transition-all focus:ring-2 focus:ring-indigo-400 focus:border-indigo-500 hover:border-indigo-400"
+                  />
+                  {errors.year && (
+                    <div className="flex items-center gap-2 text-pink-600 text-base font-semibold mt-2 mb-3 text-left">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5 flex-shrink-0"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      {errors.year}
+                    </div>
+                  )}
+                </div>
+                <div className="mb-2">
+                  <Label
+                    htmlFor="autor"
+                    className="mb-1 inline-flex items-center gap-1"
+                  >
+                    Autor (opcional)
+                  </Label>
+                  <Input
+                    id="autor"
+                    type="text"
+                    placeholder="Autor (opcional)"
+                    value={autor || ""}
+                    onChange={(e) => setAutor(e.target.value)}
+                    className="transition-all focus:ring-2 focus:ring-indigo-400 focus:border-indigo-500 hover:border-indigo-400"
+                  />
+                </div>
+                <div className="mb-2">
+                  <Label
+                    htmlFor="artistId"
+                    className="mb-1 inline-flex items-center gap-1"
+                  >
+                    Artista <span className="text-pink-600">*</span>
+                  </Label>
+                  <select
+                    id="artistId"
+                    value={artistId || ""}
+                    onChange={(e) => setArtistId(e.target.value)}
+                    className="w-full px-4 py-3 rounded-md border-2 text-base bg-background dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] transition-all focus:ring-2 focus:ring-indigo-400 focus:border-indigo-500 hover:border-indigo-400"
+                  >
+                    <option value="">Selecciona un artista (opcional)</option>
+                    {artistList &&
+                      artistList.map((artist) => (
+                        <option key={artist.id} value={artist.id}>
+                          {artist.user?.name || artist.id}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              </CardContent>
+            </Card>
           )}
 
           {step === 1 && (
@@ -3424,7 +3609,23 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session, asP
                     )}
                   </div>
                   {errors.imagen && (
-                    <div className="text-pink-500 text-sm">{errors.imagen}</div>
+                    <div className="flex items-center gap-2 text-pink-600 text-base font-semibold mt-2 mb-3 text-left">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5 flex-shrink-0"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      {errors.imagen}
+                    </div>
                   )}
                 </>
               )}
@@ -4028,7 +4229,7 @@ export default function CrearObraModal({ isOpen, onClose, onCreate, session, asP
                             const url = URL.createObjectURL(file);
                             setCanvasBg(url);
                             setBgImageError(null);
-                            // Probar si la imagen se puede cargar
+                            const testImg = new window.Image();
                             testImg.onload = () => {
                               // Todo bien
                             };
