@@ -28,6 +28,8 @@ export default function MisSalas() {
   const addMuralBtnRef = useRef(null);
   const [modalPosition, setModalPosition] = useState({ top: 0, left: 0 });
   const router = useRouter();
+  // Nuevo estado para el mural a eliminar
+  const [muralToRemove, setMuralToRemove] = useState(null);
 
   const isAdmin = session?.user?.role === "ADMIN";
   const userId = session?.user?.id;
@@ -203,16 +205,16 @@ export default function MisSalas() {
                             <img
                               src={sm.mural.url_imagen}
                               alt={sm.mural.titulo}
-                              className="w-16 h-16 object-cover rounded-lg border border-gray-200 dark:border-gray-700 shadow"
+                              className="w-24 h-24 aspect-square object-cover rounded-lg border border-gray-200 dark:border-gray-700 shadow transition-all duration-200"
                             />
                             {isAdmin && (
                               <button
                                 type="button"
-                                className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-80 group-hover:opacity-100 transition"
+                                className="absolute inset-0 flex items-center justify-center bg-black/40 hover:bg-black/60 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-200 z-10"
                                 title="Eliminar mural de la sala"
-                                onClick={() => handleRemoveMural(sala.id, sm.mural.id)}
+                                onClick={() => setMuralToRemove({ salaId: sala.id, muralId: sm.mural.id })}
                               >
-                                ×
+                                <Trash2 className="w-8 h-8 text-red-500 drop-shadow" />
                               </button>
                             )}
                           </div>
@@ -414,6 +416,32 @@ export default function MisSalas() {
                 disabled={isDeleting}
               >
                 {isDeleting ? "Eliminando..." : "Eliminar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Modal de confirmación para eliminar mural de sala */}
+      {muralToRemove && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white dark:bg-neutral-900 border border-border rounded-2xl shadow-2xl p-8 flex flex-col items-center max-w-xs">
+            <h3 className="font-semibold mb-4 text-lg text-red-600">¿Eliminar mural de la sala?</h3>
+            <p className="mb-6 text-center text-sm">Esta acción no se puede deshacer.<br/>¿Seguro que quieres quitar este mural de la sala?</p>
+            <div className="flex gap-4 w-full justify-center">
+              <button
+                className="px-4 py-2 rounded bg-gray-200 dark:bg-neutral-800 text-gray-700 dark:text-gray-200 font-bold hover:bg-gray-300 dark:hover:bg-neutral-700 transition w-1/2"
+                onClick={() => setMuralToRemove(null)}
+              >
+                Cancelar
+              </button>
+              <button
+                className="px-4 py-2 rounded bg-red-600 text-white font-bold hover:bg-red-700 transition w-1/2"
+                onClick={async () => {
+                  await handleRemoveMural(muralToRemove.salaId, muralToRemove.muralId);
+                  setMuralToRemove(null);
+                }}
+              >
+                Eliminar
               </button>
             </div>
           </div>

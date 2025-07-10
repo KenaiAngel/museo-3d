@@ -2,6 +2,34 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+// --- INTEGRACIÓN RESEND ---
+import { Resend } from "resend";
+
+const resend = new Resend("re_7bBL1GSd_B8i2u8ZwqWRu1HJQ5v385HXW");
+
+export async function sendEmail({ to, subject, html }) {
+  try {
+    const { data, error } = await resend.emails.send({
+      from: "info@psicologopuebla.com", // Remitente actualizado
+      to,
+      subject,
+      html,
+    });
+    if (error) throw error;
+    return data;
+  } catch (err) {
+    console.error("Error enviando email con Resend:", err);
+    throw err;
+  }
+}
+
+// Ejemplo de uso (descomentar para probar):
+// await sendEmail({
+//   to: 'destinatario@ejemplo.com',
+//   subject: 'Prueba de Resend',
+//   html: '<h1>¡Funciona!</h1><p>Este es un email de prueba enviado con Resend.</p>'
+// });
+
 // GET /api/usuarios/email/[email] - Verificar disponibilidad de email
 export async function GET(req, context) {
   try {
