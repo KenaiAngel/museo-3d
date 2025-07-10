@@ -217,78 +217,32 @@ export default function MainMenu({ onSubirArchivo }) {
           </div>
           {/* Navigation Menu */}
           <NavigationMenu className="hidden md:block">
+            {/* DESKTOP: solo enlaces directos */}
             <NavigationMenuList className="text-sm font-medium">
               <NavigationMenuItem>
-                <NavigationMenuTrigger
-                  className={
-                    "navbar-link hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-all " +
-                    (pathname.startsWith("/crear-sala") ||
-                    pathname.startsWith("/galeria") ||
-                    pathname.startsWith("/museo")
-                      ? "elegant-active-menu"
-                      : "")
-                  }
-                >
-                  Galería
-                </NavigationMenuTrigger>
-                <NavigationMenuContent className="navbar-dropdown bg-card p-6 rounded-lg shadow-lg border min-w-[200px]">
-                  <div className="flex flex-col gap-2">
-                    <NavigationMenuLink asChild>
-                      <Link
-                        href="/crear-sala"
-                        onClick={onSubirArchivo}
-                        className={`navbar-dropdown-item block px-3 py-2 rounded-md hover:bg-muted hover:text-primary transition-all ${
-                          pathname.startsWith("/crear-sala")
-                            ? "elegant-active-menu"
-                            : ""
-                        }`}
-                      >
-                        Crear Sala
-                      </Link>
-                    </NavigationMenuLink>
-                    <NavigationMenuLink asChild>
-                      <Link
-                        href="/galeria"
-                        className={`navbar-dropdown-item block px-3 py-2 rounded-md hover:bg-muted hover:text-primary transition-all ${
-                          pathname.startsWith("/galeria")
-                            ? "elegant-active-menu"
-                            : ""
-                        }`}
-                      >
-                        Ver Galería
-                      </Link>
-                    </NavigationMenuLink>
-                    <NavigationMenuLink asChild>
-                      <Link
-                        href="/museo"
-                        className={`navbar-dropdown-item block px-3 py-2 rounded-md hover:bg-muted hover:text-primary transition-all ${
-                          pathname.startsWith("/museo")
-                            ? "elegant-active-menu"
-                            : ""
-                        }`}
-                      >
-                        Explorar mural
-                      </Link>
-                    </NavigationMenuLink>
-                  </div>
-                </NavigationMenuContent>
+                <NavigationMenuLink asChild>
+                  <Link
+                    href="/galeria"
+                    className={`navbar-link hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-all ${
+                      pathname.startsWith("/galeria") ? "elegant-active-menu" : ""
+                    }`}
+                  >
+                    Galería
+                  </Link>
+                </NavigationMenuLink>
               </NavigationMenuItem>
-
               <NavigationMenuItem>
                 <NavigationMenuLink asChild>
                   <Link
                     href="/acerca-de"
                     className={`navbar-link hover:text-primary transition-all px-3 py-2 rounded-lg ${
-                      pathname.startsWith("/acerca-de")
-                        ? "elegant-active-menu"
-                        : ""
+                      pathname.startsWith("/acerca-de") ? "elegant-active-menu" : ""
                     }`}
                   >
                     Acerca de
                   </Link>
                 </NavigationMenuLink>
               </NavigationMenuItem>
-
               <NavigationMenuItem>
                 <NavigationMenuLink asChild>
                   <Link
@@ -414,12 +368,12 @@ export default function MainMenu({ onSubirArchivo }) {
                           </Link>
                         </NavigationMenuLink>
 
-                        {/* Opciones para moderadores y administradores */}
+                        {/* DESKTOP: Fusionar paneles de moderación y administración */}
                         {(isModerator || isAdmin) && (
                           <>
                             <div className="px-3 py-1 border-t border-border">
                               <p className="text-xs text-muted-foreground font-medium">
-                                Panel de Moderación
+                                Panel de Gestión
                               </p>
                             </div>
                             <NavigationMenuLink asChild>
@@ -430,33 +384,26 @@ export default function MainMenu({ onSubirArchivo }) {
                                 Gestionar Usuarios
                               </Link>
                             </NavigationMenuLink>
-                          </>
-                        )}
-
-                        {/* Opciones solo para administradores */}
-                        {isAdmin && (
-                          <>
-                            <div className="px-3 py-1 border-t border-border">
-                              <p className="text-xs text-muted-foreground font-medium">
-                                Panel de Administración
-                              </p>
-                            </div>
-                            <NavigationMenuLink asChild>
-                              <Link
-                                href="/admin/logs"
-                                className="block px-3 py-2 rounded-md hover:bg-muted hover:text-primary transition-all text-sm"
-                              >
-                                Ver Logs
-                              </Link>
-                            </NavigationMenuLink>
-                            <NavigationMenuLink asChild>
-                              <Link
-                                href="/admin/healthcheck"
-                                className="block px-3 py-2 rounded-md hover:bg-muted hover:text-primary transition-all text-sm"
-                              >
-                                Estado del sistema
-                              </Link>
-                            </NavigationMenuLink>
+                            {isAdmin && (
+                              <>
+                                <NavigationMenuLink asChild>
+                                  <Link
+                                    href="/admin/logs"
+                                    className="block px-3 py-2 rounded-md hover:bg-muted hover:text-primary transition-all text-sm"
+                                  >
+                                    Ver Logs
+                                  </Link>
+                                </NavigationMenuLink>
+                                <NavigationMenuLink asChild>
+                                  <Link
+                                    href="/admin/healthcheck"
+                                    className="block px-3 py-2 rounded-md hover:bg-muted hover:text-primary transition-all text-sm"
+                                  >
+                                    Estado del sistema
+                                  </Link>
+                                </NavigationMenuLink>
+                              </>
+                            )}
                           </>
                         )}
 
@@ -577,7 +524,7 @@ export default function MainMenu({ onSubirArchivo }) {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="px-1 py-1 space-y-1 overflow-y-auto max-h-[80vh]">
-                {/* Enlaces principales */}
+                {/* Enlaces principales (solo una vez cada uno, sin dropdowns) */}
                 <Link
                   href="/"
                   onClick={() => setMobileMenuOpen(false)}
@@ -587,7 +534,6 @@ export default function MainMenu({ onSubirArchivo }) {
                 >
                   Inicio
                 </Link>
-
                 <Link
                   href="/museo"
                   onClick={() => setMobileMenuOpen(false)}
@@ -597,111 +543,20 @@ export default function MainMenu({ onSubirArchivo }) {
                 >
                   Museo Virtual
                 </Link>
-
                 <Link
-                  href="/mis-salas"
+                  href="/galeria"
                   onClick={() => setMobileMenuOpen(false)}
                   className={`navbar-link block py-1 text-sm font-medium hover:text-primary transition-colors ${
-                    pathname.startsWith("/mis-salas") ? "elegant-active-menu" : ""
+                    pathname.startsWith("/galeria") ? "elegant-active-menu" : ""
                   }`}
                 >
-                  Mis Salas
+                  Galería
                 </Link>
-
-                {/* Dropdown de Archivo */}
-                <div className="space-y-1">
-                  <button
-                    onClick={() => setMobileArchivoOpen(!mobileArchivoOpen)}
-                    className={`navbar-link flex items-center justify-between w-full py-1 text-sm font-medium hover:text-primary transition-colors ${
-                      ["/crear-sala", "/galeria", "/museo"].some((p) =>
-                        pathname.startsWith(p)
-                      )
-                        ? "elegant-active-menu"
-                        : ""
-                    }`}
-                  >
-                    <span>Galería</span>
-                    <svg
-                      className={`w-4 h-4 transition-transform duration-200 ${
-                        mobileArchivoOpen ? "rotate-180" : ""
-                      }`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
-                      />
-                    </svg>
-                  </button>
-
-                  <AnimatePresence>
-                    {mobileArchivoOpen && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="pl-3 space-y-1 border-l-2 border-gray-200 dark:border-gray-700"
-                      >
-                        <Link
-                          href="/crear-sala"
-                          onClick={() => {
-                            setMobileMenuOpen(false);
-                            setMobileArchivoOpen(false);
-                            if (onSubirArchivo) onSubirArchivo();
-                          }}
-                          className={`navbar-dropdown-item block py-1 text-sm hover:text-primary transition-colors ${
-                            pathname.startsWith("/crear-sala")
-                              ? "elegant-active-menu"
-                              : ""
-                          }`}
-                        >
-                          Crear Sala
-                        </Link>
-                        <Link
-                          href="/galeria"
-                          onClick={() => {
-                            setMobileMenuOpen(false);
-                            setMobileArchivoOpen(false);
-                          }}
-                          className={`navbar-dropdown-item block py-1 text-sm hover:text-primary transition-colors ${
-                            pathname.startsWith("/galeria")
-                              ? "elegant-active-menu"
-                              : ""
-                          }`}
-                        >
-                          Ver Galería
-                        </Link>
-                        <Link
-                          href="/museo"
-                          onClick={() => {
-                            setMobileMenuOpen(false);
-                            setMobileArchivoOpen(false);
-                          }}
-                          className={`navbar-dropdown-item block py-1 text-sm hover:text-primary transition-colors ${
-                            pathname.startsWith("/museo")
-                              ? "elegant-active-menu"
-                              : ""
-                          }`}
-                        >
-                          Explorar mural
-                        </Link>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-
                 <Link
                   href="/acerca-de"
                   onClick={() => setMobileMenuOpen(false)}
                   className={`navbar-link block py-1 text-sm font-medium hover:text-primary transition-colors ${
-                    pathname.startsWith("/acerca-de")
-                      ? "elegant-active-menu"
-                      : ""
+                    pathname.startsWith("/acerca-de") ? "elegant-active-menu" : ""
                   }`}
                 >
                   Acerca de
@@ -805,7 +660,7 @@ export default function MainMenu({ onSubirArchivo }) {
                       <>
                         <div className="px-2 py-0.5 border-t border-border">
                           <p className="text-xs text-muted-foreground font-medium">
-                            Panel de Moderación
+                            Panel de Gestión
                           </p>
                         </div>
                         <Link
@@ -815,30 +670,24 @@ export default function MainMenu({ onSubirArchivo }) {
                         >
                           Gestionar Usuarios
                         </Link>
-                      </>
-                    )}
-                    {/* Opciones solo para administradores */}
-                    {isAdmin && (
-                      <>
-                        <div className="px-2 py-0.5 border-t border-border">
-                          <p className="text-xs text-muted-foreground font-medium">
-                            Panel de Administración
-                          </p>
-                        </div>
-                        <Link
-                          href="/admin/logs"
-                          onClick={() => setMobileMenuOpen(false)}
-                          className="block py-1 text-sm hover:text-primary transition-colors"
-                        >
-                          Ver Logs
-                        </Link>
-                        <Link
-                          href="/admin/healthcheck"
-                          onClick={() => setMobileMenuOpen(false)}
-                          className="block py-1 text-sm hover:text-primary transition-colors"
-                        >
-                          Estado del sistema
-                        </Link>
+                        {isAdmin && (
+                          <>
+                            <Link
+                              href="/admin/logs"
+                              onClick={() => setMobileMenuOpen(false)}
+                              className="block py-1 text-sm hover:text-primary transition-colors"
+                            >
+                              Ver Logs
+                            </Link>
+                            <Link
+                              href="/admin/healthcheck"
+                              onClick={() => setMobileMenuOpen(false)}
+                              className="block py-1 text-sm hover:text-primary transition-colors"
+                            >
+                              Estado del sistema
+                            </Link>
+                          </>
+                        )}
                       </>
                     )}
                     <button
