@@ -86,6 +86,26 @@ export function useAdminUsers() {
     }
   }, [userToDelete, fetchUsers]);
 
+  // Invalidar email de usuario
+  const handleInvalidateEmail = useCallback(
+    async (userId) => {
+      try {
+        const res = await fetch(`/api/usuarios/${userId}/invalidate-email`, {
+          method: "POST",
+        });
+        if (res.ok) {
+          toast.success("Email invalidado");
+          fetchUsers();
+        } else {
+          toast.error("No se pudo invalidar el email");
+        }
+      } catch (e) {
+        toast.error("Error al invalidar email");
+      }
+    },
+    [fetchUsers]
+  );
+
   return {
     users,
     loading,
@@ -98,5 +118,6 @@ export function useAdminUsers() {
     userToDelete,
     setUserToDelete,
     confirmDeleteUser,
+    handleInvalidateEmail, // <-- exporta la función
   };
 }

@@ -1,34 +1,32 @@
 "use client";
-import { useEffect, useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useEffect, useState, useRef } from "react";
+import { useSearchParams } from "next/navigation";
+import { signIn } from "next-auth/react";
 
 export default function EmailVerifyConfirm() {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const [status, setStatus] = useState("loading"); // loading, success, error
+  const fetched = useRef(false);
 
   useEffect(() => {
+    if (fetched.current) return; // Evita doble fetch
+    fetched.current = true;
     const token = searchParams.get("token");
     if (!token) {
       setStatus("error");
       return;
     }
-    // Llama al endpoint API para validar el token
     fetch(`/api/usuarios/email/verify/confirm?token=${token}`)
       .then((res) => {
-        if (res.redirected) {
-          // Si el backend redirige, seguimos la redirección
-          router.replace(res.url.replace("/api", ""));
-          return;
-        }
         if (res.ok) {
           setStatus("success");
+          signIn(undefined, { redirect: false }); // Refresca la sesión
         } else {
           setStatus("error");
         }
       })
       .catch(() => setStatus("error"));
-  }, [searchParams, router]);
+  }, [searchParams]);
 
   if (status === "loading") {
     return (
@@ -38,16 +36,19 @@ export default function EmailVerifyConfirm() {
     );
   }
   if (status === "success") {
-    // Esto solo se muestra si el backend no redirige (por fallback)
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-green-600 text-xl font-bold">¡Correo verificado!</div>
+        <div className="text-green-600 text-xl font-bold">
+          ¡Correo verificado!
+        </div>
       </div>
     );
   }
   return (
     <div className="min-h-screen flex items-center justify-center">
-      <div className="text-red-600 text-xl font-bold">Token inválido o expirado</div>
+      <div className="text-red-600 text-xl font-bold">
+        Token inválido o expirado
+      </div>
     </div>
   );
-} 
+}

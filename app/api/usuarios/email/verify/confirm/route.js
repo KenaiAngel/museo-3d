@@ -1,10 +1,14 @@
 import { prisma } from "@/lib/prisma";
 
 export async function GET(req) {
-  const { searchParams, origin } = new URL(req.url);
+  const { searchParams } = new URL(req.url);
   const token = searchParams.get("token");
-  if (!token)
-    return Response.redirect(`${origin}/usuarios/email/verify/invalid`, 302);
+  if (!token) {
+    return new Response(JSON.stringify({ error: "Token requerido" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
 
   const user = await prisma.user.findFirst({
     where: {
@@ -13,8 +17,12 @@ export async function GET(req) {
     },
   });
 
-  if (!user)
-    return Response.redirect(`${origin}/usuarios/email/verify/invalid`, 302);
+  if (!user) {
+    return new Response(
+      JSON.stringify({ error: "Token inválido o expirado" }),
+      { status: 400, headers: { "Content-Type": "application/json" } }
+    );
+  }
 
   await prisma.user.update({
     where: { id: user.id },
@@ -25,6 +33,8 @@ export async function GET(req) {
     },
   });
 
-  // Redirige a la página de éxito
-  return Response.redirect(`${origin}/usuarios/email/verify/success`, 302);
+  return new Response(JSON.stringify({ success: true }), {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
+  });
 }
