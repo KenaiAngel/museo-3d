@@ -161,16 +161,22 @@ function CollectionItem({ item, allItems }) {
       <div className="flex-1 text-left">
         <div className="font-medium">{title}</div>
         <div className="flex flex-wrap gap-1 mb-1">
-          {autores.length > 0
-            ? autores.map((autor, idx) => (
-                <span key={idx} className="inline-block bg-pink-100 dark:bg-pink-900/40 text-pink-700 dark:text-pink-200 px-2 py-0.5 rounded-full text-xs font-semibold">
-                  {autor}
-                </span>
-              ))
-            : <span className="text-muted-foreground">Artista desconocido</span>}
+          {autores.length > 0 ? (
+            autores.map((autor, idx) => (
+              <span
+                key={idx}
+                className="inline-block bg-pink-100 dark:bg-pink-900/40 text-pink-700 dark:text-pink-200 px-2 py-0.5 rounded-full text-xs font-semibold"
+              >
+                {autor}
+              </span>
+            ))
+          ) : (
+            <span className="text-muted-foreground">Artista desconocido</span>
+          )}
         </div>
         <div className="text-xs text-muted-foreground">
-          {year ? ` · ${year}` : ""}{technique ? ` · ${technique}` : ""}
+          {year ? ` · ${year}` : ""}
+          {technique ? ` · ${technique}` : ""}
         </div>
       </div>
     </div>
@@ -485,7 +491,6 @@ function PerfilContent() {
   } = useUpdateProfile();
   const [notifEnabled, setNotifEnabled] = useState(false);
   const [subsEnabled, setSubsEnabled] = useState(false);
-  const [emailValidated, setEmailValidated] = useState(false);
   const switchesInitialized = useRef(false);
   const [verifLoading, setVerifLoading] = useState(false);
   const [verifMsg, setVerifMsg] = useState("");
@@ -527,7 +532,6 @@ function PerfilContent() {
     if (session?.user?.settings && !switchesInitialized.current) {
       setNotifEnabled(session.user.settings.notificaciones === "true");
       setSubsEnabled(session.user.settings.subscripcion === "true");
-      setEmailValidated(session.user.settings.emailValidated === "true");
       switchesInitialized.current = true;
     }
   }, [session?.user?.id]);
@@ -750,7 +754,6 @@ function PerfilContent() {
         ...session.user.settings,
         notificaciones: checked ? "true" : "false",
         subscripcion: subsEnabled ? "true" : "false",
-        emailValidated: emailValidated ? "true" : "false",
       });
       toast.success(`Notificaciones ${checked ? "activadas" : "desactivadas"}`);
     } catch (error) {
@@ -766,7 +769,6 @@ function PerfilContent() {
         ...session.user.settings,
         notificaciones: notifEnabled ? "true" : "false",
         subscripcion: checked ? "true" : "false",
-        emailValidated: emailValidated ? "true" : "false",
       });
       toast.success(`Suscripción ${checked ? "activada" : "desactivada"}`);
     } catch (error) {
@@ -774,23 +776,31 @@ function PerfilContent() {
     }
   };
 
-  // Simulación de verificación de email
+  // Reemplaza la función handleVerifyEmail para llamar al endpoint real
   const handleVerifyEmail = async () => {
     setVerifLoading(true);
     setVerifMsg("");
-    // Simula un proceso de verificación
-    setTimeout(async () => {
-      setEmailValidated(true);
-      await handleSettingsChange({
-        ...session.user.settings,
-        notificaciones: notifEnabled ? "true" : "false",
-        subscripcion: subsEnabled ? "true" : "false",
-        emailValidated: "true",
+    try {
+      const res = await fetch("/api/usuarios/email/verify/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: session?.user?.email }),
       });
-      setVerifMsg("¡Email verificado!");
-      toast.success("¡Email verificado correctamente!");
-      setVerifLoading(false);
-    }, 1200);
+      if (res.ok) {
+        setVerifMsg(
+          "¡Email de verificación enviado! Revisa tu bandeja de entrada."
+        );
+        toast.success("¡Email de verificación enviado!");
+      } else {
+        const data = await res.text();
+        setVerifMsg("Error: " + data);
+        toast.error("No se pudo enviar el email de verificación");
+      }
+    } catch (err) {
+      setVerifMsg("Error al enviar email de verificación");
+      toast.error("Error al enviar email de verificación");
+    }
+    setVerifLoading(false);
   };
 
   const handleEditProfile = () => {
@@ -917,18 +927,30 @@ function PerfilContent() {
                       <Label>Email</Label>
                       <div className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
                         {session?.user?.email || "No disponible"}
-                        {!emailValidated && (
+                        {!session?.user?.emailVerified && (
                           <button
                             onClick={handleVerifyEmail}
                             disabled={verifLoading}
                             className="text-primary hover:underline text-xs font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            {verifLoading ? "Verificando..." : "(Verificar)"}
+                            {verifLoading ? "Enviando..." : "(Verificar)"}
                           </button>
+                        )}
+                        {session?.user?.emailVerified && (
+                          <span className="text-green-600 text-xs font-semibold ml-2">
+                            (Verificado)
+                          </span>
                         )}
                       </div>
                       {verifMsg && (
-                        <div className="text-xs text-green-600 mt-1">
+                        <div
+                          className="text-xs mt-1"
+                          style={{
+                            color: verifMsg.startsWith("¡Email")
+                              ? "#16a34a"
+                              : "#dc2626",
+                          }}
+                        >
                           {verifMsg}
                         </div>
                       )}
@@ -971,9 +993,13 @@ function PerfilContent() {
                       <Label>Email verificado</Label>
                       <div className="flex items-center gap-2 mt-1">
                         <Badge
-                          variant={emailValidated ? "success" : "destructive"}
+                          variant={
+                            session?.user?.emailVerified
+                              ? "success"
+                              : "destructive"
+                          }
                         >
-                          {emailValidated ? "Sí" : "No"}
+                          {session?.user?.emailVerified ? "Sí" : "No"}
                         </Badge>
                       </div>
                     </div>
@@ -1083,8 +1109,8 @@ function PerfilContent() {
                                   i === 0
                                     ? "blue"
                                     : i === 1
-                                    ? "green"
-                                    : "violet"
+                                      ? "green"
+                                      : "violet"
                                 }
                                 images={murales.filter(
                                   (m) =>
@@ -1133,8 +1159,8 @@ function PerfilContent() {
                                   i === 0
                                     ? "violet"
                                     : i === 1
-                                    ? "blue"
-                                    : "green"
+                                      ? "blue"
+                                      : "green"
                                 }
                                 images={murales.filter(
                                   (m) =>
@@ -1165,7 +1191,9 @@ function PerfilContent() {
                 </CardHeader>
                 <CardContent>
                   {collectionLoading ? (
-                    <div className="text-center text-muted-foreground">Cargando colección...</div>
+                    <div className="text-center text-muted-foreground">
+                      Cargando colección...
+                    </div>
                   ) : collection.length === 0 ? (
                     <div className="text-center text-muted-foreground">
                       No tienes obras guardadas en tu colección.
@@ -1325,11 +1353,17 @@ export default function Perfil() {
 
 function parseAutores(autorString) {
   return autorString
-    ? autorString.split(",").map((a) => a.trim()).filter(Boolean)
+    ? autorString
+        .split(",")
+        .map((a) => a.trim())
+        .filter(Boolean)
     : [];
 }
 function parseColaboradores(colabString) {
   return colabString
-    ? colabString.split(",").map((c) => c.trim()).filter(Boolean)
+    ? colabString
+        .split(",")
+        .map((c) => c.trim())
+        .filter(Boolean)
     : [];
 }

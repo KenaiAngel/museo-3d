@@ -41,21 +41,23 @@ enum UserRole {
 }
 
 model User {
-    id                String              @id @default(cuid())
-    name              String?
-    email             String?             @unique
-    emailVerified     DateTime?
-    image             String?
-    password          String? // Campo para contraseñas hasheadas
-    role              UserRole            @default(USER)
-    accounts          Account[]
-    sessions          Session[]
-    settings          Json?
-    salasPropias      Sala[]              @relation("SalaOwner")
-    salasColabora     SalaColaborador[]
-    pushSubscriptions PushSubscription[]
-    artist            Artist? // Relación opcional con Artist
-    favoritedBy       UserMuralFavorite[]
+    id                       String              @id @default(cuid())
+    name                     String?
+    email                    String?             @unique
+    emailVerified            DateTime?
+    image                    String?
+    password                 String? // Campo para contraseñas hasheadas
+    role                     UserRole            @default(USER)
+    accounts                 Account[]
+    sessions                 Session[]
+    settings                 Json?
+    salasPropias             Sala[]              @relation("SalaOwner")
+    salasColabora            SalaColaborador[]
+    pushSubscriptions        PushSubscription[]
+    artist                   Artist? // Relación opcional con Artist
+    favoritedBy              UserMuralFavorite[]
+    verificationToken        String?
+    verificationTokenExpires DateTime?
 }
 
 model VerificationToken {
