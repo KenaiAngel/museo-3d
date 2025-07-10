@@ -9,6 +9,7 @@ import { useSession } from "next-auth/react";
 import { AnimatedBlobsBackground, DotsPattern } from "../../components/admin/usuarios/Backgrounds";
 import AvatarTooltip from "../../components/ui/AvatarTooltip";
 import React, { useRef } from "react";
+import { Trash2 } from "lucide-react";
 
 export default function AdminSalasPage() {
   const { data: session, status } = useSession();
@@ -42,6 +43,21 @@ function AdminSalasContent() {
   const [showAddMuralModal, setShowAddMuralModal] = useState(false);
   const [selectedSalaId, setSelectedSalaId] = useState(null);
   const [selectedMuralId, setSelectedMuralId] = useState("");
+  const addMuralBtnRef = useRef(null);
+  const [modalPosition, setModalPosition] = useState({ top: 0, left: 0 });
+
+  // Cerrar modal al hacer click fuera
+  useEffect(() => {
+    if (!showAddMuralModal) return;
+    function handleClickOutside(e) {
+      const modal = document.getElementById("add-mural-modal");
+      if (modal && !modal.contains(e.target) && addMuralBtnRef.current && !addMuralBtnRef.current.contains(e.target)) {
+        setShowAddMuralModal(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showAddMuralModal]);
 
   useEffect(() => {
     const fetchSalas = async () => {
@@ -110,9 +126,13 @@ function AdminSalasContent() {
     }
   };
 
-  const handleShowAddMural = (salaId) => {
+  const handleShowAddMural = (salaId, e) => {
     setSelectedSalaId(salaId);
     setShowAddMuralModal(true);
+    if (e && addMuralBtnRef.current) {
+      const rect = addMuralBtnRef.current.getBoundingClientRect();
+      setModalPosition({ top: rect.bottom + window.scrollY + 8, left: rect.left + window.scrollX });
+    }
   };
 
   const handleAddMural = async () => {
@@ -259,28 +279,38 @@ function AdminSalasContent() {
                     <span className="font-medium text-base">{sala.creador?.name || <span className="italic text-muted-foreground">Sin nombre</span>}</span>
                     <span className="text-xs text-muted-foreground">{sala.creador?.email}</span>
                   </div>
-                  <div className="flex flex-row gap-2 overflow-x-auto py-2 justify-center items-center">
-                    {sala.murales.map((sm) => {
-                      if (!muralRefs.current[sm.mural.id]) muralRefs.current[sm.mural.id] = React.createRef();
-                      return (
-                        <span
-                          key={sm.mural.id}
-                          onMouseEnter={() => setHoveredMuralId(null)}
-                          onMouseLeave={() => setHoveredMuralId(null)}
-                          className="inline-block cursor-pointer transition-transform duration-200 hover:scale-110"
+                  {/* Murales en grid 2 columnas */}
+                  <div className="grid grid-cols-2 gap-5 justify-items-center items-center py-2 mx-auto">
+                    {sala.murales.map((sm) => (
+                      <div key={sm.mural.id} className="relative group overflow-visible w-20 h-20 flex items-center justify-center">
+                        <img
+                          src={sm.mural.url_imagen}
+                          alt={sm.mural.titulo}
+                          className="w-20 h-20 object-cover object-center rounded-lg border border-gray-200 dark:border-gray-700 shadow"
+                        />
+                        <button
+                          type="button"
+                          className="absolute top-1 right-1 z-10 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-base shadow-lg transition pointer-events-auto"
+                          title="Eliminar mural de la sala"
+                          onClick={() => handleRemoveMural(sala.id, sm.mural.id)}
                         >
-                          <img
-                            ref={muralRefs.current[sm.mural.id]}
-                            src={sm.mural.url_imagen}
-                            alt={sm.mural.titulo}
-                            className="w-16 h-16 object-cover rounded-lg border border-gray-200 dark:border-gray-700 shadow"
-                            onLoad={() => setLoadedMurales((prev) => ({ ...prev, [sm.mural.id]: true }))}
-                          />
-                        </span>
-                      );
-                    })}
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                    {/* Botón añadir mural, ocupa toda la columna */}
+                    <button
+                      type="button"
+                      ref={addMuralBtnRef}
+                      className="col-span-2 flex flex-col items-center justify-center gap-1 p-2 border-2 border-dashed border-indigo-400 rounded-lg bg-white dark:bg-neutral-900 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-neutral-800 transition min-h-[4rem]"
+                      onClick={(e) => handleShowAddMural(sala.id, e)}
+                      title="Añadir mural a la sala"
+                    >
+                      <span className="text-2xl leading-none">＋</span>
+                      <span className="text-xs font-medium">Añadir mural</span>
+                    </button>
                   </div>
-                  <div className="flex flex-row gap-2 justify-center">
+                  <div className="flex flex-row gap-2 justify-center mt-2">
                     <Button asChild size="sm" variant="outline">
                       <Link href={`/admin/salas/${sala.id}`}>Editar</Link>
                     </Button>
@@ -290,6 +320,65 @@ function AdminSalasContent() {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+          {/* Modal para añadir mural en mobile */}
+          {showAddMuralModal && (
+            <div
+              id="add-mural-modal"
+              className="fixed z-50 bg-white dark:bg-neutral-900 border border-border rounded-2xl shadow-2xl p-4 flex flex-col items-center w-full max-w-xs mx-auto"
+              style={{ top: modalPosition.top, left: modalPosition.left, position: 'absolute' }}
+            >
+              <h3 className="font-semibold mb-4 text-lg text-indigo-700 dark:text-indigo-300">Añadir mural a la sala</h3>
+              <div className="flex flex-col gap-4 max-h-80 overflow-y-auto w-full mb-6">
+                {muralesDisponibles
+                  .filter((mural) => {
+                    const sala = salas.find((s) => s.id === selectedSalaId);
+                    return sala && !sala.murales.some((sm) => sm.mural.id === mural.id);
+                  })
+                  .map((mural) => (
+                    <button
+                      key={mural.id}
+                      type="button"
+                      className={`flex flex-row items-center border rounded-lg p-2 transition shadow hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 ${selectedMuralId == mural.id ? "border-indigo-600 ring-2 ring-indigo-400" : "border-gray-300 dark:border-gray-700"}`}
+                      onClick={() => setSelectedMuralId(mural.id)}
+                    >
+                      <img
+                        src={mural.url_imagen}
+                        alt={mural.titulo}
+                        className="w-14 h-14 object-cover rounded mr-3"
+                      />
+                      <div className="flex flex-col flex-1">
+                        <span className="font-medium text-sm text-left truncate w-full">{mural.titulo}</span>
+                        <span className="text-xs text-muted-foreground text-left truncate w-full">{mural.tecnica}</span>
+                      </div>
+                      {selectedMuralId == mural.id && (
+                        <span className="ml-2 text-indigo-600 font-bold text-lg">✓</span>
+                      )}
+                    </button>
+                  ))}
+                {muralesDisponibles.filter((mural) => {
+                  const sala = salas.find((s) => s.id === selectedSalaId);
+                  return sala && !sala.murales.some((sm) => sm.mural.id === mural.id);
+                }).length === 0 && (
+                  <div className="text-center text-muted-foreground py-8">No hay murales disponibles para agregar.</div>
+                )}
+              </div>
+              <div className="flex gap-4 w-full justify-center">
+                <button
+                  className="px-4 py-2 rounded bg-gray-200 dark:bg-neutral-800 text-gray-700 dark:text-gray-200 font-bold hover:bg-gray-300 dark:hover:bg-neutral-700 transition w-1/2"
+                  onClick={() => setShowAddMuralModal(false)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  className="px-4 py-2 rounded bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition w-1/2"
+                  onClick={handleAddMural}
+                  disabled={!selectedMuralId}
+                >
+                  Añadir
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -314,39 +403,6 @@ function AdminSalasContent() {
                 disabled={isDeleting}
               >
                 {isDeleting ? "Eliminando..." : "Eliminar"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      {/* Modal para añadir mural */}
-      {showAddMuralModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-white dark:bg-neutral-900 border border-border rounded-2xl shadow-2xl p-8 flex flex-col items-center max-w-xs">
-            <h3 className="font-semibold mb-4 text-lg text-indigo-700 dark:text-indigo-300">Añadir mural a la sala</h3>
-            <select
-              className="mb-6 w-full p-2 rounded border border-gray-300 dark:border-gray-700"
-              value={selectedMuralId}
-              onChange={(e) => setSelectedMuralId(e.target.value)}
-            >
-              <option value="">Selecciona un mural</option>
-              {muralesDisponibles.map((mural) => (
-                <option key={mural.id} value={mural.id}>{mural.titulo}</option>
-              ))}
-            </select>
-            <div className="flex gap-4">
-              <button
-                className="px-4 py-2 rounded bg-gray-200 dark:bg-neutral-800 text-gray-700 dark:text-gray-200 font-bold hover:bg-gray-300 dark:hover:bg-neutral-700 transition"
-                onClick={() => setShowAddMuralModal(false)}
-              >
-                Cancelar
-              </button>
-              <button
-                className="px-4 py-2 rounded bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition"
-                onClick={handleAddMural}
-                disabled={!selectedMuralId}
-              >
-                Añadir
               </button>
             </div>
           </div>
