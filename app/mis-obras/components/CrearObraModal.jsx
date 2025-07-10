@@ -562,6 +562,10 @@ export default function CrearObraModal({
 
   const handleNext = () => {
     if (validateStep()) {
+      // Si estamos en el paso 1 y modo canvas, guardar imagen del canvas
+      if (step === 1 && imgMode === "canvas" && canvasRef.current) {
+        setCanvasImage(canvasRef.current.toDataURL("image/png"));
+      }
       setStep(step + 1);
     }
   };
@@ -2063,19 +2067,20 @@ export default function CrearObraModal({
 
     let imgFile = null;
 
-    if (imgMode === "canvas" && canvasImage) {
-      const canvas = canvasRef.current;
-      canvas.toBlob(async (blob) => {
-        if (!blob) {
-          toast.error("No se pudo obtener la imagen del canvas.");
-          setIsSubmitting(false);
-          return;
-        }
-        imgFile = new File([blob], `${titulo || "obra"}.png`, {
-          type: "image/png",
-        });
-        await sendForm(imgFile);
-      }, "image/png");
+    if (imgMode === "canvas") {
+      // En el paso de confirmación, canvasRef ya no existe, usar canvasImage (dataURL)
+      if (!canvasImage) {
+        toast.error("No se encontró la imagen del canvas.");
+        setIsSubmitting(false);
+        return;
+      }
+      // Convertir dataURL a blob
+      const res = await fetch(canvasImage);
+      const blob = await res.blob();
+      imgFile = new File([blob], `${titulo || "obra"}.png`, {
+        type: "image/png",
+      });
+      await sendForm(imgFile);
       return;
     } else if (imgMode === "archivo" && imagen) {
       imgFile = imagen;
