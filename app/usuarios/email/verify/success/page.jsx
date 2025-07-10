@@ -1,4 +1,13 @@
+"use client";
+import { useEffect } from "react";
+import { signIn } from "next-auth/react";
+
 export default function EmailVerifySuccess() {
+  useEffect(() => {
+    // Refresca la sesión para obtener el nuevo emailVerified
+    signIn(undefined, { redirect: false });
+  }, []);
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-indigo-100 to-white dark:from-neutral-900 dark:to-neutral-800">
       <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-xl p-8 max-w-md w-full flex flex-col items-center">
