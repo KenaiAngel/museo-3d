@@ -24,7 +24,7 @@ export default function MisSalas() {
   const [muralesDisponibles, setMuralesDisponibles] = useState([]);
   const [showAddMuralModal, setShowAddMuralModal] = useState(false);
   const [selectedSalaId, setSelectedSalaId] = useState(null);
-  const [selectedMuralId, setSelectedMuralId] = useState("");
+  const [selectedMuralIds, setSelectedMuralIds] = useState([]);
   const addMuralBtnRef = useRef(null);
   const [modalPosition, setModalPosition] = useState({ top: 0, left: 0 });
   const router = useRouter();
@@ -118,26 +118,24 @@ export default function MisSalas() {
   };
 
   const handleAddMural = async () => {
-    if (!selectedSalaId || !selectedMuralId) return;
+    if (!selectedSalaId || selectedMuralIds.length === 0) return;
     try {
       const res = await fetch(`/api/salas/${selectedSalaId}/murales`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ murales: [selectedMuralId] }),
+        body: JSON.stringify({ murales: selectedMuralIds }),
       });
       if (!res.ok) throw new Error("No se pudo agregar el mural a la sala");
       // Refrescar la sala localmente
       setSalas((prev) => prev.map((s) => {
         if (s.id === selectedSalaId) {
-          const mural = muralesDisponibles.find((m) => m.id === Number(selectedMuralId));
-          if (mural) {
-            return { ...s, murales: [...s.murales, { mural }] };
-          }
+          const newMurales = muralesDisponibles.filter((m) => selectedMuralIds.includes(m.id));
+          return { ...s, murales: [...s.murales, ...newMurales] };
         }
         return s;
       }));
       setShowAddMuralModal(false);
-      setSelectedMuralId("");
+      setSelectedMuralIds([]);
     } catch (e) {
       alert(e.message);
     }
@@ -177,7 +175,7 @@ export default function MisSalas() {
               </thead>
               <tbody>
                 {salas.map((sala) => (
-                  <tr key={sala.id} className="bg-white/80 dark:bg-zinc-900/80 rounded-xl shadow border border-zinc-200 dark:border-zinc-700">
+                  <tr key={sala.id} className="bg-white/80 dark:bg-zinc-900/80 rounded-xl shadow border border-gray-200 dark:border-gray-700 dark:border-2">
                     {/* Nombre y creador centrados verticalmente */}
                     <td className="px-4 py-4 align-middle text-lg font-semibold text-foreground text-center">
                       <div className="flex flex-col items-center justify-center gap-1">
@@ -262,7 +260,7 @@ export default function MisSalas() {
           ) : (
             <div className="flex flex-col gap-6">
               {salas.map((sala) => (
-                <div key={sala.id} className="bg-white/80 dark:bg-zinc-900/80 rounded-2xl shadow border border-zinc-200 dark:border-zinc-700 p-4 flex flex-col gap-3">
+                <div key={sala.id} className="bg-white/80 dark:bg-zinc-900/80 rounded-2xl shadow border border-gray-200 dark:border-gray-700 dark:border-2 p-4 flex flex-col gap-3">
                   <div className="flex flex-col items-center justify-center gap-1">
                     <span className="text-lg font-semibold text-foreground">{sala.nombre}</span>
                     <span className="text-xs text-muted-foreground font-normal">ID: {sala.id}</span>
@@ -325,15 +323,16 @@ export default function MisSalas() {
               ))}
             </div>
           )}
-          {/* Modal para añadir mural en mobile */}
-          {showAddMuralModal && (
-            <div
-              id="add-mural-modal"
-              className="fixed z-50 bg-white dark:bg-neutral-900 border border-border rounded-2xl shadow-2xl p-4 flex flex-col items-center w-full max-w-xs mx-auto"
-              style={{ top: modalPosition.top, left: modalPosition.left, position: 'absolute' }}
-            >
-              <h3 className="font-semibold mb-4 text-lg text-indigo-700 dark:text-indigo-300">Añadir mural a la sala</h3>
-              <div className="flex flex-col gap-4 max-h-80 overflow-y-auto w-full mb-6">
+        </div>
+        {/* Modal para añadir mural en mobile */}
+        {showAddMuralModal && (
+          <div
+            id="add-mural-modal"
+            className="fixed inset-0 z-50 flex justify-center items-start pt-10 pb-4 bg-black/40 backdrop-blur-sm overflow-y-auto"
+          >
+            <div className="bg-white dark:bg-neutral-900 border border-border rounded-2xl shadow-2xl p-4 md:p-8 flex flex-col items-center w-full max-w-xs md:max-w-lg mx-auto">
+              <h3 className="font-semibold mb-4 text-lg md:text-2xl text-indigo-700 dark:text-indigo-300">Añadir mural a la sala</h3>
+              <div className="flex flex-col gap-4 max-h-80 md:max-h-[32rem] overflow-y-auto w-full mb-6 border border-gray-200 dark:border-gray-700 dark:border-2 rounded-xl p-2 md:p-4">
                 {muralesDisponibles
                   .filter((mural) => {
                     const sala = salas.find((s) => s.id === selectedSalaId);
@@ -343,20 +342,26 @@ export default function MisSalas() {
                     <button
                       key={mural.id}
                       type="button"
-                      className={`flex flex-row items-center border rounded-lg p-2 transition shadow hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 ${selectedMuralId == mural.id ? "border-indigo-600 ring-2 ring-indigo-400" : "border-gray-300 dark:border-gray-700"}`}
-                      onClick={() => setSelectedMuralId(mural.id)}
+                      className={`flex flex-row items-center border rounded-lg p-2 md:p-4 transition shadow hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 ${selectedMuralIds.includes(mural.id) ? "border-indigo-600 ring-2 ring-indigo-400" : "border-gray-300 dark:border-gray-700 dark:border-2"}`}
+                      onClick={() => {
+                        setSelectedMuralIds((prev) =>
+                          prev.includes(mural.id)
+                            ? prev.filter((id) => id !== mural.id)
+                            : [...prev, mural.id]
+                        );
+                      }}
                     >
                       <img
                         src={mural.url_imagen}
                         alt={mural.titulo}
-                        className="w-14 h-14 object-cover rounded mr-3"
+                        className="w-14 h-14 md:w-24 md:h-24 object-cover rounded mr-3 md:mr-6"
                       />
-                      <div className="flex flex-col flex-1">
-                        <span className="font-medium text-sm text-left truncate w-full">{mural.titulo}</span>
-                        <span className="text-xs text-muted-foreground text-left truncate w-full">{mural.tecnica}</span>
+                      <div className="flex flex-col flex-1 max-w-[10rem] md:max-w-[18rem] overflow-hidden">
+                        <span className="font-medium text-sm md:text-lg text-left truncate w-full">{mural.titulo}</span>
+                        <span className="text-xs md:text-base text-muted-foreground text-left truncate w-full">{mural.tecnica}</span>
                       </div>
-                      {selectedMuralId == mural.id && (
-                        <span className="ml-2 text-indigo-600 font-bold text-lg">✓</span>
+                      {selectedMuralIds.includes(mural.id) && (
+                        <span className="ml-2 text-indigo-600 font-bold text-lg md:text-2xl">✓</span>
                       )}
                     </button>
                   ))}
@@ -375,16 +380,19 @@ export default function MisSalas() {
                   Cancelar
                 </button>
                 <button
-                  className="px-4 py-2 rounded bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition w-1/2"
+                  className="px-4 py-2 rounded bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition w-1/2 disabled:opacity-60 disabled:cursor-not-allowed"
                   onClick={handleAddMural}
-                  disabled={!selectedMuralId}
+                  disabled={selectedMuralIds.length === 0 || muralesDisponibles.filter((mural) => {
+                    const sala = salas.find((s) => s.id === selectedSalaId);
+                    return sala && !sala.murales.some((sm) => sm.mural.id === mural.id);
+                  }).length === 0}
                 >
-                  Añadir
+                  Añadir{selectedMuralIds.length > 0 ? ` (${selectedMuralIds.length})` : ""}
                 </button>
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
       {/* Modal de confirmación de borrado */}
       { salaToDelete && (
