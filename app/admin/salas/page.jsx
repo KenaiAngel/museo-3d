@@ -35,6 +35,13 @@ function AdminSalasContent() {
   const [loadedMurales, setLoadedMurales] = useState({});
   // Usar refs individuales para cada miniatura
   const muralRefs = React.useRef({});
+  // Modal de confirmación
+  const [salaToDelete, setSalaToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [muralesDisponibles, setMuralesDisponibles] = useState([]);
+  const [showAddMuralModal, setShowAddMuralModal] = useState(false);
+  const [selectedSalaId, setSelectedSalaId] = useState(null);
+  const [selectedMuralId, setSelectedMuralId] = useState("");
 
   useEffect(() => {
     const fetchSalas = async () => {
@@ -53,12 +60,82 @@ function AdminSalasContent() {
     fetchSalas();
   }, []);
 
+  useEffect(() => {
+    // Cargar murales disponibles para añadir
+    const fetchMurales = async () => {
+      const res = await fetch("/api/murales");
+      if (res.ok) {
+        const data = await res.json();
+        setMuralesDisponibles(data.murales || []);
+      }
+    };
+    fetchMurales();
+  }, []);
+
   const handleDelete = async (id) => {
-    if (!confirm("¿Seguro que deseas eliminar esta sala?")) return;
+    setSalaToDelete(id);
+  };
+
+  const confirmDelete = async () => {
+    if (!salaToDelete) return;
+    setIsDeleting(true);
     try {
-      const res = await fetch(`/api/salas/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/salas/${salaToDelete}`, { method: "DELETE" });
       if (!res.ok) throw new Error("No se pudo eliminar la sala");
-      setSalas((prev) => prev.filter((s) => s.id !== id));
+      setSalas((prev) => prev.filter((s) => s.id !== salaToDelete));
+      setSalaToDelete(null);
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+  const cancelDelete = () => setSalaToDelete(null);
+
+  const handleRemoveMural = async (salaId, muralId) => {
+    try {
+      const res = await fetch(`/api/salas/${salaId}/murales`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ murales: [muralId] }),
+      });
+      if (!res.ok) throw new Error("No se pudo eliminar el mural de la sala");
+      setSalas((prev) => prev.map((s) =>
+        s.id === salaId
+          ? { ...s, murales: s.murales.filter((sm) => sm.mural.id !== muralId) }
+          : s
+      ));
+    } catch (e) {
+      alert(e.message);
+    }
+  };
+
+  const handleShowAddMural = (salaId) => {
+    setSelectedSalaId(salaId);
+    setShowAddMuralModal(true);
+  };
+
+  const handleAddMural = async () => {
+    if (!selectedSalaId || !selectedMuralId) return;
+    try {
+      const res = await fetch(`/api/salas/${selectedSalaId}/murales`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ murales: [selectedMuralId] }),
+      });
+      if (!res.ok) throw new Error("No se pudo agregar el mural a la sala");
+      // Refrescar la sala localmente
+      setSalas((prev) => prev.map((s) => {
+        if (s.id === selectedSalaId) {
+          const mural = muralesDisponibles.find((m) => m.id === Number(selectedMuralId));
+          if (mural) {
+            return { ...s, murales: [...s.murales, { mural }] };
+          }
+        }
+        return s;
+      }));
+      setShowAddMuralModal(false);
+      setSelectedMuralId("");
     } catch (e) {
       alert(e.message);
     }
@@ -112,27 +189,37 @@ function AdminSalasContent() {
                         <span className="text-xs text-muted-foreground">{sala.creador?.email}</span>
                       </div>
                     </td>
+                    {/* Murales de la sala */}
                     <td className="px-4 py-4 align-middle text-center">
-                      <div className="relative grid grid-cols-4 gap-2 justify-center items-center max-w-xs mx-auto">
-                        {sala.murales.map((sm) => {
-                          if (!muralRefs.current[sm.mural.id]) muralRefs.current[sm.mural.id] = React.createRef();
-                          return (
-                            <span
-                              key={sm.mural.id}
-                              onMouseEnter={() => setHoveredMuralId(null)}
-                              onMouseLeave={() => setHoveredMuralId(null)}
-                              className="inline-block cursor-pointer transition-transform duration-200 hover:scale-110"
+                      <div className="grid grid-cols-3 md:grid-cols-4 gap-3 justify-center items-center max-w-xs mx-auto">
+                        {sala.murales.map((sm) => (
+                          <div key={sm.mural.id} className="relative group">
+                            <img
+                              ref={muralRefs.current[sm.mural.id]}
+                              src={sm.mural.url_imagen}
+                              alt={sm.mural.titulo}
+                              className="w-16 h-16 object-cover rounded-lg border border-gray-200 dark:border-gray-700 shadow"
+                              onLoad={() => setLoadedMurales((prev) => ({ ...prev, [sm.mural.id]: true }))}
+                            />
+                            <button
+                              type="button"
+                              className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-80 group-hover:opacity-100 transition"
+                              title="Eliminar mural de la sala"
+                              onClick={() => handleRemoveMural(sala.id, sm.mural.id)}
                             >
-                              <img
-                                ref={muralRefs.current[sm.mural.id]}
-                                src={sm.mural.url_imagen}
-                                alt={sm.mural.titulo}
-                                className="w-12 h-12 object-cover rounded-lg border border-gray-200 dark:border-gray-700 shadow"
-                                onLoad={() => setLoadedMurales((prev) => ({ ...prev, [sm.mural.id]: true }))}
-                              />
-                            </span>
-                          );
-                        })}
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                        <button
+                          type="button"
+                          className="flex flex-col items-center justify-center gap-1 p-0.5 border-2 border-dashed border-indigo-400 rounded-lg bg-white dark:bg-neutral-900 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-neutral-800 transition h-16 w-16 min-w-[4rem] min-h-[4rem]"
+                          onClick={() => handleShowAddMural(sala.id)}
+                          title="Añadir mural a la sala"
+                        >
+                          <span className="text-2xl leading-none">＋</span>
+                          <span className="text-xs font-medium">Añadir</span>
+                        </button>
                       </div>
                     </td>
                     <td className="px-4 py-4 align-middle text-center">
@@ -207,6 +294,64 @@ function AdminSalasContent() {
           )}
         </div>
       </div>
+      {/* Modal de confirmación de borrado */}
+      { salaToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white dark:bg-neutral-900 border border-border rounded-2xl shadow-2xl p-8 flex flex-col items-center max-w-xs">
+            <h3 className="font-semibold mb-4 text-lg text-red-700 dark:text-red-300">¿Eliminar sala?</h3>
+            <p className="mb-6 text-gray-700 dark:text-gray-200 text-center">Esta acción eliminará la sala y no se puede deshacer. ¿Seguro que quieres continuar?</p>
+            <div className="flex gap-4">
+              <button
+                className="px-4 py-2 rounded bg-gray-200 dark:bg-neutral-800 text-gray-700 dark:text-gray-200 font-bold hover:bg-gray-300 dark:hover:bg-neutral-700 transition"
+                onClick={cancelDelete}
+                disabled={isDeleting}
+              >
+                Cancelar
+              </button>
+              <button
+                className="px-4 py-2 rounded bg-red-600 text-white font-bold hover:bg-red-700 transition"
+                onClick={confirmDelete}
+                disabled={isDeleting}
+              >
+                {isDeleting ? "Eliminando..." : "Eliminar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Modal para añadir mural */}
+      {showAddMuralModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white dark:bg-neutral-900 border border-border rounded-2xl shadow-2xl p-8 flex flex-col items-center max-w-xs">
+            <h3 className="font-semibold mb-4 text-lg text-indigo-700 dark:text-indigo-300">Añadir mural a la sala</h3>
+            <select
+              className="mb-6 w-full p-2 rounded border border-gray-300 dark:border-gray-700"
+              value={selectedMuralId}
+              onChange={(e) => setSelectedMuralId(e.target.value)}
+            >
+              <option value="">Selecciona un mural</option>
+              {muralesDisponibles.map((mural) => (
+                <option key={mural.id} value={mural.id}>{mural.titulo}</option>
+              ))}
+            </select>
+            <div className="flex gap-4">
+              <button
+                className="px-4 py-2 rounded bg-gray-200 dark:bg-neutral-800 text-gray-700 dark:text-gray-200 font-bold hover:bg-gray-300 dark:hover:bg-neutral-700 transition"
+                onClick={() => setShowAddMuralModal(false)}
+              >
+                Cancelar
+              </button>
+              <button
+                className="px-4 py-2 rounded bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition"
+                onClick={handleAddMural}
+                disabled={!selectedMuralId}
+              >
+                Añadir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 
