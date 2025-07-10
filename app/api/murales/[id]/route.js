@@ -31,9 +31,15 @@ export async function GET(req, context) {
                 colaboradores: {
                   select: {
                     id: true,
-                    name: true,
-                    email: true,
-                    role: true,
+                    rol: true,
+                    user: {
+                      select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        role: true,
+                      },
+                    },
                   },
                 },
               },

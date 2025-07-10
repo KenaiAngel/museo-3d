@@ -29,7 +29,11 @@ export default function Carousel({ title, items }) {
           >
             <div className={styles.content}>
               <div className={styles.name}>{item.title}</div>
-              <div className={styles.des}>{item.autor}</div>
+              <div className={styles.des}>
+                {item.autor && item.autor.includes(',')
+                  ? item.autor.split(',')[0] + '...'
+                  : item.autor}
+              </div>
               <div className={styles.des}>{item.tecnica}</div>
               <button onClick={() => setActiveCard(item)}>Ver mas</button>
             </div>
