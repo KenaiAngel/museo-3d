@@ -430,6 +430,7 @@ export default function CrearObraModal({
   const [artistId, setArtistId] = useState("");
   const [artistList, setArtistList] = useState([]);
   const scrollYRef = useRef(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -2053,23 +2054,37 @@ export default function CrearObraModal({
   }, [isOpen, imgMode]);
 
   const handleCreate = async () => {
-    if (!validateStep()) return;
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    if (!validateStep()) {
+      setIsSubmitting(false);
+      return;
+    }
 
     let imgFile = null;
-    let imgUrl = null;
 
-    if (imgMode === "archivo" && imagen) {
-      imgFile = imagen;
-    } else if (imgMode === "canvas" && canvasImage) {
-      // Convertir canvas a blob
+    if (imgMode === "canvas" && canvasImage) {
       const canvas = canvasRef.current;
-      canvas.toBlob((blob) => {
+      canvas.toBlob(async (blob) => {
+        if (!blob) {
+          toast.error("No se pudo obtener la imagen del canvas.");
+          setIsSubmitting(false);
+          return;
+        }
         imgFile = new File([blob], `${titulo || "obra"}.png`, {
           type: "image/png",
         });
+        await sendForm(imgFile);
       }, "image/png");
+      return;
+    } else if (imgMode === "archivo" && imagen) {
+      imgFile = imagen;
     }
 
+    await sendForm(imgFile);
+  };
+
+  async function sendForm(imgFile) {
     const formData = new FormData();
     if (imgFile)
       formData.append("imagen", imgFile, titulo ? `${titulo}.png` : "obra.png");
@@ -2077,12 +2092,18 @@ export default function CrearObraModal({
     formData.append("tecnica", tecnica);
     formData.append("anio", year ? year.toString() : "");
     // Al guardar la obra, usar el nombre real del usuario logueado
-    const autorNombre = session?.user?.name || "";
-    if (!autorNombre) {
-      toast.error("No se pudo obtener el nombre del usuario. Inicia sesión nuevamente.");
+    const autorNombre = session?.user?.name;
+    if (session?.user && autorNombre === undefined) {
+      formData.append("autor", "");
+    } else if (!autorNombre) {
+      toast.error(
+        "No se pudo obtener el nombre del usuario. Inicia sesión nuevamente."
+      );
+      setIsSubmitting(false);
       return;
+    } else {
+      formData.append("autor", autorNombre);
     }
-    formData.append("autor", autorNombre);
     formData.append("userId", session?.user?.id || "");
     formData.append("descripcion", descripcion);
     formData.append("artistId", artistId);
@@ -2097,16 +2118,22 @@ export default function CrearObraModal({
         const result = await response.json();
         onCreate(result);
         toast.success("Obra creada exitosamente");
-        onClose();
+        if (typeof onClose === "function") onClose();
       } else {
-        const error = await response.json();
-        toast.error(error.message || "Error al crear la obra");
+        let errorMsg = "Error al crear la obra";
+        try {
+          const error = await response.json();
+          if (error && error.message) errorMsg = error.message;
+        } catch {}
+        toast.error(errorMsg);
       }
     } catch (error) {
       toast.error("Error al crear la obra");
       console.error(error);
+    } finally {
+      setIsSubmitting(false);
     }
-  };
+  }
 
   // Determinar si estamos en el paso de canvas
   const isCanvasStep = step === 1 && imgMode === "canvas";
@@ -2490,11 +2517,24 @@ export default function CrearObraModal({
                         />
                         <div className="flex flex-col items-center mt-3 gap-1 w-full">
                           <div className="flex items-center justify-center gap-3 w-full">
-                            <span className="text-sm text-foreground font-medium truncate max-w-[180px]" title={imagen.name}>{imagen.name}</span>
-                            <span className="text-xs text-muted-foreground">{(imagen.size / 1024 < 1024 ? (imagen.size / 1024).toFixed(1) + ' KB' : (imagen.size / 1024 / 1024).toFixed(2) + ' MB')}</span>
+                            <span
+                              className="text-sm text-foreground font-medium truncate max-w-[180px]"
+                              title={imagen.name}
+                            >
+                              {imagen.name}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {imagen.size / 1024 < 1024
+                                ? (imagen.size / 1024).toFixed(1) + " KB"
+                                : (imagen.size / 1024 / 1024).toFixed(2) +
+                                  " MB"}
+                            </span>
                             <button
                               type="button"
-                              onClick={e => { e.stopPropagation(); setImagen(null); }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setImagen(null);
+                              }}
                               className="ml-2 p-1 rounded-full bg-red-100 hover:bg-red-300 text-red-700 transition"
                               title="Eliminar imagen"
                             >
@@ -2509,7 +2549,8 @@ export default function CrearObraModal({
                           Arrastra una imagen aquí o haz clic para seleccionar
                         </span>
                         <span className="text-sm text-muted-foreground">
-                          Formatos soportados: JPG, PNG, GIF, WebP. Tamaño máximo 5MB.
+                          Formatos soportados: JPG, PNG, GIF, WebP. Tamaño
+                          máximo 5MB.
                         </span>
                       </>
                     )}
@@ -2753,16 +2794,49 @@ export default function CrearObraModal({
                         <Download className="h-6 w-6" />
                         <span className="sr-only">Descargar</span>
                       </button>
-                      <button
+                      <Button
+                        type="button"
                         onClick={handleCreate}
+                        disabled={isSubmitting}
                         className="group p-2 rounded-full bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-800 transition"
                         title="Guardar obra"
                         aria-label="Guardar obra"
                       >
                         <Save className="h-6 w-6" />
                         <span className="sr-only">Guardar</span>
-                      </button>
+                        {isSubmitting && <span>Creando...</span>}
+                      </Button>
                     </div>
+                    {showConfirmClear && (
+                      <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-black/40 backdrop-blur-sm">
+                        <div className="bg-white dark:bg-neutral-900 border border-border rounded-2xl shadow-2xl p-8 flex flex-col items-center">
+                          <h3 className="font-semibold mb-4 text-lg text-red-700 dark:text-red-300">
+                            ¿Limpiar el lienzo?
+                          </h3>
+                          <p className="mb-6 text-gray-700 dark:text-gray-200">
+                            Esta acción eliminará todo el contenido del canvas.
+                            ¿Seguro que quieres continuar?
+                          </p>
+                          <div className="flex gap-4">
+                            <button
+                              className="px-4 py-2 rounded bg-gray-200 dark:bg-neutral-800 text-gray-700 dark:text-gray-200 font-bold hover:bg-gray-300 dark:hover:bg-neutral-700 transition"
+                              onClick={() => setShowConfirmClear(false)}
+                            >
+                              Cancelar
+                            </button>
+                            <button
+                              className="px-4 py-2 rounded bg-red-600 text-white font-bold hover:bg-red-700 transition"
+                              onClick={() => {
+                                clearCanvasAndSave();
+                                setShowConfirmClear(false);
+                              }}
+                            >
+                              Limpiar
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                     {/* Canvas grande y centrado */}
                     <div
                       style={{
@@ -3279,7 +3353,13 @@ export default function CrearObraModal({
             <div className="flex flex-col md:flex-row gap-8 items-center justify-center py-8">
               {/* Vista previa de la imagen */}
               <div className="flex-shrink-0 flex flex-col items-center">
-                {imagen ? (
+                {imgMode === "canvas" && canvasImage ? (
+                  <img
+                    src={canvasImage}
+                    alt="preview"
+                    className="w-[320px] h-[320px] object-contain rounded-2xl border-4 border-indigo-400 shadow-lg bg-white dark:bg-neutral-900"
+                  />
+                ) : imagen ? (
                   <img
                     src={URL.createObjectURL(imagen)}
                     alt="preview"
@@ -3294,15 +3374,62 @@ export default function CrearObraModal({
               {/* Datos del mural */}
               <div className="flex-1 max-w-md w-full flex flex-col justify-center items-center h-full">
                 <div className="w-full max-w-xs mx-auto flex flex-col justify-center">
-                  <h3 className="text-2xl font-bold mb-4 text-foreground text-center">Datos de la obra</h3>
+                  <h3 className="text-2xl font-bold mb-4 text-foreground text-center">
+                    Datos de la obra
+                  </h3>
                   <div className="space-y-3 text-base w-full">
-                    <div className="flex gap-2 justify-start"><span className="font-semibold w-28 text-right">Título:</span> <span className="truncate text-left">{titulo}</span></div>
-                    <div className="flex gap-2 justify-start"><span className="font-semibold w-28 text-right">Técnica:</span> <span className="text-left">{tecnica}</span></div>
-                    <div className="flex gap-2 justify-start"><span className="font-semibold w-28 text-right">Año:</span> <span className="text-left">{year}</span></div>
-                    <div className="flex gap-2 justify-start"><span className="font-semibold w-28 text-right">Autor(es):</span> <span className="text-left">{autor || <span className="italic text-gray-400">No especificado</span>}</span></div>
-                    <div className="flex gap-2 justify-start"><span className="font-semibold w-28 text-right">Artista:</span> <span className="text-left">{artistList.find(a => a.id === artistId)?.user?.name || <span className="italic text-gray-400">No especificado</span>}</span></div>
+                    <div className="flex gap-2 justify-start">
+                      <span className="font-semibold w-28 text-right">
+                        Título:
+                      </span>{" "}
+                      <span className="truncate text-left">{titulo}</span>
+                    </div>
+                    <div className="flex gap-2 justify-start">
+                      <span className="font-semibold w-28 text-right">
+                        Técnica:
+                      </span>{" "}
+                      <span className="text-left">{tecnica}</span>
+                    </div>
+                    <div className="flex gap-2 justify-start">
+                      <span className="font-semibold w-28 text-right">
+                        Año:
+                      </span>{" "}
+                      <span className="text-left">{year}</span>
+                    </div>
+                    <div className="flex gap-2 justify-start">
+                      <span className="font-semibold w-28 text-right">
+                        Autor(es):
+                      </span>{" "}
+                      <span className="text-left">
+                        {autor || (
+                          <span className="italic text-gray-400">
+                            No especificado
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                    <div className="flex gap-2 justify-start">
+                      <span className="font-semibold w-28 text-right">
+                        Artista:
+                      </span>{" "}
+                      <span className="text-left">
+                        {artistList.find((a) => a.id === artistId)?.user
+                          ?.name || (
+                          <span className="italic text-gray-400">
+                            No especificado
+                          </span>
+                        )}
+                      </span>
+                    </div>
                     {descripcion && (
-                      <div className="flex gap-2 items-start justify-start"><span className="font-semibold w-28 text-right">Descripción:</span> <span className="whitespace-pre-line text-left">{descripcion}</span></div>
+                      <div className="flex gap-2 items-start justify-start">
+                        <span className="font-semibold w-28 text-right">
+                          Descripción:
+                        </span>{" "}
+                        <span className="whitespace-pre-line text-left">
+                          {descripcion}
+                        </span>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -3336,12 +3463,14 @@ export default function CrearObraModal({
                 Siguiente
               </button>
             ) : (
-              <button
+              <Button
+                type="button"
                 onClick={handleCreate}
+                disabled={isSubmitting}
                 className="px-4 py-2 rounded-lg bg-green-600 text-white font-bold hover:bg-green-700 transition"
               >
-                Crear obra
-              </button>
+                {isSubmitting ? "Creando..." : "Crear obra"}
+              </Button>
             )}
           </div>
         </div>
@@ -3641,11 +3770,24 @@ export default function CrearObraModal({
                         />
                         <div className="flex flex-col items-center mt-3 gap-1 w-full">
                           <div className="flex items-center justify-center gap-3 w-full">
-                            <span className="text-sm text-foreground font-medium truncate max-w-[180px]" title={imagen.name}>{imagen.name}</span>
-                            <span className="text-xs text-muted-foreground">{(imagen.size / 1024 < 1024 ? (imagen.size / 1024).toFixed(1) + ' KB' : (imagen.size / 1024 / 1024).toFixed(2) + ' MB')}</span>
+                            <span
+                              className="text-sm text-foreground font-medium truncate max-w-[180px]"
+                              title={imagen.name}
+                            >
+                              {imagen.name}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {imagen.size / 1024 < 1024
+                                ? (imagen.size / 1024).toFixed(1) + " KB"
+                                : (imagen.size / 1024 / 1024).toFixed(2) +
+                                  " MB"}
+                            </span>
                             <button
                               type="button"
-                              onClick={e => { e.stopPropagation(); setImagen(null); }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setImagen(null);
+                              }}
                               className="ml-2 p-1 rounded-full bg-red-100 hover:bg-red-300 text-red-700 transition"
                               title="Eliminar imagen"
                             >
@@ -3660,7 +3802,8 @@ export default function CrearObraModal({
                           Arrastra una imagen aquí o haz clic para seleccionar
                         </span>
                         <span className="text-sm text-muted-foreground">
-                          Formatos soportados: JPG, PNG, GIF, WebP. Tamaño máximo 5MB.
+                          Formatos soportados: JPG, PNG, GIF, WebP. Tamaño
+                          máximo 5MB.
                         </span>
                       </>
                     )}
@@ -3904,16 +4047,49 @@ export default function CrearObraModal({
                         <Download className="h-6 w-6" />
                         <span className="sr-only">Descargar</span>
                       </button>
-                      <button
+                      <Button
+                        type="button"
                         onClick={handleCreate}
+                        disabled={isSubmitting}
                         className="group p-2 rounded-full bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-800 transition"
                         title="Guardar obra"
                         aria-label="Guardar obra"
                       >
                         <Save className="h-6 w-6" />
                         <span className="sr-only">Guardar</span>
-                      </button>
+                        {isSubmitting && <span>Creando...</span>}
+                      </Button>
                     </div>
+                    {showConfirmClear && (
+                      <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-black/40 backdrop-blur-sm">
+                        <div className="bg-white dark:bg-neutral-900 border border-border rounded-2xl shadow-2xl p-8 flex flex-col items-center">
+                          <h3 className="font-semibold mb-4 text-lg text-red-700 dark:text-red-300">
+                            ¿Limpiar el lienzo?
+                          </h3>
+                          <p className="mb-6 text-gray-700 dark:text-gray-200">
+                            Esta acción eliminará todo el contenido del canvas.
+                            ¿Seguro que quieres continuar?
+                          </p>
+                          <div className="flex gap-4">
+                            <button
+                              className="px-4 py-2 rounded bg-gray-200 dark:bg-neutral-800 text-gray-700 dark:text-gray-200 font-bold hover:bg-gray-300 dark:hover:bg-neutral-700 transition"
+                              onClick={() => setShowConfirmClear(false)}
+                            >
+                              Cancelar
+                            </button>
+                            <button
+                              className="px-4 py-2 rounded bg-red-600 text-white font-bold hover:bg-red-700 transition"
+                              onClick={() => {
+                                clearCanvasAndSave();
+                                setShowConfirmClear(false);
+                              }}
+                            >
+                              Limpiar
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                     {/* Canvas grande y centrado */}
                     <div
                       style={{
@@ -4430,7 +4606,13 @@ export default function CrearObraModal({
             <div className="flex flex-col md:flex-row gap-8 items-center justify-center py-8">
               {/* Vista previa de la imagen */}
               <div className="flex-shrink-0 flex flex-col items-center">
-                {imagen ? (
+                {imgMode === "canvas" && canvasImage ? (
+                  <img
+                    src={canvasImage}
+                    alt="preview"
+                    className="w-[320px] h-[320px] object-contain rounded-2xl border-4 border-indigo-400 shadow-lg bg-white dark:bg-neutral-900"
+                  />
+                ) : imagen ? (
                   <img
                     src={URL.createObjectURL(imagen)}
                     alt="preview"
@@ -4445,15 +4627,62 @@ export default function CrearObraModal({
               {/* Datos del mural */}
               <div className="flex-1 max-w-md w-full flex flex-col justify-center items-center h-full">
                 <div className="w-full max-w-xs mx-auto flex flex-col justify-center">
-                  <h3 className="text-2xl font-bold mb-4 text-foreground text-center">Datos de la obra</h3>
+                  <h3 className="text-2xl font-bold mb-4 text-foreground text-center">
+                    Datos de la obra
+                  </h3>
                   <div className="space-y-3 text-base w-full">
-                    <div className="flex gap-2 justify-start"><span className="font-semibold w-28 text-right">Título:</span> <span className="truncate text-left">{titulo}</span></div>
-                    <div className="flex gap-2 justify-start"><span className="font-semibold w-28 text-right">Técnica:</span> <span className="text-left">{tecnica}</span></div>
-                    <div className="flex gap-2 justify-start"><span className="font-semibold w-28 text-right">Año:</span> <span className="text-left">{year}</span></div>
-                    <div className="flex gap-2 justify-start"><span className="font-semibold w-28 text-right">Autor(es):</span> <span className="text-left">{autor || <span className="italic text-gray-400">No especificado</span>}</span></div>
-                    <div className="flex gap-2 justify-start"><span className="font-semibold w-28 text-right">Artista:</span> <span className="text-left">{artistList.find(a => a.id === artistId)?.user?.name || <span className="italic text-gray-400">No especificado</span>}</span></div>
+                    <div className="flex gap-2 justify-start">
+                      <span className="font-semibold w-28 text-right">
+                        Título:
+                      </span>{" "}
+                      <span className="truncate text-left">{titulo}</span>
+                    </div>
+                    <div className="flex gap-2 justify-start">
+                      <span className="font-semibold w-28 text-right">
+                        Técnica:
+                      </span>{" "}
+                      <span className="text-left">{tecnica}</span>
+                    </div>
+                    <div className="flex gap-2 justify-start">
+                      <span className="font-semibold w-28 text-right">
+                        Año:
+                      </span>{" "}
+                      <span className="text-left">{year}</span>
+                    </div>
+                    <div className="flex gap-2 justify-start">
+                      <span className="font-semibold w-28 text-right">
+                        Autor(es):
+                      </span>{" "}
+                      <span className="text-left">
+                        {autor || (
+                          <span className="italic text-gray-400">
+                            No especificado
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                    <div className="flex gap-2 justify-start">
+                      <span className="font-semibold w-28 text-right">
+                        Artista:
+                      </span>{" "}
+                      <span className="text-left">
+                        {artistList.find((a) => a.id === artistId)?.user
+                          ?.name || (
+                          <span className="italic text-gray-400">
+                            No especificado
+                          </span>
+                        )}
+                      </span>
+                    </div>
                     {descripcion && (
-                      <div className="flex gap-2 items-start justify-start"><span className="font-semibold w-28 text-right">Descripción:</span> <span className="whitespace-pre-line text-left">{descripcion}</span></div>
+                      <div className="flex gap-2 items-start justify-start">
+                        <span className="font-semibold w-28 text-right">
+                          Descripción:
+                        </span>{" "}
+                        <span className="whitespace-pre-line text-left">
+                          {descripcion}
+                        </span>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -4487,12 +4716,14 @@ export default function CrearObraModal({
                 Siguiente
               </button>
             ) : (
-              <button
+              <Button
+                type="button"
                 onClick={handleCreate}
+                disabled={isSubmitting}
                 className="px-4 py-2 rounded-lg bg-green-600 text-white font-bold hover:bg-green-700 transition"
               >
-                Crear obra
-              </button>
+                {isSubmitting ? "Creando..." : "Crear obra"}
+              </Button>
             )}
           </div>
         </div>

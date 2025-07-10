@@ -52,7 +52,7 @@ model User {
     sessions          Session[]
     settings          Json?
     salasPropias      Sala[]              @relation("SalaOwner")
-    salasColabora     Sala[]              @relation("SalaColaboradores")
+    salasColabora     SalaColaborador[]
     pushSubscriptions PushSubscription[]
     artist            Artist? // Relación opcional con Artist
     favoritedBy       UserMuralFavorite[]
@@ -86,14 +86,16 @@ model Mural {
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
+
+    @@unique([titulo])
 }
 
 model Sala {
-    id               Int         @id @default(autoincrement())
+    id               Int               @id @default(autoincrement())
     nombre           String
     descripcion      String?
-    publica          Boolean     @default(false)
-    esPrivada        Boolean?    @default(false)
+    publica          Boolean           @default(false)
+    esPrivada        Boolean?          @default(false)
     color            String?
     texturaPared     String?
     texturaPiso      String?
@@ -104,11 +106,11 @@ model Sala {
     fechaApertura    DateTime?
     notas            String?
     creadorId        String
-    creador          User        @relation("SalaOwner", fields: [creadorId], references: [id])
+    creador          User              @relation("SalaOwner", fields: [creadorId], references: [id])
     murales          SalaMural[]
-    colaboradores    User[]      @relation("SalaColaboradores")
-    createdAt        DateTime    @default(now())
-    updatedAt        DateTime    @updatedAt
+    colaboradores    SalaColaborador[]
+    createdAt        DateTime          @default(now())
+    updatedAt        DateTime          @updatedAt
 }
 
 model SalaMural {
@@ -137,11 +139,24 @@ model PushSubscription {
     endpoint  String   @unique
     p256dh    String
     auth      String
-    userId    String
-    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    userId    String? // Ahora opcional
+    user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+    keys      Json? // Opcional, para guardar el objeto completo de keys si lo necesitas
     createdAt DateTime @default(now())
 
     @@index([userId])
+}
+
+model SalaColaborador {
+    id        Int      @id @default(autoincrement())
+    sala      Sala     @relation(fields: [salaId], references: [id])
+    salaId    Int
+    user      User     @relation(fields: [userId], references: [id])
+    userId    String
+    rol       String // Ejemplo: "colaborador", "curador"
+    createdAt DateTime @default(now())
+
+    @@unique([salaId, userId])
 }
 
 model Artist {

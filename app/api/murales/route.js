@@ -185,6 +185,20 @@ export async function POST(req) {
       );
     }
 
+    // Validar que no exista un mural con el mismo título
+    const existing = await prisma.mural.findUnique({
+      where: { titulo: data.titulo },
+    });
+    if (existing) {
+      return new Response(
+        JSON.stringify({
+          message:
+            "Ya existe una obra con ese nombre. Elige un título diferente.",
+        }),
+        { status: 409, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
     const mural = await prisma.mural.create({
       data: {
         titulo: data.titulo,

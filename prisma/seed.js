@@ -49,77 +49,77 @@ async function main() {
   console.log("✅ Artist user processed:", artistUser.email);
 
   // --- 2. CREACIÓN DE MURALES DE EJEMPLO ---
-  const muralesData = [
-    {
-      titulo: "Mural de Bienvenida",
-      autor: "Artista Local",
-      tecnica: "Acrílico sobre muro",
-      descripcion: "Un mural vibrante que da la bienvenida a los visitantes.",
-      anio: 2024,
-      url_imagen:
-        "https://res.cloudinary.com/daol1ohso/image/upload/v1749847137/ejemplo1.jpg",
-    },
-    {
-      titulo: "Historia de la Ciudad",
-      autor: "Muralista Urbano",
-      tecnica: "Spray y acrílico",
-      descripcion:
-        "Un recorrido visual por la rica historia de nuestra ciudad.",
-      anio: 2023,
-      url_imagen:
-        "https://res.cloudinary.com/daol1ohso/image/upload/v1749847137/ejemplo2.jpg",
-    },
-    {
-      titulo: "Sueños Digitales",
-      autor: "Artista de Prueba",
-      tecnica: "Proyección sobre muro",
-      descripcion:
-        "Una exploración de los paisajes oníricos en la era digital.",
-      anio: 2024,
-      url_imagen:
-        "https://res.cloudinary.com/daol1ohso/image/upload/v1749847137/mural_artista1.jpg",
-      artistId: artistUser.artist.id,
-    },
-    {
-      titulo: "Naturaleza Conectada",
-      autor: "Artista de Prueba",
-      tecnica: "Pintura con elementos de AR",
-      descripcion: "Un mural que cobra vida a través de la realidad aumentada.",
-      anio: 2023,
-      url_imagen:
-        "https://res.cloudinary.com/daol1ohso/image/upload/v1749847137/mural_artista2.jpg",
-      artistId: artistUser.artist.id,
-    },
-    {
-      titulo: "Geometría Ancestral",
-      autor: "Colectivo Andino",
-      tecnica: "Mosaico de cerámica",
-      descripcion: "Patrones geométricos inspirados en culturas precolombinas.",
-      anio: 2022,
-      url_imagen:
-        "https://res.cloudinary.com/daol1ohso/image/upload/v1749847137/mural_geo.jpg",
-    },
-    {
-      titulo: "Ritmos Urbanos",
-      autor: "DJ Arte",
-      tecnica: "Grafiti y esténcil",
-      descripcion:
-        "La energía y el movimiento de la música urbana plasmados en un muro.",
-      anio: 2024,
-      url_imagen:
-        "https://res.cloudinary.com/daol1ohso/image/upload/v1749847137/mural_urbano.jpg",
-    },
-  ];
+  // const muralesData = [
+  //   {
+  //     titulo: "Mural de Bienvenida",
+  //     autor: "Artista Local",
+  //     tecnica: "Acrílico sobre muro",
+  //     descripcion: "Un mural vibrante que da la bienvenida a los visitantes.",
+  //     anio: 2024,
+  //     url_imagen:
+  //       "https://res.cloudinary.com/daol1ohso/image/upload/v1749847137/ejemplo1.jpg",
+  //   },
+  //   {
+  //     titulo: "Historia de la Ciudad",
+  //     autor: "Muralista Urbano",
+  //     tecnica: "Spray y acrílico",
+  //     descripcion:
+  //       "Un recorrido visual por la rica historia de nuestra ciudad.",
+  //     anio: 2023,
+  //     url_imagen:
+  //       "https://res.cloudinary.com/daol1ohso/image/upload/v1749847137/ejemplo2.jpg",
+  //   },
+  //   {
+  //     titulo: "Sueños Digitales",
+  //     autor: "Artista de Prueba",
+  //     tecnica: "Proyección sobre muro",
+  //     descripcion:
+  //       "Una exploración de los paisajes oníricos en la era digital.",
+  //     anio: 2024,
+  //     url_imagen:
+  //       "https://res.cloudinary.com/daol1ohso/image/upload/v1749847137/mural_artista1.jpg",
+  //     artistId: artistUser.artist.id,
+  //   },
+  //   {
+  //     titulo: "Naturaleza Conectada",
+  //     autor: "Artista de Prueba",
+  //     tecnica: "Pintura con elementos de AR",
+  //     descripcion: "Un mural que cobra vida a través de la realidad aumentada.",
+  //     anio: 2023,
+  //     url_imagen:
+  //       "https://res.cloudinary.com/daol1ohso/image/upload/v1749847137/mural_artista2.jpg",
+  //     artistId: artistUser.artist.id,
+  //   },
+  //   {
+  //     titulo: "Geometría Ancestral",
+  //     autor: "Colectivo Andino",
+  //     tecnica: "Mosaico de cerámica",
+  //     descripcion: "Patrones geométricos inspirados en culturas precolombinas.",
+  //     anio: 2022,
+  //     url_imagen:
+  //       "https://res.cloudinary.com/daol1ohso/image/upload/v1749847137/mural_geo.jpg",
+  //   },
+  //   {
+  //     titulo: "Ritmos Urbanos",
+  //     autor: "DJ Arte",
+  //     tecnica: "Grafiti y esténcil",
+  //     descripcion:
+  //       "La energía y el movimiento de la música urbana plasmados en un muro.",
+  //     anio: 2024,
+  //     url_imagen:
+  //       "https://res.cloudinary.com/daol1ohso/image/upload/v1749847137/mural_urbano.jpg",
+  //   },
+  // ];
 
-  for (const data of muralesData) {
-    const existingMural = await prisma.mural.findFirst({
-      where: { titulo: data.titulo },
-    });
-    if (!existingMural) {
-      await prisma.mural.create({ data });
-    }
-  }
-  console.log(`✅ ${muralesData.length} base murals processed.`);
+  // for (const data of muralesData) {
+  //   const existingMural = await prisma.mural.findFirst({
+  //     where: { titulo: data.titulo },
+  //   });
+  //   if (!existingMural) {
+  //     await prisma.mural.create({ data });
+  //   }
+  // }
+  // console.log(`✅ ${muralesData.length} base murals processed.`);
 
   // --- 3. LIMPIAR ASOCIACIONES Y SALAS EXISTENTES ---
   // Para evitar duplicados en relaciones, es más seguro limpiar las salas viejas

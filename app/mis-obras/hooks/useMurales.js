@@ -100,8 +100,7 @@ export function useMurales() {
 
   // Eliminar mural
   const handleDeleteMural = useCallback(async (muralId) => {
-    if (!confirm("¿Estás seguro de que quieres eliminar esta obra?")) return;
-
+    // confirm eliminado, la confirmación ahora es por modal
     try {
       const response = await fetch(`/api/murales/${muralId}`, {
         method: "DELETE",

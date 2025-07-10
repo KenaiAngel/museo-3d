@@ -25,10 +25,16 @@ export async function GET(req) {
         },
         colaboradores: {
           select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
+            rol: true,
+            createdAt: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+              },
+            },
           },
         },
         murales: {
@@ -253,10 +259,16 @@ export async function POST(req) {
         },
         colaboradores: {
           select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
+            rol: true,
+            createdAt: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+              },
+            },
           },
         },
         murales: {
