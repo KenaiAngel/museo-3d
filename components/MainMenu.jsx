@@ -430,14 +430,6 @@ export default function MainMenu({ onSubirArchivo }) {
                                 Gestionar Usuarios
                               </Link>
                             </NavigationMenuLink>
-                            <NavigationMenuLink asChild>
-                              <Link
-                                href="/admin/salas"
-                                className="block px-3 py-2 rounded-md hover:bg-muted hover:text-primary transition-all text-sm"
-                              >
-                                Moderar Salas y Murales
-                              </Link>
-                            </NavigationMenuLink>
                           </>
                         )}
 
@@ -822,13 +814,6 @@ export default function MainMenu({ onSubirArchivo }) {
                           className="block py-1 text-sm hover:text-primary transition-colors"
                         >
                           Gestionar Usuarios
-                        </Link>
-                        <Link
-                          href="/admin/salas"
-                          onClick={() => setMobileMenuOpen(false)}
-                          className="block py-1 text-sm hover:text-primary transition-colors"
-                        >
-                          Moderar Salas y Murales
                         </Link>
                       </>
                     )}
