@@ -185,8 +185,15 @@ export async function POST(req) {
       );
     }
 
+    // Validar que el título esté presente y sea string
+    if (!data.titulo || typeof data.titulo !== "string") {
+      return new Response(
+        JSON.stringify({ error: "El título de la obra es obligatorio." }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
     // Validar que no exista un mural con el mismo título
-    const existing = await prisma.mural.findUnique({
+    const existing = await prisma.mural.findFirst({
       where: { titulo: data.titulo },
     });
     if (existing) {

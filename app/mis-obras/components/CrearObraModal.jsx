@@ -3362,13 +3362,13 @@ export default function CrearObraModal({
                   <img
                     src={canvasImage}
                     alt="preview"
-                    className="w-[320px] h-[320px] object-contain rounded-2xl border-4 border-indigo-400 shadow-lg bg-white dark:bg-neutral-900"
+                    className="w-[320px] h-[320px] object-contain rounded-2xl border-4 border-indigo-400 shadow-lg bg-white"
                   />
                 ) : imagen ? (
                   <img
                     src={URL.createObjectURL(imagen)}
                     alt="preview"
-                    className="w-[320px] h-[320px] object-contain rounded-2xl border-4 border-indigo-400 shadow-lg bg-white dark:bg-neutral-900"
+                    className="w-[320px] h-[320px] object-contain rounded-2xl border-4 border-indigo-400 shadow-lg bg-white"
                   />
                 ) : (
                   <div className="w-[320px] h-[320px] flex items-center justify-center rounded-2xl border-4 border-dashed border-gray-300 bg-gray-50 dark:bg-neutral-800 text-gray-400 text-lg">
@@ -4615,13 +4615,13 @@ export default function CrearObraModal({
                   <img
                     src={canvasImage}
                     alt="preview"
-                    className="w-[320px] h-[320px] object-contain rounded-2xl border-4 border-indigo-400 shadow-lg bg-white dark:bg-neutral-900"
+                    className="w-[320px] h-[320px] object-contain rounded-2xl border-4 border-indigo-400 shadow-lg bg-white"
                   />
                 ) : imagen ? (
                   <img
                     src={URL.createObjectURL(imagen)}
                     alt="preview"
-                    className="w-[320px] h-[320px] object-contain rounded-2xl border-4 border-indigo-400 shadow-lg bg-white dark:bg-neutral-900"
+                    className="w-[320px] h-[320px] object-contain rounded-2xl border-4 border-indigo-400 shadow-lg bg-white"
                   />
                 ) : (
                   <div className="w-[320px] h-[320px] flex items-center justify-center rounded-2xl border-4 border-dashed border-gray-300 bg-gray-50 dark:bg-neutral-800 text-gray-400 text-lg">
