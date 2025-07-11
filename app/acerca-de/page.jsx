@@ -49,6 +49,12 @@ const equipo = [
     img: "/images/Equipo_1.webp",
     color: "bg-gradient-to-br from-violet-400 to-purple-500",
   },
+  {
+    nombre: "Daniela Estefanía Díaz Merino",
+    rol: "Front-end / Diseñadora UI/UX",
+    img: "/images/Equipo_3.webp",
+    color: "bg-gradient-to-br from-emerald-400 to-green-500",
+  }
 ];
 
 // Componente de imagen con fallback
@@ -160,7 +166,7 @@ export default function AcercaDe() {
             <h2 className="text-3xl font-bold mb-6 font-playfair text-foreground">
               Nuestra Historia
             </h2>
-            <div className="space-y-4 text-muted-foreground font-normal font-inter text-lg leading-relaxed">
+            <div className="space-y-4 text-muted-foreground font-normal font-inter text-lg text-justify leading-relaxed">
               <p>
                 El Mural ARPA nació como parte de un esfuerzo colectivo por
                 documentar y visibilizar las obras murales creadas por
@@ -234,7 +240,7 @@ export default function AcercaDe() {
               <h2 className="text-3xl font-bold mb-6 font-playfair text-foreground text-center">
                 Nuestra Misión
               </h2>
-              <div className="space-y-4 text-muted-foreground font-normal font-inter text-lg leading-relaxed">
+              <div className="space-y-4 text-muted-foreground font-normal font-inter text-lg text-justify leading-relaxed">
                 <p>
                   Preservar, documentar y difundir el arte mural mexicano a
                   través de tecnologías digitales innovadoras, haciendo
@@ -269,7 +275,7 @@ export default function AcercaDe() {
               <h2 className="text-3xl font-bold mb-6 font-playfair text-foreground text-center">
                 Nuestra Visión
               </h2>
-              <div className="space-y-4 text-muted-foreground font-normal font-inter text-lg leading-relaxed">
+              <div className="space-y-4 text-muted-foreground font-normal font-inter text-lg text-justify leading-relaxed">
                 <p>
                   Ser la plataforma líder mundial en la preservación y
                   experiencia digital del arte mural, conectando artistas,
@@ -320,7 +326,7 @@ export default function AcercaDe() {
                 <h3 className="text-xl font-semibold text-foreground mb-3">
                   Preservación Cultural
                 </h3>
-                <p className="text-muted-foreground font-inter leading-relaxed">
+                <p className="text-muted-foreground font-inter text-justify leading-relaxed">
                   Creemos firmemente en la importancia de preservar nuestro
                   patrimonio cultural para las futuras generaciones. Cada mural
                   representa una pieza única de nuestra historia colectiva, y
@@ -332,7 +338,7 @@ export default function AcercaDe() {
                 <h3 className="text-xl font-semibold text-foreground mb-3">
                   Innovación Tecnológica
                 </h3>
-                <p className="text-muted-foreground font-inter leading-relaxed">
+                <p className="text-muted-foreground font-inter text-justify leading-relaxed">
                   Abrazamos las tecnologías más avanzadas para crear
                   experiencias digitales que honren la belleza y complejidad del
                   arte mural original. Utilizamos herramientas de vanguardia
@@ -343,7 +349,7 @@ export default function AcercaDe() {
                 <h3 className="text-xl font-semibold text-foreground mb-3">
                   Accesibilidad Universal
                 </h3>
-                <p className="text-muted-foreground font-inter leading-relaxed">
+                <p className="text-muted-foreground font-inter text-justify leading-relaxed">
                   Nos esforzamos por hacer que el arte mural sea accesible para
                   todos, independientemente de su ubicación geográfica,
                   capacidades físicas o recursos económicos. Creemos que el arte
@@ -355,7 +361,7 @@ export default function AcercaDe() {
                 <h3 className="text-xl font-semibold text-foreground mb-3">
                   Colaboración Comunitaria
                 </h3>
-                <p className="text-muted-foreground font-inter leading-relaxed">
+                <p className="text-muted-foreground font-inter text-justify leading-relaxed">
                   Trabajamos en estrecha colaboración con las comunidades
                   locales, artistas, instituciones educativas y organizaciones
                   culturales para asegurar que nuestro trabajo refleje
@@ -385,7 +391,7 @@ export default function AcercaDe() {
               <h4 className="font-semibold text-foreground text-lg mb-2">
                 Escuela de Artes Plásticas y Audiovisuales (BUAP)
               </h4>
-              <p className="text-muted-foreground font-inter max-w-2xl mx-auto">
+              <p className="text-muted-foreground font-inter text-justify max-w-2xl mx-auto">
                 La Escuela de Artes Plásticas y Audiovisuales de la Benemérita
                 Universidad Autónoma de Puebla ha sido fundamental en el
                 desarrollo de este proyecto, proporcionando no solo el apoyo
