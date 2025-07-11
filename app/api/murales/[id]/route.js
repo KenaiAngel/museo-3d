@@ -7,10 +7,24 @@ const prisma = new PrismaClient();
 export async function GET(req, context) {
   const params = await context.params;
   const { id } = params;
+  const muralId = Number(id);
+
+  if (!id || isNaN(muralId)) {
+    return new Response(
+      JSON.stringify({
+        error: "ID de mural inválido",
+        message: "El parámetro 'id' es requerido y debe ser un número.",
+      }),
+      {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  }
 
   try {
     const mural = await prisma.mural.findUnique({
-      where: { id: Number(id) },
+      where: { id: muralId },
       include: {
         salas: {
           include: {
@@ -85,6 +99,20 @@ export async function GET(req, context) {
 export async function PUT(req, context) {
   const params = await context.params;
   const { id } = params;
+  const muralId = Number(id);
+
+  if (!id || isNaN(muralId)) {
+    return new Response(
+      JSON.stringify({
+        error: "ID de mural inválido",
+        message: "El parámetro 'id' es requerido y debe ser un número.",
+      }),
+      {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  }
 
   try {
     const contentType = req.headers.get("content-type") || "";
@@ -131,7 +159,7 @@ export async function PUT(req, context) {
 
     // Actualizar mural
     const mural = await prisma.mural.update({
-      where: { id: Number(id) },
+      where: { id: muralId },
       data: {
         titulo: data.titulo,
         descripcion: data.descripcion,
@@ -149,8 +177,8 @@ export async function PUT(req, context) {
         anio: data.anio
           ? Number(data.anio)
           : data.year
-          ? Number(data.year)
-          : null,
+            ? Number(data.year)
+            : null,
       },
       include: {
         salas: {
@@ -197,26 +225,37 @@ export async function PUT(req, context) {
 export async function DELETE(req, context) {
   const params = await context.params;
   const { id } = params;
+  const muralId = Number(id);
 
-  try {
-    await prisma.mural.delete({
-      where: { id: Number(id) },
-    });
-
-    return new Response(null, {
-      status: 204,
-    });
-  } catch (error) {
-    console.error("Error al eliminar mural:", error);
+  if (!id || isNaN(muralId)) {
     return new Response(
       JSON.stringify({
-        error: "Error interno del servidor al eliminar el mural",
-        details: error.message,
+        error: "ID de mural inválido",
+        message: "El parámetro 'id' es requerido y debe ser un número.",
       }),
       {
-        status: 500,
+        status: 400,
         headers: { "Content-Type": "application/json" },
       }
+    );
+  }
+
+  try {
+    // Soft delete: actualiza deletedAt
+    const mural = await prisma.mural.update({
+      where: { id: muralId },
+      data: { deletedAt: new Date() },
+    });
+    return new Response(JSON.stringify({ success: true, mural }), {
+      status: 200,
+    });
+  } catch (error) {
+    return new Response(
+      JSON.stringify({
+        error: "Error al eliminar mural",
+        details: error.message,
+      }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }
 }

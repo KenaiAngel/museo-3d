@@ -20,6 +20,109 @@ import MuralGrid from "./components/MuralGrid";
 import { Badge } from "../components/ui/badge";
 import { useCollection } from "../../providers/CollectionProvider";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
+
+function MuralesEliminadosAdmin() {
+  const { data: session } = useSession();
+  const [eliminados, setEliminados] = useState({});
+
+  useEffect(() => {
+    if (session?.user?.role === "ADMIN") {
+      fetch("/api/murales/eliminados")
+        .then((res) => res.json())
+        .then(setEliminados);
+    }
+  }, [session]);
+
+  // Agrupa todos los murales sin usuario bajo una sola clave
+  const agrupados = {};
+  Object.entries(eliminados).forEach(([userId, { user, murales }]) => {
+    const key = userId && userId !== "sin_usuario" ? userId : "sin_usuario";
+    if (!agrupados[key]) agrupados[key] = { user, murales: [] };
+    agrupados[key].murales = agrupados[key].murales.concat(murales || []);
+  });
+
+  // Si no hay ningún mural restaurable, no mostrar la sección
+  const hayMuralesEliminados = Object.values(agrupados).some(
+    ({ murales }) => (murales || []).length > 0
+  );
+  if (!hayMuralesEliminados) return null;
+
+  if (session?.user?.role !== "ADMIN") return null;
+
+  return (
+    <section className="mt-12">
+      <h2 className="text-2xl font-bold mb-4">
+        Usuarios con murales eliminados
+      </h2>
+      {Object.entries(agrupados).map(([userId, { user, murales }]) =>
+        (murales || []).length === 0 ? null : (
+          <div key={userId} className="mb-8">
+            <h3 className="font-semibold text-lg mb-2">
+              {userId === "sin_usuario"
+                ? "Sin usuario"
+                : user?.name || "Sin usuario"}{" "}
+              ({user?.email || "N/A"})
+            </h3>
+            <span className="text-sm text-gray-500">
+              {murales.length} mural(es) eliminados
+            </span>
+          </div>
+        )
+      )}
+    </section>
+  );
+}
+
+function MisMuralesEliminados() {
+  const { data: session } = useSession();
+  const [murales, setMurales] = useState([]);
+  const [loadingId, setLoadingId] = useState(null);
+  useEffect(() => {
+    if (session?.user?.id) {
+      fetch(`/api/murales?deleted=1&userId=${session.user.id}`)
+        .then((res) => res.json())
+        .then((data) => setMurales(data.murales || []));
+    }
+  }, [session]);
+  if (!session?.user?.id) return null;
+  if (murales.length === 0) return null;
+  return (
+    <section className="mt-12">
+      <h2 className="text-2xl font-bold mb-4">Tus murales eliminados</h2>
+      <ul>
+        {murales.map((mural) => (
+          <li key={mural.id} className="flex items-center gap-4 mb-2">
+            <span>{mural.titulo}</span>
+            <span className="text-xs text-gray-500">
+              Eliminado: {new Date(mural.deletedAt).toLocaleString()}
+            </span>
+            <button
+              className="px-2 py-1 bg-green-600 text-white rounded disabled:opacity-50"
+              disabled={loadingId === mural.id}
+              onClick={async () => {
+                setLoadingId(mural.id);
+                const res = await fetch(`/api/murales/${mural.id}/restore`, {
+                  method: "POST",
+                });
+                if (res.ok) {
+                  toast.success("Mural restaurado");
+                  setMurales(murales.filter((m) => m.id !== mural.id));
+                } else {
+                  toast.error("Error al restaurar mural");
+                }
+                setLoadingId(null);
+              }}
+            >
+              {loadingId === mural.id ? "Restaurando..." : "Restaurar"}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
 
 export default function MisObras() {
   const { data: session, status } = useSession();
@@ -69,9 +172,9 @@ export default function MisObras() {
     openCanvasEditor(mural);
   };
 
-  // Estrategia: 'Mis obras' = murales donde autor === session.user.name
+  // Estrategia: 'Mis obras' = murales donde userId === session.user.id
   const propios = murales
-    .filter((m) => session?.user?.name && m.autor === session.user.name)
+    .filter((m) => session?.user?.id && m.userId === session.user.id)
     .map((m) => ({ ...m, editable: true, fromCollection: false }));
 
   // Colección: favoritos (no editables)
@@ -177,7 +280,9 @@ export default function MisObras() {
           {favoritosFiltrados.length > 0 && (
             <div className="mb-8">
               <div className="flex items-center gap-2 mb-4">
-                <h2 className="text-xl font-bold text-foreground">Mi colección</h2>
+                <h2 className="text-xl font-bold text-foreground">
+                  Mi colección
+                </h2>
                 <Badge variant="pink">Favoritos</Badge>
               </div>
               <MuralGrid
@@ -197,6 +302,8 @@ export default function MisObras() {
             />
           )}
         </motion.div>
+        <MisMuralesEliminados />
+        <MuralesEliminadosAdmin />
       </div>
 
       {/* Modal de subida de imágenes */}

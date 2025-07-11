@@ -19,6 +19,12 @@ export default function EditarObraPage() {
   const { user, userProfile } = useUser();
 
   useEffect(() => {
+    console.log("params:", params, "id:", id);
+    if (!id) {
+      setError("ID de obra inválido");
+      setLoading(false);
+      return;
+    }
     async function fetchObra() {
       setLoading(true);
       setError(null);
@@ -33,7 +39,7 @@ export default function EditarObraPage() {
         setLoading(false);
       }
     }
-    if (id) fetchObra();
+    fetchObra();
   }, [id]);
 
   // Solo el dueño puede editar

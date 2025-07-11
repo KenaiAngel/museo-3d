@@ -12,16 +12,20 @@ export async function GET(req) {
     const autor = searchParams.get("autor");
     const tecnica = searchParams.get("tecnica");
     const anio = searchParams.get("anio");
+    const deleted = searchParams.get("deleted");
+    const userId = searchParams.get("userId");
 
     // Construir filtros dinámicamente
     const where = {};
     if (autor) where.autor = { contains: autor, mode: "insensitive" };
     if (tecnica) where.tecnica = { contains: tecnica, mode: "insensitive" };
     if (anio) where.anio = Number(anio);
+    if (deleted === "1") where.deletedAt = { not: null };
+    if (userId) where.userId = userId;
 
     // Si se especifica salaId, buscar murales que pertenezcan a esa sala
     if (salaId) {
-      where.salas = {
+      where.SalaMural = {
         some: {
           salaId: Number(salaId),
         },
@@ -31,7 +35,7 @@ export async function GET(req) {
     const murales = await prisma.mural.findMany({
       where,
       include: {
-        salas: {
+        SalaMural: {
           include: {
             sala: {
               select: {
@@ -77,8 +81,8 @@ export async function GET(req) {
 
     murales.forEach((mural) => {
       // Estadísticas por sala
-      if (mural.salas.length > 0) {
-        mural.salas.forEach((salaMural) => {
+      if (mural.SalaMural.length > 0) {
+        mural.SalaMural.forEach((salaMural) => {
           const salaNombre = salaMural.sala.nombre;
           stats.porSala[salaNombre] = (stats.porSala[salaNombre] || 0) + 1;
         });
@@ -107,6 +111,8 @@ export async function GET(req) {
           autor: autor || null,
           tecnica: tecnica || null,
           anio: anio || null,
+          deleted: deleted || null,
+          userId: userId || null,
         },
       }),
       {

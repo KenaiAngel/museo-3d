@@ -82,6 +82,7 @@ model Mural {
     imagenUrlWebp       String?
     imagenesSecundarias Json?
     videoUrl            String?
+    audioUrl            String?
     latitud             Float?
     longitud            Float?
     ubicacion           String?
