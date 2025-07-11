@@ -150,7 +150,7 @@ export default function AcercaDe() {
       </div>
       <main className="relative z-10 w-full max-w-5xl mx-auto flex flex-col gap-16 px-4 sm:px-8 py-8 md:py-12">
         {/* Hero Section */}
-        <section className="text-center animate-fade-in-up">
+        <section className="text-center px-4 sm:px-0 animate-fade-in-up">
           <h1 className="text-5xl font-bold mb-6 font-playfair text-foreground">
             Acerca del Mural ARPA
           </h1>
@@ -161,7 +161,7 @@ export default function AcercaDe() {
         </section>
 
         {/* Historia Section - Collage con murales aleatorios */}
-        <section className="grid md:grid-cols-2 gap-12 items-center animate-fade-in-up delay-100">
+        <section className="grid md:grid-cols-2 gap-12 mx-6 sm:mx-0 items-center animate-fade-in-up delay-100">
           <div>
             <h2 className="text-3xl font-bold mb-6 font-playfair text-foreground">
               Nuestra Historia
@@ -184,7 +184,7 @@ export default function AcercaDe() {
               </p>
             </div>
           </div>
-          <div className="relative w-full h-80 flex items-center justify-center">
+          <div className="relative my-10 sm:my-0 w-full h-80 flex items-center justify-center">
             {loading ? (
               <SectionLoader text="Cargando murales..." />
             ) : error ? (
@@ -234,7 +234,7 @@ export default function AcercaDe() {
         </section>
 
         {/* Misión y Visión - Ahora en una columna */}
-        <section className="animate-fade-in-up delay-200">
+        <section className="mx-6 sm:mx-0 animate-fade-in-up delay-200">
           <div className="max-w-4xl mx-auto space-y-12">
             <div>
               <h2 className="text-3xl font-bold mb-6 font-playfair text-foreground text-center">
@@ -316,7 +316,7 @@ export default function AcercaDe() {
         </section>
 
         {/* Valores y Principios */}
-        <section className="animate-fade-in-up delay-250">
+        <section className="mx-6 sm:mx-0 animate-fade-in-up delay-250">
           <div className="max-w-4xl mx-auto">
             <h2 className="text-3xl font-bold mb-8 font-playfair text-foreground text-center">
               Nuestros Valores y Principios
@@ -374,7 +374,7 @@ export default function AcercaDe() {
         </section>
 
         {/* Apoyo */}
-        <section className="text-center animate-fade-in-up delay-300">
+        <section className="mx-6 sm:mx-0 text-center animate-fade-in-up delay-300">
           <h2 className="text-3xl font-bold mb-8 font-playfair text-foreground">
             Con apoyo de:
           </h2>
