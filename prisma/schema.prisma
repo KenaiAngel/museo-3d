@@ -59,6 +59,8 @@ model User {
     verificationToken        String?
     verificationTokenExpires DateTime?
     subscriptions            Subscription[]
+    muralesColabora          MuralColaborador[] // Relación inversa
+    Mural                    Mural[]
 }
 
 model VerificationToken {
@@ -70,27 +72,38 @@ model VerificationToken {
 }
 
 model Mural {
-    id          Int     @id @default(autoincrement())
-    titulo      String
-    autor       String? // Campo legacy para compatibilidad
-    tecnica     String?
-    descripcion String?
-    anio        Int?
-    url_imagen  String?
-    latitud     Float? // Coordenada de latitud
-    longitud    Float? // Coordenada de longitud
-    ubicacion   String? // Dirección o descripción de ubicación
-
-    // Relaciones
-    salas       SalaMural[]
-    artistId    String? // ID del artista (opcional)
-    artist      Artist?             @relation(fields: [artistId], references: [id])
-    favoritedBy UserMuralFavorite[]
-
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-
-    @@unique([titulo])
+    id                  Int                 @id @default(autoincrement())
+    titulo              String
+    descripcion         String?
+    anio                Int?
+    tecnica             String?
+    dimensiones         String?
+    url_imagen          String?
+    imagenUrlWebp       String?
+    imagenesSecundarias Json?
+    videoUrl            String?
+    latitud             Float?
+    longitud            Float?
+    ubicacion           String?
+    salaId              Int?
+    exposiciones        Json?
+    estado              String?
+    publica             Boolean?            @default(true)
+    destacada           Boolean?            @default(false)
+    deletedAt           DateTime?
+    tags                Json?
+    orden               Int?
+    visitas             Int?                @default(0)
+    userId              String?
+    user                User?               @relation(fields: [userId], references: [id])
+    artistId            String?
+    artist              Artist?             @relation(fields: [artistId], references: [id])
+    autor               String?
+    colaboradores       MuralColaborador[]
+    favoritedBy         UserMuralFavorite[]
+    createdAt           DateTime            @default(now())
+    updatedAt           DateTime            @updatedAt
+    SalaMural           SalaMural[]
 }
 
 model Sala {
@@ -200,4 +213,17 @@ model Subscription {
     createdAt DateTime @default(now())
 
     @@unique([userId, type])
+}
+
+model MuralColaborador {
+    id            Int      @id @default(autoincrement())
+    mural         Mural    @relation(fields: [muralId], references: [id])
+    muralId       Int
+    user          User?    @relation(fields: [userId], references: [id])
+    userId        String? // Opcional: null si es externo
+    nombreExterno String? // Nombre si no es usuario registrado
+    rol           String? // Ejemplo: "colaborador", "curador"
+    createdAt     DateTime @default(now())
+
+    @@unique([muralId, userId, nombreExterno])
 }

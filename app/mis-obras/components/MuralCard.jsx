@@ -2,10 +2,12 @@
 
 import { motion } from "framer-motion";
 import { Edit3, Trash2, Ban } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 const MuralCard = ({ mural, view = "grid", onEdit, onDelete }) => {
+  const router = useRouter();
   const handleEdit = () => {
-    onEdit(mural);
+    router.push(`/mis-obras/editar/${mural.id}`);
   };
 
   const handleDelete = () => {
@@ -46,7 +48,10 @@ const MuralCard = ({ mural, view = "grid", onEdit, onDelete }) => {
             className="p-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors relative"
             title="Editar"
             disabled={!mural.editable}
-            style={{ opacity: mural.editable ? 1 : 0.5, cursor: mural.editable ? 'pointer' : 'not-allowed' }}
+            style={{
+              opacity: mural.editable ? 1 : 0.5,
+              cursor: mural.editable ? "pointer" : "not-allowed",
+            }}
           >
             <Edit3 className="h-4 w-4" />
             {!mural.editable && (
@@ -60,7 +65,10 @@ const MuralCard = ({ mural, view = "grid", onEdit, onDelete }) => {
             className="p-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
             title="Eliminar"
             disabled={!mural.editable}
-            style={{ opacity: mural.editable ? 1 : 0.5, cursor: mural.editable ? 'pointer' : 'not-allowed' }}
+            style={{
+              opacity: mural.editable ? 1 : 0.5,
+              cursor: mural.editable ? "pointer" : "not-allowed",
+            }}
           >
             <Trash2 className="h-4 w-4" />
           </button>
@@ -75,7 +83,7 @@ const MuralCard = ({ mural, view = "grid", onEdit, onDelete }) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="bg-white dark:bg-white backdrop-blur-sm rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 border border-border"
+      className="flex flex-col h-full bg-white dark:bg-white backdrop-blur-sm rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 border border-border"
     >
       <div className="aspect-square relative overflow-hidden">
         <img
@@ -90,7 +98,10 @@ const MuralCard = ({ mural, view = "grid", onEdit, onDelete }) => {
               className="p-2 bg-white/90 text-gray-800 rounded-lg hover:bg-white transition-colors relative"
               title="Editar"
               disabled={!mural.editable}
-              style={{ opacity: mural.editable ? 1 : 0.5, cursor: mural.editable ? 'pointer' : 'not-allowed' }}
+              style={{
+                opacity: mural.editable ? 1 : 0.5,
+                cursor: mural.editable ? "pointer" : "not-allowed",
+              }}
             >
               <Edit3 className="h-4 w-4" />
               {!mural.editable && (
@@ -104,14 +115,17 @@ const MuralCard = ({ mural, view = "grid", onEdit, onDelete }) => {
               className="p-2 bg-red-500/90 text-white rounded-lg hover:bg-red-600 transition-colors"
               title="Eliminar"
               disabled={!mural.editable}
-              style={{ opacity: mural.editable ? 1 : 0.5, cursor: mural.editable ? 'pointer' : 'not-allowed' }}
+              style={{
+                opacity: mural.editable ? 1 : 0.5,
+                cursor: mural.editable ? "pointer" : "not-allowed",
+              }}
             >
               <Trash2 className="h-4 w-4" />
             </button>
           </div>
         </div>
       </div>
-      <div className="p-4 bg-white dark:bg-neutral-900 transition-colors duration-300">
+      <div className="p-4 bg-white dark:bg-neutral-900 transition-colors duration-300 flex flex-col flex-1 justify-end">
         <h3 className="font-semibold text-lg text-foreground mb-1 truncate">
           {mural.titulo}
         </h3>

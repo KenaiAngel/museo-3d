@@ -7,6 +7,7 @@ import React, {
   useCallback,
 } from "react";
 import { useSession } from "next-auth/react";
+import useSWR, { mutate } from "swr";
 
 const CollectionContext = createContext();
 
@@ -20,37 +21,26 @@ export const useCollection = () => {
 
 export const CollectionProvider = ({ children }) => {
   const { data: session } = useSession();
-  const [collection, setCollection] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const fetcher = async () => {
+    if (!session?.user?.id) return [];
+    const response = await fetch("/api/collection");
+    if (!response.ok) throw new Error("Error al cargar la colección");
+    const data = await response.json();
+    return Array.isArray(data) ? data : data.items || [];
+  };
 
-  // Cargar colección del usuario
-  const loadCollection = useCallback(async () => {
-    if (!session?.user?.id) {
-      setCollection([]);
-      return;
+  const {
+    data: collection = [],
+    error,
+    isLoading: loading,
+    mutate: swrMutate,
+  } = useSWR(
+    session?.user?.id ? ["collection", session.user.id] : null,
+    fetcher,
+    {
+      revalidateOnFocus: false,
     }
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch("/api/collection");
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      setCollection(Array.isArray(data) ? data : (data.items || []));
-    } catch (err) {
-      console.error("Error loading collection:", err);
-      setError(err.message);
-      setCollection([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [session?.user?.id]);
+  );
 
   // Agregar obra a la colección
   const addToCollection = useCallback(
@@ -60,44 +50,32 @@ export const CollectionProvider = ({ children }) => {
           "Debes iniciar sesión para agregar obras a tu colección"
         );
       }
-
-      try {
-        const response = await fetch("/api/collection", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
+      const response = await fetch("/api/collection", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          muralId: Number(artworkId),
+          artworkType,
+          artworkData: {
+            id: artworkId,
+            type: artworkType,
+            addedAt: new Date().toISOString(),
+            ...artworkData,
           },
-          body: JSON.stringify({
-            muralId: Number(artworkId),
-            artworkType,
-            artworkData: {
-              id: artworkId,
-              type: artworkType,
-              addedAt: new Date().toISOString(),
-              ...artworkData,
-            },
-          }),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(
-            errorData.message || "Error al agregar obra a la colección"
-          );
-        }
-
-        const result = await response.json();
-
-        // Actualizar la colección local
-        setCollection((prev) => [...prev, result.item]);
-
-        return result;
-      } catch (error) {
-        console.error("Error adding to collection:", error);
-        throw error;
+        }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+          errorData.message || "Error al agregar obra a la colección"
+        );
       }
+      await swrMutate(); // Refresca la colección tras agregar
+      return await response.json();
     },
-    [session?.user?.id]
+    [session?.user?.id, swrMutate]
   );
 
   // Remover obra de la colección
@@ -106,35 +84,27 @@ export const CollectionProvider = ({ children }) => {
       if (!session?.user?.id) {
         throw new Error("Debes iniciar sesión para modificar tu colección");
       }
-
-      try {
-        const response = await fetch(`/api/collection?itemId=${itemId}`, {
-          method: "DELETE",
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(
-            errorData.message || "Error al remover obra de la colección"
-          );
-        }
-
-        // Actualizar la colección local
-        setCollection((prev) => prev.filter((item) => item.id !== itemId));
-
-        return await response.json();
-      } catch (error) {
-        console.error("Error removing from collection:", error);
-        throw error;
+      const response = await fetch(`/api/collection?itemId=${itemId}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+          errorData.message || "Error al remover obra de la colección"
+        );
       }
+      await swrMutate(); // Refresca la colección tras eliminar
+      return await response.json();
     },
-    [session?.user?.id]
+    [session?.user?.id, swrMutate]
   );
 
   // Verificar si una obra está en la colección
   const isInCollection = useCallback(
     (artworkId) => {
-      return collection.some((item) => item && item.id && item.id.toString() === artworkId.toString());
+      return collection.some(
+        (item) => item && item.id && item.id.toString() === artworkId.toString()
+      );
     },
     [collection]
   );
@@ -149,20 +119,17 @@ export const CollectionProvider = ({ children }) => {
         newestItem: null,
       };
     }
-
     const byType = collection.reduce((acc, item) => {
       const type = item.artworkType || "unknown";
       acc[type] = (acc[type] || 0) + 1;
       return acc;
     }, {});
-
     const sortedByDate = collection
       .map((item) => ({
         ...item,
         addedAt: new Date(item.addedAt || item.createdAt),
       }))
       .sort((a, b) => a.addedAt - b.addedAt);
-
     return {
       totalItems: collection.length,
       byType,
@@ -171,10 +138,8 @@ export const CollectionProvider = ({ children }) => {
     };
   }, [collection]);
 
-  // Cargar colección cuando cambie la sesión
-  useEffect(() => {
-    loadCollection();
-  }, [loadCollection]);
+  // Refrescar colección manualmente
+  const refreshCollection = useCallback(() => swrMutate(), [swrMutate]);
 
   const value = {
     collection,
@@ -184,7 +149,7 @@ export const CollectionProvider = ({ children }) => {
     removeFromCollection,
     isInCollection,
     getCollectionStats,
-    refreshCollection: loadCollection,
+    refreshCollection,
   };
 
   return (
