@@ -33,14 +33,17 @@ const fetcher = (url) => fetch(url).then((res) => res.json());
 
 // Helper function to parse authors/artists
 function parseAutores(artist) {
-  if (!artist || typeof artist !== 'string') return [];
-  return artist.split(',').map(a => a.trim()).filter(a => a.length > 0);
+  if (!artist || typeof artist !== "string") return [];
+  return artist
+    .split(",")
+    .map((a) => a.trim())
+    .filter((a) => a.length > 0);
 }
 
 // Hook simple para el efecto mouse glow
 const useCardMouseGlow = () => {
   const blobRef = useRef(null);
-  
+
   const handleMouseMove = (e) => {
     if (!blobRef.current) return;
     const { left, top } = e.currentTarget.getBoundingClientRect();
@@ -52,8 +55,8 @@ const useCardMouseGlow = () => {
 
   const handleMouseLeave = () => {
     if (!blobRef.current) return;
-    blobRef.current.style.left = '-100px';
-    blobRef.current.style.top = '-100px';
+    blobRef.current.style.left = "-100px";
+    blobRef.current.style.top = "-100px";
   };
 
   return { blobRef, handleMouseMove, handleMouseLeave };
@@ -359,7 +362,7 @@ function PerfilAvatarTooltip({ src, alt, anchorRef, show }) {
   }, [show, anchorRef]);
 
   if (!show) return null;
-  
+
   return ReactDOM.createPortal(
     <div
       style={{
@@ -424,18 +427,19 @@ function PerfilAvatarEdit({
   // Para detectar cambio de imagen, verificamos si hay un archivo nuevo
   const imageChanged = newImage && newImage !== originalImage;
   const hasChanges = nameChanged || imageChanged;
-  
+
   // Si cambió el nombre, debe estar disponible; si no cambió, no importa
   const nameIsValid = nameChanged ? nameAvailable === true : true;
-  
+
   // Si solo cambió la imagen (sin cambiar nombre), no necesita validar disponibilidad
   const onlyImageChanged = imageChanged && !nameChanged;
-  
-  const canSave = !updating && 
-                  hasChanges && 
-                  newName.length >= 3 && 
-                  (onlyImageChanged || nameIsValid) && 
-                  !checkingName;
+
+  const canSave =
+    !updating &&
+    hasChanges &&
+    newName.length >= 3 &&
+    (onlyImageChanged || nameIsValid) &&
+    !checkingName;
 
   return (
     <>
@@ -505,7 +509,7 @@ function PerfilAvatarEdit({
       {nameAvailable === true && (
         <div className="text-xs text-green-600">¡Nombre disponible!</div>
       )}
-      
+
       {/* Mensaje de estado del guardado */}
       {!hasChanges && (
         <div className="text-xs text-muted-foreground">
@@ -518,21 +522,17 @@ function PerfilAvatarEdit({
         </div>
       )}
       {hasChanges && nameChanged && nameAvailable === false && (
-        <div className="text-xs text-red-500">
-          El nombre no está disponible
-        </div>
+        <div className="text-xs text-red-500">El nombre no está disponible</div>
       )}
       {hasChanges && nameChanged && checkingName && (
-        <div className="text-xs text-yellow-600">
-          Verificando nombre...
-        </div>
+        <div className="text-xs text-yellow-600">Verificando nombre...</div>
       )}
       {hasChanges && nameChanged && nameAvailable === true && (
         <div className="text-xs text-green-600">
           ¡Cambios listos para guardar!
         </div>
       )}
-      
+
       <div className="flex gap-2 mt-2">
         <Button
           size="sm"
@@ -542,18 +542,24 @@ function PerfilAvatarEdit({
         >
           Cancelar
         </Button>
-        <Button 
-          size="sm" 
-          onClick={handleSave} 
+        <Button
+          size="sm"
+          onClick={handleSave}
           disabled={!canSave}
           title={
-            !hasChanges ? "Realiza cambios para guardar" :
-            onlyImageChanged ? "Guardar nueva imagen de perfil" :
-            nameChanged && nameAvailable === false ? "El nombre no está disponible" :
-            nameChanged && checkingName ? "Verificando disponibilidad del nombre" :
-            newName.length < 3 ? "El nombre debe tener al menos 3 caracteres" :
-            hasChanges && nameIsValid ? "Guardar cambios de perfil" :
-            ""
+            !hasChanges
+              ? "Realiza cambios para guardar"
+              : onlyImageChanged
+                ? "Guardar nueva imagen de perfil"
+                : nameChanged && nameAvailable === false
+                  ? "El nombre no está disponible"
+                  : nameChanged && checkingName
+                    ? "Verificando disponibilidad del nombre"
+                    : newName.length < 3
+                      ? "El nombre debe tener al menos 3 caracteres"
+                      : hasChanges && nameIsValid
+                        ? "Guardar cambios de perfil"
+                        : ""
           }
         >
           {updating ? "Guardando..." : "Guardar"}
@@ -836,12 +842,12 @@ function PerfilContent() {
           error: "Error al actualizar el perfil",
         }
       );
-      
+
       // Forzar recarga del perfil en el contexto global y esperar a que termine
       if (typeof loadUserProfile === "function" && session?.user?.email) {
         await loadUserProfile(session.user.email);
       }
-      
+
       // Limpiar el estado después de guardar exitosamente
       setNewImage(null);
       setImagePreview(session?.user?.image || "");
@@ -922,13 +928,13 @@ function PerfilContent() {
 
   const onSubsChange = async (checked, e) => {
     if (e && typeof e.preventDefault === "function") e.preventDefault();
-    
+
     // Verificar que el email esté verificado antes de permitir suscripción
     if (checked && !session?.user?.emailVerified) {
       toast.error("Debes verificar tu email antes de activar la suscripción");
       return;
     }
-    
+
     setSubsEnabled(checked);
     try {
       if (checked) {
@@ -1030,7 +1036,11 @@ function PerfilContent() {
 
   // Sincronizar imagen cuando la sesión cambie, pero solo si no hay archivo pendiente
   useEffect(() => {
-    if (session?.user && !editMode && (!newImage || typeof newImage === "string")) {
+    if (
+      session?.user &&
+      !editMode &&
+      (!newImage || typeof newImage === "string")
+    ) {
       setNewImage(session.user.image || "");
       setImagePreview(session.user.image || "");
     }
@@ -1184,12 +1194,14 @@ function PerfilContent() {
                         />
                         <span className="text-xs text-muted-foreground">
                           {subsEnabled ? "Activa" : "Inactiva"}
-                          {!session?.user?.emailVerified && " (Requiere email verificado)"}
+                          {!session?.user?.emailVerified &&
+                            " (Requiere email verificado)"}
                         </span>
                       </div>
                       {!session?.user?.emailVerified && (
                         <div className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                          ⚠️ Debes verificar tu email para activar las suscripciones
+                          ⚠️ Debes verificar tu email para activar las
+                          suscripciones
                         </div>
                       )}
                     </div>

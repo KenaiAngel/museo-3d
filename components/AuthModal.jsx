@@ -43,24 +43,24 @@ export default function AuthModal() {
 
   useEffect(() => {
     if (!isOpen) return;
-    
+
     // Al abrir el modal, ir al top de la página instantáneamente
     window.scrollTo(0, 0);
-    
+
     const handleKey = (e) => {
       if (e.key === "Escape" && !success) {
         handleClose();
       }
     };
-    
+
     window.addEventListener("keydown", handleKey);
-    
+
     // Bloquear el scroll inmediatamente
     document.body.style.overflow = "hidden";
-    
+
     return () => {
       window.removeEventListener("keydown", handleKey);
-      
+
       // Restaurar el scroll
       document.body.style.overflow = "";
     };
@@ -155,16 +155,19 @@ export default function AuthModal() {
         } else {
           toast.success("Cuenta creada e iniciada sesión correctamente");
           setSuccess(true);
-          
+
           // Manejar redirección después del registro exitoso
           setTimeout(() => {
-            const redirectTo = modalData?.redirectTo || 
-                              (typeof window !== 'undefined' ? sessionStorage.getItem('redirectAfterLogin') : null);
-            
-            if (redirectTo && redirectTo !== '/') {
+            const redirectTo =
+              modalData?.redirectTo ||
+              (typeof window !== "undefined"
+                ? sessionStorage.getItem("redirectAfterLogin")
+                : null);
+
+            if (redirectTo && redirectTo !== "/") {
               // Limpiar el almacenamiento de redirección
-              if (typeof window !== 'undefined') {
-                sessionStorage.removeItem('redirectAfterLogin');
+              if (typeof window !== "undefined") {
+                sessionStorage.removeItem("redirectAfterLogin");
               }
               router.push(redirectTo);
             } else {
@@ -188,16 +191,19 @@ export default function AuthModal() {
         } else {
           toast.success("Sesión iniciada correctamente");
           setSuccess(true);
-          
+
           // Manejar redirección después del login exitoso
           setTimeout(() => {
-            const redirectTo = modalData?.redirectTo || 
-                              (typeof window !== 'undefined' ? sessionStorage.getItem('redirectAfterLogin') : null);
-            
-            if (redirectTo && redirectTo !== '/') {
+            const redirectTo =
+              modalData?.redirectTo ||
+              (typeof window !== "undefined"
+                ? sessionStorage.getItem("redirectAfterLogin")
+                : null);
+
+            if (redirectTo && redirectTo !== "/") {
               // Limpiar el almacenamiento de redirección
-              if (typeof window !== 'undefined') {
-                sessionStorage.removeItem('redirectAfterLogin');
+              if (typeof window !== "undefined") {
+                sessionStorage.removeItem("redirectAfterLogin");
               }
               router.push(redirectTo);
             } else {
@@ -254,15 +260,15 @@ export default function AuthModal() {
           transition={{ duration: 0.3 }}
           className="fixed z-[9999] bg-black/50 backdrop-blur-sm"
           style={{
-            position: 'fixed',
-            top: '0',
-            left: '0',
-            width: '100vw',
-            height: '100vh',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '1rem'
+            position: "fixed",
+            top: "0",
+            left: "0",
+            width: "100vw",
+            height: "100vh",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "1rem",
           }}
           onClick={handleBackdropClick}
         >
@@ -346,8 +352,8 @@ export default function AuthModal() {
                               form.name.length === 0
                                 ? "border-gray-200 dark:border-gray-700"
                                 : isNameValid
-                                ? "border-green-400 dark:border-green-500"
-                                : "border-red-400 dark:border-red-500"
+                                  ? "border-green-400 dark:border-green-500"
+                                  : "border-red-400 dark:border-red-500"
                             }`}
                           >
                             <User className="w-5 h-5 text-gray-300 dark:text-gray-500 mr-2" />
@@ -402,8 +408,8 @@ export default function AuthModal() {
                             form.email.length === 0
                               ? "border-gray-200 dark:border-gray-700"
                               : isEmailValid
-                              ? "border-green-400 dark:border-green-500"
-                              : "border-red-400 dark:border-red-500"
+                                ? "border-green-400 dark:border-green-500"
+                                : "border-red-400 dark:border-red-500"
                           }`}
                         >
                           <Mail className="w-5 h-5 text-gray-300 dark:text-gray-500 mr-2" />
@@ -457,8 +463,8 @@ export default function AuthModal() {
                             form.password.length === 0
                               ? "border-gray-200 dark:border-gray-700"
                               : isPasswordValid
-                              ? "border-green-400 dark:border-green-500"
-                              : "border-red-400 dark:border-red-500"
+                                ? "border-green-400 dark:border-green-500"
+                                : "border-red-400 dark:border-red-500"
                           }`}
                         >
                           <Lock className="w-5 h-5 text-gray-300 dark:text-gray-500 mr-2" />
@@ -528,8 +534,8 @@ export default function AuthModal() {
                               form.confirmPassword.length === 0
                                 ? "border-gray-200 dark:border-gray-700"
                                 : isConfirmValid
-                                ? "border-green-400 dark:border-green-500"
-                                : "border-red-400 dark:border-red-500"
+                                  ? "border-green-400 dark:border-green-500"
+                                  : "border-red-400 dark:border-red-500"
                             }`}
                           >
                             <Lock className="w-5 h-5 text-gray-300 dark:text-gray-500 mr-2" />
@@ -618,11 +624,14 @@ export default function AuthModal() {
               <button
                 type="button"
                 onClick={() => {
-                  const redirectTo = modalData?.redirectTo || 
-                                   (typeof window !== 'undefined' ? sessionStorage.getItem('redirectAfterLogin') : null);
-                  
+                  const redirectTo =
+                    modalData?.redirectTo ||
+                    (typeof window !== "undefined"
+                      ? sessionStorage.getItem("redirectAfterLogin")
+                      : null);
+
                   // Si hay una URL de redirección, incluirla como callbackUrl
-                  if (redirectTo && redirectTo !== '/') {
+                  if (redirectTo && redirectTo !== "/") {
                     signIn("google", { callbackUrl: redirectTo });
                   } else {
                     signIn("google");
