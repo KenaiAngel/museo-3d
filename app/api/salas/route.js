@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { sendEmail } from "@/lib/sendEmail";
 
 const prisma = new PrismaClient();
 
@@ -312,6 +313,28 @@ export async function POST(req) {
         },
       },
     });
+
+    // Notificar a los suscriptores
+    try {
+      const subscriptions = await prisma.subscription.findMany({
+        where: { OR: [{ type: "all" }, { type: "sala" }] },
+        include: { user: true },
+      });
+      for (const sub of subscriptions) {
+        if (!sub.user?.email) continue;
+        await sendEmail({
+          to: sub.user.email,
+          subject: `Nueva sala creada: ${sala.nombre}`,
+          html: `<p>Hola ${sub.user.name || "usuario"},</p>
+            <p>Se ha creado una nueva sala: <b>${sala.nombre}</b>.</p>
+            <p>Descripción: ${sala.descripcion || "Sin descripción"}</p>
+            <p>Puedes verla en el <a href="https://museo-3d.vercel.app/mis-salas">Museo Virtual</a>.</p>
+            <p>Si no deseas recibir más notificaciones, puedes desuscribirte desde tu perfil.</p>`,
+        });
+      }
+    } catch (notifyErr) {
+      console.error("Error notificando suscriptores de sala:", notifyErr);
+    }
 
     return new Response(JSON.stringify(sala), {
       status: 201,

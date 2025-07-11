@@ -765,6 +765,23 @@ function PerfilContent() {
     if (e && typeof e.preventDefault === "function") e.preventDefault();
     setSubsEnabled(checked);
     try {
+      if (checked) {
+        // Suscribir
+        const res = await fetch("/api/subscription", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "all" }),
+        });
+        if (!res.ok) throw new Error("No se pudo suscribir");
+      } else {
+        // Desuscribir
+        const res = await fetch("/api/subscription", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "all" }),
+        });
+        if (!res.ok) throw new Error("No se pudo desuscribir");
+      }
       await handleSettingsChange({
         ...session.user.settings,
         notificaciones: notifEnabled ? "true" : "false",
@@ -772,7 +789,8 @@ function PerfilContent() {
       });
       toast.success(`Suscripción ${checked ? "activada" : "desactivada"}`);
     } catch (error) {
-      toast.error("Error al cambiar configuración de suscripción");
+      toast.error("Error al cambiar suscripción global");
+      setSubsEnabled(!checked); // revertir visual si falla
     }
   };
 

@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import cloudinary from "../../../utils/cloudinary";
+import { sendEmail } from "@/lib/sendEmail";
 
 const prisma = new PrismaClient();
 
@@ -220,6 +221,28 @@ export async function POST(req) {
         artistId: data.artistId || null,
       },
     });
+
+    // Notificar a los suscriptores
+    try {
+      const subscriptions = await prisma.subscription.findMany({
+        where: { OR: [{ type: "all" }, { type: "obra" }] },
+        include: { user: true },
+      });
+      for (const sub of subscriptions) {
+        if (!sub.user?.email) continue;
+        await sendEmail({
+          to: sub.user.email,
+          subject: `Nueva obra creada: ${mural.titulo}`,
+          html: `<p>Hola ${sub.user.name || "usuario"},</p>
+            <p>Se ha creado una nueva obra: <b>${mural.titulo}</b>.</p>
+            <p>Autor: ${mural.autor || "Desconocido"}</p>
+            <p>Puedes verla en la <a href="https://museo-3d.vercel.app/galeria">Galería del Museo Virtual</a>.</p>
+            <p>Si no deseas recibir más notificaciones, puedes desuscribirte desde tu perfil.</p>`,
+        });
+      }
+    } catch (notifyErr) {
+      console.error("Error notificando suscriptores de obra:", notifyErr);
+    }
 
     return new Response(JSON.stringify(mural), {
       status: 201,

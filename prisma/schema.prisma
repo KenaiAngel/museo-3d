@@ -58,6 +58,7 @@ model User {
     favoritedBy              UserMuralFavorite[]
     verificationToken        String?
     verificationTokenExpires DateTime?
+    subscriptions            Subscription[]
 }
 
 model VerificationToken {
@@ -189,4 +190,14 @@ model Artist {
     // Timestamps
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
+}
+
+model Subscription {
+    id        String   @id @default(uuid())
+    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    userId    String
+    type      String // 'sala', 'obra', o 'all' para suscripción global
+    createdAt DateTime @default(now())
+
+    @@unique([userId, type])
 }
