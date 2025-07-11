@@ -1,4 +1,4 @@
-import { sendEmail } from "../usuarios/email/[email]/route";
+import { sendEmail } from "@/lib/sendEmail";
 
 export async function POST(req) {
   try {
