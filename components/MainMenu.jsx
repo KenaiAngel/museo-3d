@@ -181,7 +181,7 @@ export default function MainMenu({ onSubirArchivo }) {
             : "bg-transparent md:bg-white/95 md:dark:bg-gray-900/95 md:backdrop-blur-md"
         } text-gray-900 dark:text-white shadow-sm transition-colors duration-300`}
       >
-        <div className="max-w-screen-xl mx-auto flex items-center justify-between px-4 py-3 md:py-4">
+        <div className="max-w-screen-xl mx-auto flex items-center justify-between px-4 py-2 md:py-4">
           {" "}
           {/* Logo */}
           <Link
