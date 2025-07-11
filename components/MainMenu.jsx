@@ -212,7 +212,7 @@ export default function MainMenu({ onSubirArchivo }) {
           {/* Título a la izquierda en mobile, junto al logo */}
           <div className="flex items-center gap-2 md:hidden">
             <span className="text-lg font-bold tracking-wide text-gray-900 dark:text-white">
-              Museo 3D
+              Mural ARPA
             </span>
           </div>
           {/* Navigation Menu */}

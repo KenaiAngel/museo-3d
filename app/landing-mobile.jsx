@@ -18,25 +18,25 @@ export default function LandingMobile() {
         style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.08))" }}
       />
       <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2 text-center">
-        Bienvenido al Museo Virtual 3D
+        Bienvenido a la experiencia del Mural ARPA.
       </h1>
       <p className="text-gray-600 dark:text-gray-300 text-center mb-8 max-w-xs">
         Explora arte y cultura desde tu dispositivo móvil. Una experiencia
         sencilla y ligera.
       </p>
       <a
-        href="#login"
+        href="login"
         className="inline-block w-full max-w-xs py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg text-center transition-all duration-200 shadow-md mb-8"
       >
         Iniciar sesión
       </a>
-
+    
       <section className="w-full max-w-xs mb-8">
         <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-1 text-center">
           ¿Qué es el Museo 3D?
         </h2>
         <p className="text-gray-600 dark:text-gray-300 text-center text-sm">
-          Es una plataforma digital donde puedes explorar murales, obras y
+          Es una aplicación web donde puedes explorar murales, obras y
           artistas de manera interactiva, desde cualquier lugar.
         </p>
       </section>
@@ -63,12 +63,12 @@ export default function LandingMobile() {
 
       <section className="w-full max-w-xs mb-8">
         <blockquote className="italic text-blue-700 dark:text-blue-300 text-center text-sm border-l-4 border-blue-400 pl-3">
-          "El arte es el puente que une culturas y corazones."
+          "No hay innovación sin sensibilidad: cuando el arte y la tecnología se encuentran, las obras cobran vida, y el futuro, un mural en movimiento que seguimos pintando juntos."
         </blockquote>
       </section>
 
       <footer className="mt-6 text-xs text-gray-400 text-center">
-        &copy; {new Date().getFullYear()} Museo 3D
+        &copy; {new Date().getFullYear()} Mural ARPA
       </footer>
     </main>
   );

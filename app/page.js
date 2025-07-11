@@ -18,7 +18,7 @@ const steps = [
   },
   {
     img: "/images/Impulso_Humano_Creador.webp",
-    text: "Visita nuestra galería de arte y conoce a los artistas detrás de las obras.",
+    text: "Visita múltiples galerías de arte y conoce a los artistas detrás de cada obras.",
   },
   {
     img: "/images/CCU_15_años_de_Arte_y_Cultura.webp",
