@@ -162,8 +162,16 @@ export default function CanvasEditor({
       // Si estamos editando un mural existente, cargar la imagen
       if (editingMural?.url_imagen) {
         const img = new Image();
+        img.crossOrigin = "anonymous"; // <-- importante para CORS
         img.onload = () => {
           ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          saveToHistory();
+        };
+        img.onerror = () => {
+          // Si la imagen no tiene CORS, muestra un mensaje o maneja el error
+          alert(
+            "No se puede cargar la imagen para editar porque el servidor no permite CORS. No podrás exportar el canvas."
+          );
           saveToHistory();
         };
         img.src = editingMural.url_imagen;
@@ -176,10 +184,16 @@ export default function CanvasEditor({
   const saveToHistory = () => {
     if (!canvasRef.current) return;
     const canvas = canvasRef.current;
-    const newHistory = canvasHistory.slice(0, historyIndex + 1);
-    newHistory.push(canvas.toDataURL());
-    setCanvasHistory(newHistory);
-    setHistoryIndex(newHistory.length - 1);
+    try {
+      const newHistory = canvasHistory.slice(0, historyIndex + 1);
+      newHistory.push(canvas.toDataURL());
+      setCanvasHistory(newHistory);
+      setHistoryIndex(newHistory.length - 1);
+    } catch (e) {
+      alert(
+        "No se puede exportar el canvas porque contiene imágenes externas sin CORS. Guarda tu trabajo como imagen o usa solo imágenes propias."
+      );
+    }
   };
 
   const undo = () => {
@@ -244,21 +258,18 @@ export default function CanvasEditor({
   };
 
   const handleMouseLeave = () => {
-
     setCursorPos(null);
     setIsDrawing(false);
     setLastPoint(null);
   };
 
   const handleMouseUp = () => {
-
     setIsDrawing(false);
     setLastPoint(null);
     saveToHistory();
   };
 
   const handleMouseDown = (e) => {
-
     setIsDrawing(true);
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
@@ -304,7 +315,6 @@ export default function CanvasEditor({
     const rgb = hexToRgb(brushColor);
 
     // Log de depuración para saber qué pincel se está usando
-
 
     // Cada pincel tiene su propio efecto visual
     switch (type) {
@@ -820,8 +830,6 @@ export default function CanvasEditor({
   }, [isOpen, editingMural]);
 
   if (!isOpen) return null;
-
-
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
