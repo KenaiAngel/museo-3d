@@ -15,6 +15,24 @@ export default function Page() {
   const [hasSentError, setHasSentError] = useState(false);
   const [isConnected, setIsConnected] = useState(true);
 
+  // Ejemplo: setear usuario en Sentry (puedes hacerlo globalmente en tu app)
+  useEffect(() => {
+    Sentry.setUser({
+      id: "1234", // Reemplaza por el ID real del usuario si lo tienes
+      email: "usuario@ejemplo.com", // Reemplaza por el email real
+      username: "usuario-demo", // Opcional
+    });
+  }, []);
+
+  // Ejemplo: capturar evento informativo
+  const handleInfoEvent = () => {
+    Sentry.captureMessage(
+      "El usuario abrió la página de ejemplo de Sentry",
+      "info"
+    );
+    alert("Evento informativo enviado a Sentry");
+  };
+
   useEffect(() => {
     async function checkConnectivity() {
       const result = await Sentry.diagnoseSdkConnectivity();
@@ -101,6 +119,45 @@ export default function Page() {
           disabled={!isConnected}
         >
           <span>Generar error de prueba</span>
+        </button>
+
+        <button
+          type="button"
+          style={{
+            marginLeft: 16,
+            background: "#2563eb",
+            color: "#fff",
+            border: "none",
+            borderRadius: 8,
+            padding: "10px 18px",
+            fontSize: 16,
+            cursor: "pointer",
+          }}
+          onClick={handleInfoEvent}
+        >
+          Enviar evento info
+        </button>
+        <button
+          type="button"
+          style={{
+            marginLeft: 16,
+            background: "#facc15",
+            color: "#181423",
+            border: "none",
+            borderRadius: 8,
+            padding: "10px 18px",
+            fontSize: 16,
+            cursor: "pointer",
+          }}
+          onClick={() => {
+            Sentry.captureMessage(
+              "Este es un evento de advertencia (warning) generado manualmente",
+              "warning"
+            );
+            alert("Evento warning enviado a Sentry");
+          }}
+        >
+          Enviar evento warning
         </button>
 
         {hasSentError ? (

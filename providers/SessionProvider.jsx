@@ -1,6 +1,7 @@
 "use client";
 import { SessionProvider as NextAuthSessionProvider, useSession } from "next-auth/react";
 import { createContext, useContext, useEffect, useState, useRef } from "react";
+import * as Sentry from "@sentry/nextjs";
 
 const SessionContext = createContext();
 
@@ -102,6 +103,19 @@ function SessionDataManager({ children }) {
   useEffect(() => {
     setSessionStatus(status);
   }, [status]);
+
+  // Setear usuario en Sentry globalmente
+  useEffect(() => {
+    if (status === "authenticated" && session?.user) {
+      Sentry.setUser({
+        id: session.user.id,
+        email: session.user.email,
+        username: session.user.name,
+      });
+    } else if (status === "unauthenticated") {
+      Sentry.setUser(null);
+    }
+  }, [status, session]);
 
   return (
     <SessionContext.Provider

@@ -29,6 +29,8 @@
     "@react-three/fiber": "^9.1.2",
     "@react-three/postprocessing": "^3.0.4",
     "@sentry/nextjs": "^9.35.0",
+    "@sentry/replay": "^7.116.0",
+    "@sentry/tracing": "^7.120.3",
     "bcryptjs": "^3.0.2",
     "class-variance-authority": "^0.7.1",
     "cloudinary": "^2.6.1",
