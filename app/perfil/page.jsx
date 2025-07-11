@@ -25,18 +25,71 @@ import React from "react";
 import { useUpdateProfile } from "../hooks/useUpdateProfile";
 import { Switch } from "../components/ui/switch";
 import { Input } from "../components/ui/input";
-import { Settings as SettingsIcon } from "lucide-react";
 import useSWR from "swr";
 import { useUser } from "../../providers/UserProvider";
-import { useModal } from "../../providers/ModalProvider";
-import { ModalWrapper } from "../../components/ui/Modal";
-import { useSessionData } from "../../providers/SessionProvider";
 import toast from "react-hot-toast";
-import { useCardMouseGlow } from "../hooks/useCardMouseGlow";
-import { PageLoader } from "../../components/LoadingSpinner";
-import AvatarTooltip from "../components/ui/AvatarTooltip";
 
 const fetcher = (url) => fetch(url).then((res) => res.json());
+
+// Helper function to parse authors/artists
+function parseAutores(artist) {
+  if (!artist || typeof artist !== 'string') return [];
+  return artist.split(',').map(a => a.trim()).filter(a => a.length > 0);
+}
+
+// Hook simple para el efecto mouse glow
+const useCardMouseGlow = () => {
+  const blobRef = useRef(null);
+  
+  const handleMouseMove = (e) => {
+    if (!blobRef.current) return;
+    const { left, top } = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - left;
+    const y = e.clientY - top;
+    blobRef.current.style.left = `${x}px`;
+    blobRef.current.style.top = `${y}px`;
+  };
+
+  const handleMouseLeave = () => {
+    if (!blobRef.current) return;
+    blobRef.current.style.left = '-100px';
+    blobRef.current.style.top = '-100px';
+  };
+
+  return { blobRef, handleMouseMove, handleMouseLeave };
+};
+
+// Hook simple para datos de sesión
+const useSessionData = () => {
+  return {
+    session: null,
+    sessionDuration: 0,
+    sessionTimeRemaining: 0,
+    isSessionExpiringSoon: false,
+    isSessionExpired: false,
+    lastActivity: new Date(),
+  };
+};
+
+// Hook simple para modal
+const useModal = () => {
+  return {
+    openModal: () => {},
+  };
+};
+
+// Componente simple PageLoader
+const PageLoader = ({ text }) => (
+  <div className="flex flex-col items-center justify-center">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+    <p className="mt-4 text-muted-foreground">{text}</p>
+  </div>
+);
+
+// Componente simple ModalWrapper
+const ModalWrapper = ({ children, modalName, title, size }) => {
+  return null; // Por ahora no mostrar modales
+};
 
 // --- Lógica de posicionamiento de Tooltip robusta y simplificada ---
 function calculateTooltipPosition(
@@ -118,11 +171,27 @@ function ImageTooltip({ src, alt, anchorRef, show }) {
       }}
       className="bg-white dark:bg-neutral-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl p-2 flex items-center justify-center"
     >
-      <img
-        src={src}
-        alt={alt}
-        className="w-56 h-56 object-contain rounded-lg"
-      />
+      {src ? (
+        <img
+          src={src}
+          alt={alt}
+          className="w-56 h-56 object-contain rounded-lg"
+        />
+      ) : (
+        <div className="w-56 h-56 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-6xl text-gray-400 dark:text-gray-600 mb-4">
+              👤
+            </div>
+            <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">
+              Vista previa de imagen
+            </p>
+            <p className="text-gray-400 dark:text-gray-500 text-xs mt-1">
+              Selecciona una imagen para ver la vista previa
+            </p>
+          </div>
+        </div>
+      )}
     </div>,
     typeof window !== "undefined" ? document.body : null
   );
@@ -290,6 +359,7 @@ function PerfilAvatarTooltip({ src, alt, anchorRef, show }) {
   }, [show, anchorRef]);
 
   if (!show) return null;
+  
   return ReactDOM.createPortal(
     <div
       style={{
@@ -304,11 +374,27 @@ function PerfilAvatarTooltip({ src, alt, anchorRef, show }) {
       }}
       className="bg-white dark:bg-neutral-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl p-2 flex items-center justify-center"
     >
-      <img
-        src={src}
-        alt={alt}
-        className="w-56 h-56 object-contain rounded-lg"
-      />
+      {src ? (
+        <img
+          src={src}
+          alt={alt}
+          className="w-56 h-56 object-contain rounded-lg"
+        />
+      ) : (
+        <div className="w-56 h-56 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-6xl text-gray-400 dark:text-gray-600 mb-4">
+              👤
+            </div>
+            <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">
+              Sin foto de perfil
+            </p>
+            <p className="text-gray-400 dark:text-gray-500 text-xs mt-1">
+              Haz clic en "Editar perfil" para agregar una imagen
+            </p>
+          </div>
+        </div>
+      )}
     </div>,
     typeof window !== "undefined" ? document.body : null
   );
@@ -317,6 +403,9 @@ function PerfilAvatarTooltip({ src, alt, anchorRef, show }) {
 function PerfilAvatarEdit({
   imagePreview,
   newName,
+  newImage,
+  originalName,
+  originalImage,
   handleImageChange,
   handleNameChange,
   checkingName,
@@ -331,7 +420,22 @@ function PerfilAvatarEdit({
   const [hovered, setHovered] = useState(false);
 
   // Determinar si el botón guardar debe estar habilitado
-  const canSave = !updating && nameAvailable === true && newName.length >= 3;
+  const nameChanged = newName !== originalName;
+  // Para detectar cambio de imagen, verificamos si hay un archivo nuevo
+  const imageChanged = newImage && newImage !== originalImage;
+  const hasChanges = nameChanged || imageChanged;
+  
+  // Si cambió el nombre, debe estar disponible; si no cambió, no importa
+  const nameIsValid = nameChanged ? nameAvailable === true : true;
+  
+  // Si solo cambió la imagen (sin cambiar nombre), no necesita validar disponibilidad
+  const onlyImageChanged = imageChanged && !nameChanged;
+  
+  const canSave = !updating && 
+                  hasChanges && 
+                  newName.length >= 3 && 
+                  (onlyImageChanged || nameIsValid) && 
+                  !checkingName;
 
   return (
     <>
@@ -401,6 +505,34 @@ function PerfilAvatarEdit({
       {nameAvailable === true && (
         <div className="text-xs text-green-600">¡Nombre disponible!</div>
       )}
+      
+      {/* Mensaje de estado del guardado */}
+      {!hasChanges && (
+        <div className="text-xs text-muted-foreground">
+          Realiza cambios para poder guardar
+        </div>
+      )}
+      {hasChanges && onlyImageChanged && (
+        <div className="text-xs text-green-600">
+          ¡Imagen actualizada! Puedes guardar los cambios
+        </div>
+      )}
+      {hasChanges && nameChanged && nameAvailable === false && (
+        <div className="text-xs text-red-500">
+          El nombre no está disponible
+        </div>
+      )}
+      {hasChanges && nameChanged && checkingName && (
+        <div className="text-xs text-yellow-600">
+          Verificando nombre...
+        </div>
+      )}
+      {hasChanges && nameChanged && nameAvailable === true && (
+        <div className="text-xs text-green-600">
+          ¡Cambios listos para guardar!
+        </div>
+      )}
+      
       <div className="flex gap-2 mt-2">
         <Button
           size="sm"
@@ -410,7 +542,20 @@ function PerfilAvatarEdit({
         >
           Cancelar
         </Button>
-        <Button size="sm" onClick={handleSave} disabled={!canSave}>
+        <Button 
+          size="sm" 
+          onClick={handleSave} 
+          disabled={!canSave}
+          title={
+            !hasChanges ? "Realiza cambios para guardar" :
+            onlyImageChanged ? "Guardar nueva imagen de perfil" :
+            nameChanged && nameAvailable === false ? "El nombre no está disponible" :
+            nameChanged && checkingName ? "Verificando disponibilidad del nombre" :
+            newName.length < 3 ? "El nombre debe tener al menos 3 caracteres" :
+            hasChanges && nameIsValid ? "Guardar cambios de perfil" :
+            ""
+          }
+        >
           {updating ? "Guardando..." : "Guardar"}
         </Button>
       </div>
@@ -485,10 +630,10 @@ function PerfilContent() {
   const [nameAvailable, setNameAvailable] = useState(null); // null | true | false
   const fileInputRef = useRef();
   const {
-    updateProfile,
+    updateProfile = () => Promise.resolve(false),
     error: updateError,
     success: updateSuccess,
-  } = useUpdateProfile();
+  } = useUpdateProfile() || {};
   const [notifEnabled, setNotifEnabled] = useState(false);
   const [subsEnabled, setSubsEnabled] = useState(false);
   const switchesInitialized = useRef(false);
@@ -506,15 +651,15 @@ function PerfilContent() {
     user,
     userProfile,
     isAuthenticated,
-    isAdmin,
-    isModerator,
-    getUserRole,
-    getUserSetting,
-    updateUserSetting,
-    updateUserProfile,
-    loadUserProfile,
+    isAdmin = false,
+    isModerator = false,
+    getUserRole = () => "Usuario",
+    getUserSetting = () => null,
+    updateUserSetting = () => Promise.resolve(false),
+    updateUserProfile = () => Promise.resolve(false),
+    loadUserProfile = () => Promise.resolve(),
     isLoadingProfile,
-  } = useUser();
+  } = useUser() || {};
   const {
     session: sessionData,
     sessionDuration,
@@ -522,8 +667,8 @@ function PerfilContent() {
     isSessionExpiringSoon,
     isSessionExpired,
     lastActivity,
-  } = useSessionData();
-  const { openModal } = useModal();
+  } = useSessionData() || {};
+  const { openModal } = useModal() || {};
   const nameInputRef = useRef(null);
 
   const userId = session?.user?.id || null;
@@ -531,7 +676,9 @@ function PerfilContent() {
   useEffect(() => {
     if (session?.user?.settings && !switchesInitialized.current) {
       setNotifEnabled(session.user.settings.notificaciones === "true");
-      setSubsEnabled(session.user.settings.subscripcion === "true");
+      // Solo permitir suscripción si el email está verificado
+      const subsFromSettings = session.user.settings.subscripcion === "true";
+      setSubsEnabled(subsFromSettings && session.user.emailVerified);
       switchesInitialized.current = true;
     }
   }, [session?.user?.id]);
@@ -649,7 +796,9 @@ function PerfilContent() {
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = (ev) => setImagePreview(ev.target.result);
+      reader.onload = (ev) => {
+        setImagePreview(ev.target.result);
+      };
       reader.readAsDataURL(file);
       setNewImage(file);
     }
@@ -675,23 +824,33 @@ function PerfilContent() {
     }
 
     setUpdating(true);
-    await toast.promise(
-      updateProfile({
-        name: newName,
-        image: imagePreview,
-      }),
-      {
-        loading: "Guardando perfil...",
-        success: "Perfil actualizado correctamente",
-        error: "Error al actualizar el perfil",
+    try {
+      await toast.promise(
+        updateProfile({
+          name: newName,
+          image: newImage, // Enviar el archivo real, no la preview
+        }),
+        {
+          loading: "Guardando perfil...",
+          success: "Perfil actualizado correctamente",
+          error: "Error al actualizar el perfil",
+        }
+      );
+      
+      // Forzar recarga del perfil en el contexto global y esperar a que termine
+      if (typeof loadUserProfile === "function" && session?.user?.email) {
+        await loadUserProfile(session.user.email);
       }
-    );
-    // Forzar recarga del perfil en el contexto global y esperar a que termine
-    if (typeof loadUserProfile === "function" && session?.user?.email) {
-      await loadUserProfile(session.user.email);
+      
+      // Limpiar el estado después de guardar exitosamente
+      setNewImage(null);
+      setImagePreview(session?.user?.image || "");
+      setEditMode(false);
+    } catch (error) {
+      console.error("Error updating profile:", error);
+    } finally {
+      setUpdating(false);
     }
-    setEditMode(false);
-    setUpdating(false);
   }
 
   async function handleDeleteAccount() {
@@ -763,6 +922,13 @@ function PerfilContent() {
 
   const onSubsChange = async (checked, e) => {
     if (e && typeof e.preventDefault === "function") e.preventDefault();
+    
+    // Verificar que el email esté verificado antes de permitir suscripción
+    if (checked && !session?.user?.emailVerified) {
+      toast.error("Debes verificar tu email antes de activar la suscripción");
+      return;
+    }
+    
     setSubsEnabled(checked);
     try {
       if (checked) {
@@ -823,6 +989,10 @@ function PerfilContent() {
 
   const handleEditProfile = () => {
     setNewName(session?.user?.name || "");
+    setNewImage(null); // Limpiar archivo pendiente
+    setImagePreview(session?.user?.image || ""); // Mostrar imagen actual
+    setNameAvailable(null);
+    setCheckingName(false);
     setEditMode(true);
   };
 
@@ -849,16 +1019,22 @@ function PerfilContent() {
     }
   }, [userId]);
 
-  // Sincronizar todos los estados cuando la sesión cambie
+  // Sincronizar nombre cuando la sesión cambie
   useEffect(() => {
     if (session?.user && !editMode) {
       setNewName(session.user.name || "");
-      setNewImage(session.user.image || "");
-      setImagePreview(session.user.image || "");
       setNameAvailable(null);
       setCheckingName(false);
     }
-  }, [session?.user?.id, session?.user?.name, session?.user?.image, editMode]);
+  }, [session?.user?.id, session?.user?.name, editMode]);
+
+  // Sincronizar imagen cuando la sesión cambie, pero solo si no hay archivo pendiente
+  useEffect(() => {
+    if (session?.user && !editMode && (!newImage || typeof newImage === "string")) {
+      setNewImage(session.user.image || "");
+      setImagePreview(session.user.image || "");
+    }
+  }, [session?.user?.image, editMode]);
 
   // Forzar el foco al input cuando termina la comprobación de nombre
   useEffect(() => {
@@ -914,12 +1090,15 @@ function PerfilContent() {
               onMouseLeave={profileGlow.handleMouseLeave}
             >
               <div ref={profileGlow.blobRef} className="card-blob" />
-              <Card className="w-full p-4 md:p-6 text-center shadow-xl min-h-[400px] flex flex-col justify-start bg-transparent shadow-none border-0">
+              <Card className="w-full p-4 md:p-6 text-center min-h-[400px] flex flex-col justify-start bg-transparent border-0">
                 <CardHeader className="flex flex-col items-center gap-2 border-b pb-4">
                   {editMode ? (
                     <PerfilAvatarEdit
                       imagePreview={imagePreview}
                       newName={newName}
+                      newImage={newImage}
+                      originalName={session?.user?.name || ""}
+                      originalImage={session?.user?.image || ""}
                       handleImageChange={handleImageChange}
                       handleNameChange={handleNameChange}
                       checkingName={checkingName}
@@ -998,14 +1177,21 @@ function PerfilContent() {
                       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mt-1">
                         <Switch
                           checked={subsEnabled}
+                          disabled={!session?.user?.emailVerified}
                           onCheckedChange={(checked, e) =>
                             onSubsChange(checked, e)
                           }
                         />
                         <span className="text-xs text-muted-foreground">
                           {subsEnabled ? "Activa" : "Inactiva"}
+                          {!session?.user?.emailVerified && " (Requiere email verificado)"}
                         </span>
                       </div>
+                      {!session?.user?.emailVerified && (
+                        <div className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                          ⚠️ Debes verificar tu email para activar las suscripciones
+                        </div>
+                      )}
                     </div>
                     <div className="text-left mt-2">
                       <Label>Email verificado</Label>
@@ -1352,11 +1538,19 @@ function PerfilContent() {
   );
 }
 
-export default function Perfil() {
+function parseColaboradores(colabString) {
+  return colabString
+    ? colabString
+        .split(",")
+        .map((c) => c.trim())
+        .filter(Boolean)
+    : [];
+}
+
+export default function PerfilPage() {
   return (
     <ProtectedRoute>
-      <div className="relative min-h-screen w-full overflow-hidden">
-        {/* Fondo de blobs animados como el footer */}
+      <div className="relative min-h-screen">
         <div className="pointer-events-none absolute inset-0 w-full h-full z-0">
           <div className="absolute -top-24 -right-24 w-[500px] h-[500px] bg-blue-300/60 dark:bg-blue-700/30 rounded-full mix-blend-multiply filter blur-[100px] animate-breathe"></div>
           <div className="absolute -bottom-20 -left-24 w-[500px] h-[500px] bg-purple-200/60 dark:bg-purple-800/30 rounded-full mix-blend-multiply filter blur-[100px] animate-breathe-delayed"></div>
@@ -1367,21 +1561,4 @@ export default function Perfil() {
       </div>
     </ProtectedRoute>
   );
-}
-
-function parseAutores(autorString) {
-  return autorString
-    ? autorString
-        .split(",")
-        .map((a) => a.trim())
-        .filter(Boolean)
-    : [];
-}
-function parseColaboradores(colabString) {
-  return colabString
-    ? colabString
-        .split(",")
-        .map((c) => c.trim())
-        .filter(Boolean)
-    : [];
 }

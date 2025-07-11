@@ -3,6 +3,8 @@ import { useUser } from "../providers/UserProvider";
 import { useModal } from "../providers/ModalProvider";
 import { ModalWrapper } from "./ui/Modal";
 import { PageLoader } from "./LoadingSpinner";
+import { usePathname } from "next/navigation";
+import { useEffect } from "react";
 
 export default function ProtectedRoute({
   children,
@@ -13,6 +15,7 @@ export default function ProtectedRoute({
   const { isAuthenticated, isAdmin, isModerator, hasRole, isLoading } =
     useUser();
   const { openModal } = useModal();
+  const pathname = usePathname();
 
   // Si está cargando, mostrar loading mejorado
   if (isLoading) {
@@ -21,10 +24,17 @@ export default function ProtectedRoute({
 
   // Si no está autenticado
   if (!isAuthenticated) {
+    // Almacenar la URL actual para redirección después del login
+    useEffect(() => {
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('redirectAfterLogin', pathname);
+      }
+    }, [pathname]);
+
     if (showLoginModal) {
       // Abrir modal de login automáticamente
       setTimeout(() => {
-        openModal("auth-modal", { mode: "login" });
+        openModal("auth-login", { mode: "login", redirectTo: pathname });
       }, 100);
     }
 
@@ -40,7 +50,7 @@ export default function ProtectedRoute({
               Necesitas iniciar sesión para acceder a esta página.
             </p>
             <button
-              onClick={() => openModal("auth-modal", { mode: "login" })}
+              onClick={() => openModal("auth-login", { mode: "login", redirectTo: pathname })}
               className="bg-primary text-primary-foreground px-8 py-4 rounded-xl font-medium hover:bg-primary/90 transition-all duration-300 shadow-lg hover:shadow-xl"
             >
               🔑 Iniciar Sesión

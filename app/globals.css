@@ -1991,3 +1991,70 @@ html.dark .toast-badge-info {
 body.hide-footer footer {
   display: none !important;
 }
+
+/* Estilos para autofill en campos de formulario */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px white inset !important;
+  -webkit-text-fill-color: black !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Estilos para autofill en modo oscuro */
+.dark input:-webkit-autofill,
+.dark input:-webkit-autofill:hover,
+.dark input:-webkit-autofill:focus,
+.dark input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px #1f2937 inset !important;
+  -webkit-text-fill-color: white !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Estilos adicionales para inputs con clases específicas */
+input.border:-webkit-autofill,
+input.border:-webkit-autofill:hover,
+input.border:-webkit-autofill:focus,
+input.border:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px white inset, 0 0 0 1px #d1d5db inset !important;
+  border: 1px solid #d1d5db !important;
+}
+
+.dark input.border:-webkit-autofill,
+.dark input.border:-webkit-autofill:hover,
+.dark input.border:-webkit-autofill:focus,
+.dark input.border:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px #1f2937 inset, 0 0 0 1px #374151 inset !important;
+  border: 1px solid #374151 !important;
+}
+
+/* Estilos para inputs con border-radius redondeado */
+input.rounded-lg:-webkit-autofill,
+input.rounded-lg:-webkit-autofill:hover,
+input.rounded-lg:-webkit-autofill:focus,
+input.rounded-lg:-webkit-autofill:active {
+  border-radius: 0.5rem !important;
+}
+
+/* Estilos específicos para inputs con bg-transparent (usados en AuthModal) */
+input.bg-transparent:-webkit-autofill,
+input.bg-transparent:-webkit-autofill:hover,
+input.bg-transparent:-webkit-autofill:focus,
+input.bg-transparent:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px transparent inset !important;
+  -webkit-text-fill-color: inherit !important;
+  background-color: transparent !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Para modo oscuro - inputs con bg-transparent */
+.dark input.bg-transparent:-webkit-autofill,
+.dark input.bg-transparent:-webkit-autofill:hover,
+.dark input.bg-transparent:-webkit-autofill:focus,
+.dark input.bg-transparent:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px transparent inset !important;
+  -webkit-text-fill-color: white !important;
+  background-color: transparent !important;
+  transition: background-color 5000s ease-in-out 0s;
+}

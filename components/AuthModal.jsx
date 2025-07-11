@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { signIn } from "next-auth/react";
 import { useModal } from "../providers/ModalProvider";
+import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import {
   X,
@@ -18,6 +19,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 export default function AuthModal() {
   const { modal, modalData, closeModal, isModalOpen } = useModal();
+  const router = useRouter();
   const [form, setForm] = useState({
     email: "",
     password: "",
@@ -153,6 +155,23 @@ export default function AuthModal() {
         } else {
           toast.success("Cuenta creada e iniciada sesión correctamente");
           setSuccess(true);
+          
+          // Manejar redirección después del registro exitoso
+          setTimeout(() => {
+            const redirectTo = modalData?.redirectTo || 
+                              (typeof window !== 'undefined' ? sessionStorage.getItem('redirectAfterLogin') : null);
+            
+            if (redirectTo && redirectTo !== '/') {
+              // Limpiar el almacenamiento de redirección
+              if (typeof window !== 'undefined') {
+                sessionStorage.removeItem('redirectAfterLogin');
+              }
+              router.push(redirectTo);
+            } else {
+              // Recargar la página para actualizar el estado de autenticación
+              window.location.reload();
+            }
+          }, 1200);
         }
       } else {
         // Login de usuario
@@ -169,6 +188,23 @@ export default function AuthModal() {
         } else {
           toast.success("Sesión iniciada correctamente");
           setSuccess(true);
+          
+          // Manejar redirección después del login exitoso
+          setTimeout(() => {
+            const redirectTo = modalData?.redirectTo || 
+                              (typeof window !== 'undefined' ? sessionStorage.getItem('redirectAfterLogin') : null);
+            
+            if (redirectTo && redirectTo !== '/') {
+              // Limpiar el almacenamiento de redirección
+              if (typeof window !== 'undefined') {
+                sessionStorage.removeItem('redirectAfterLogin');
+              }
+              router.push(redirectTo);
+            } else {
+              // Recargar la página para actualizar el estado de autenticación
+              window.location.reload();
+            }
+          }, 1200);
         }
       }
     } catch (error) {
@@ -581,7 +617,17 @@ export default function AuthModal() {
               {/* Google Sign In */}
               <button
                 type="button"
-                onClick={() => signIn("google")}
+                onClick={() => {
+                  const redirectTo = modalData?.redirectTo || 
+                                   (typeof window !== 'undefined' ? sessionStorage.getItem('redirectAfterLogin') : null);
+                  
+                  // Si hay una URL de redirección, incluirla como callbackUrl
+                  if (redirectTo && redirectTo !== '/') {
+                    signIn("google", { callbackUrl: redirectTo });
+                  } else {
+                    signIn("google");
+                  }
+                }}
                 className="w-full py-3 px-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200 flex items-center justify-center gap-3 font-medium text-gray-700 dark:text-gray-300 cursor-pointer"
               >
                 <img

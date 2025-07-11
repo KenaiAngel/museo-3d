@@ -25,7 +25,7 @@ export const useUpdateProfile = () => {
       let imageUrl = session.user.image;
       if (formData.image && formData.image instanceof File) {
         const uploadFormData = new FormData();
-        uploadFormData.append("file", formData.image);
+        uploadFormData.append("imagen", formData.image); // Cambiar "file" por "imagen"
         uploadFormData.append("folder", "avatars");
 
         const res = await fetch("/api/upload", {
