@@ -138,26 +138,26 @@ export default function HealthcheckPage() {
         ) : null}
       </Card>
 
-      {status && !loading && !error && (
+      {statusData && !loading && !error && (
         <>
           {/* Servicios Principales */}
           <MetricSection title="Servicios Principales" icon="🔧">
             <MetricCard
               label="API"
-              value={status.api}
-              icon={status.api === "OK" ? "✅" : "❌"}
-              color={status.api === "OK" ? "text-green-600" : "text-red-600"}
+              value={statusData.api || "Error"}
+              icon={statusData.api === "OK" ? "✅" : "❌"}
+              color={statusData.api === "OK" ? "text-green-600" : "text-red-600"}
               description={
-                status.api === "OK" ? "Operacional" : "Fuera de servicio"
+                statusData.api === "OK" ? "Operacional" : "Fuera de servicio"
               }
             />
             <MetricCard
               label="Base de datos"
-              value={status.db}
-              icon={status.db === "OK" ? "🗄️" : "❌"}
-              color={status.db === "OK" ? "text-green-600" : "text-red-600"}
+              value={statusData.db || "Error"}
+              icon={statusData.db === "OK" ? "🗄️" : "❌"}
+              color={statusData.db === "OK" ? "text-green-600" : "text-red-600"}
               description={
-                status.db === "OK" ? "Conectada" : "Error de conexión"
+                statusData.db === "OK" ? "Conectada" : "Error de conexión"
               }
             />
             <MetricCard
@@ -181,9 +181,9 @@ export default function HealthcheckPage() {
             <MetricCard
               label="Usuarios registrados"
               value={
-                status.userCount !== null && status.userCount !== undefined
-                  ? status.userCount.toLocaleString()
-                  : "-"
+                statusData.userCount !== null && statusData.userCount !== undefined
+                  ? statusData.userCount.toLocaleString()
+                  : "0"
               }
               icon="👤"
               color="text-indigo-600"
@@ -192,9 +192,9 @@ export default function HealthcheckPage() {
             <MetricCard
               label="Murales registrados"
               value={
-                status.muralCount !== null && status.muralCount !== undefined
-                  ? status.muralCount.toLocaleString()
-                  : "-"
+                statusData.muralCount !== null && statusData.muralCount !== undefined
+                  ? statusData.muralCount.toLocaleString()
+                  : "0"
               }
               icon="🖼️"
               color="text-pink-600"
@@ -203,9 +203,9 @@ export default function HealthcheckPage() {
             <MetricCard
               label="Salas creadas"
               value={
-                status.roomCount !== null && status.roomCount !== undefined
-                  ? status.roomCount.toLocaleString()
-                  : "-"
+                statusData.roomCount !== null && statusData.roomCount !== undefined
+                  ? statusData.roomCount.toLocaleString()
+                  : "0"
               }
               icon="🏛️"
               color="text-amber-600"
@@ -214,10 +214,10 @@ export default function HealthcheckPage() {
             <MetricCard
               label="Sesiones activas"
               value={
-                status.activeSessionsCount !== null &&
-                status.activeSessionsCount !== undefined
-                  ? status.activeSessionsCount.toLocaleString()
-                  : "-"
+                statusData.activeSessionsCount !== null &&
+                statusData.activeSessionsCount !== undefined
+                  ? statusData.activeSessionsCount.toLocaleString()
+                  : "0"
               }
               icon="🔗"
               color="text-emerald-600"
@@ -230,18 +230,18 @@ export default function HealthcheckPage() {
             <MetricCard
               label="Uptime"
               value={
-                status.uptime
-                  ? `${Math.floor(status.uptime / 3600)}h ${Math.floor((status.uptime % 3600) / 60)}m`
-                  : "-"
+                statusData.uptime && statusData.uptime > 0
+                  ? `${Math.floor(statusData.uptime / 3600)}h ${Math.floor((statusData.uptime % 3600) / 60)}m`
+                  : "0h 0m"
               }
               icon="⏰"
               color="text-blue-600"
               description="Tiempo en línea"
             />
-            <MemoryUsageCard memoryUsage={status.memoryUsage} />
+            <MemoryUsageCard memoryUsage={statusData.memoryUsage || { heapUsed: 0, heapTotal: 0, external: 0, rss: 0 }} />
             <MetricCard
               label="Versión"
-              value={status.version || "v1.0.0"}
+              value={statusData.version && statusData.version !== "Desconocida" ? statusData.version : "v1.0.0"}
               icon="🏷️"
               color="text-gray-600"
               description="Build actual"
@@ -253,7 +253,7 @@ export default function HealthcheckPage() {
                   ? "Producción"
                   : "Desarrollo"
               }
-              icon="�"
+              icon="🌍"
               color={
                 process.env.NODE_ENV === "production"
                   ? "text-green-600"
@@ -269,7 +269,15 @@ export default function HealthcheckPage() {
               <div className="text-sm text-muted-foreground mb-2 md:mb-0 flex items-center gap-2">
                 <span className="font-medium">Última comprobación:</span>
                 <Badge variant="outline">
-                  {new Date(status.timestamp).toLocaleString("es-ES")}
+                  {statusData.timestamp && statusData.timestamp !== "Desconocida" ? 
+                    (() => {
+                      try {
+                        return new Date(statusData.timestamp).toLocaleString("es-ES");
+                      } catch {
+                        return "No disponible";
+                      }
+                    })() : 
+                    "No disponible"}
                 </Badge>
               </div>
               <div className="text-sm text-muted-foreground flex items-center gap-2">
