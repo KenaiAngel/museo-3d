@@ -49,20 +49,6 @@ export default function EditarSala() {
   const { session } = useSessionData();
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Verificación de autorización
-  if (status === "loading") return <div>Cargando...</div>;
-  if (!sessionAuth?.user || sessionAuth.user.role !== "ADMIN") {
-    return (
-      <Unauthorized
-        title="Acceso denegado"
-        message="Esta sección es solo para administradores."
-        error="403"
-        showLogin={true}
-        redirectPath="/"
-      />
-    );
-  }
   const [sala, setSala] = useState(null);
   const [form, setForm] = useState(null);
   const [muralesDisponibles, setMuralesDisponibles] = useState([]);
@@ -79,6 +65,20 @@ export default function EditarSala() {
     avanzadas: false,
   });
   const toggleSection = (key) => setSections((prev) => ({ ...prev, [key]: !prev[key] }));
+
+  // Verificación de autorización
+  if (status === "loading") return <div>Cargando...</div>;
+  if (!sessionAuth?.user || sessionAuth.user.role !== "ADMIN") {
+    return (
+      <Unauthorized
+        title="Acceso denegado"
+        message="Esta sección es solo para administradores."
+        error="403"
+        showLogin={true}
+        redirectPath="/"
+      />
+    );
+  }
 
   // Cargar datos de la sala y murales disponibles
   useEffect(() => {

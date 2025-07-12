@@ -20,12 +20,16 @@ export async function GET(req, context) {
           },
         },
         colaboradores: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
-          },
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+              }
+            }
+          }
         },
         murales: {
           include: {
@@ -141,12 +145,16 @@ export async function PUT(req, context) {
           },
         },
         colaboradores: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
-          },
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+              }
+            }
+          }
         },
         murales: {
           include: {
