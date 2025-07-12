@@ -58,6 +58,40 @@ import {
 } from "../../components/shared/AnimatedBackground";
 import equipo from "./equipo.json";
 
+// Componente CallToAction temporal para evitar error de referencia
+function CallToAction({ title, subtitle, backgroundImage, buttons }) {
+  return (
+    <section className="relative rounded-2xl overflow-hidden shadow-xl my-12">
+      <img
+        src={backgroundImage}
+        alt="Banner mural aleatorio"
+        className="absolute inset-0 w-full h-full object-cover opacity-40"
+      />
+      <div className="relative z-10 p-8 text-center flex flex-col items-center justify-center">
+        <h2 className="text-4xl font-bold mb-4 text-foreground font-playfair drop-shadow-lg">
+          {title}
+        </h2>
+        <p className="text-lg mb-6 text-muted-foreground font-inter drop-shadow-lg">
+          {subtitle}
+        </p>
+        <div className="flex flex-wrap gap-4 justify-center">
+          {buttons &&
+            buttons.map((btn, i) => (
+              <a
+                key={i}
+                href={btn.href}
+                className={btn.className}
+                style={{ textDecoration: "none" }}
+              >
+                {btn.text}
+              </a>
+            ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function AcercaDe() {
   const { murals, loading, error } = useRandomMurals(4);
 
@@ -80,18 +114,27 @@ export default function AcercaDe() {
 
   return (
     <div className="relative w-full flex flex-col items-center justify-start bg-transparent">
-      {/* Fondo animado, patrón y graffiti sutil */}
-      <div className="pointer-events-none absolute inset-0 w-full h-full z-0">
-        <AnimatedBlobsBackground />
-        <DotsPattern />
+      {/* Fondo animado blobs y puntos arriba */}
+      <div className="w-full flex items-center justify-center z-0 pointer-events-none pt-8">
+        <div className="w-full min-h-[180px] max-h-[300px] flex items-center justify-center overflow-visible">
+          <AnimatedBlobsBackground />
+          <DotsPattern />
+        </div>
+      </div>
+      {/* Fondo animado blobs y puntos centrado detrás del contenido principal */}
+      <div className="absolute inset-0 w-full h-full flex items-center justify-center z-0 pointer-events-none">
+        <div className="w-full min-h-[220px] max-h-[400px] flex items-center justify-center overflow-visible">
+          <AnimatedBlobsBackground />
+          <DotsPattern />
+        </div>
       </div>
       <main className="relative z-10 w-full max-w-5xl mx-auto flex flex-col gap-16 px-4 sm:px-8 py-8 md:py-12">
-        {/* Hero Section */}
+        {/* Sección principal */}
         <HeroSection
           title="Acerca del Mural ARPA"
           subtitle="Una iniciativa cultural que busca preservar y difundir el arte mural mexicano a través de la tecnología y la experiencia digital."
         />
-        {/* Historia Section - Collage con murales aleatorios */}
+        {/* Sección de historia - Collage con murales aleatorios */}
         <PageSection
           delay={100}
           className="grid md:grid-cols-2 gap-12 mx-6 sm:mx-0 items-center"
@@ -371,11 +414,14 @@ export default function AcercaDe() {
           </div>
         </PageSection>
         {/* Call to Action con banner de mural aleatorio */}
-        {/* CallToAction component removed: file not found. Restore when available.
         <CallToAction
           title="Únete a Nuestra Misión"
           subtitle="Ayúdanos a preservar el patrimonio cultural mexicano para las futuras generaciones."
-          backgroundImage={murals.length > 0 ? murals[0]?.url_imagen || "/assets/artworks/cuadro2.webp" : "/assets/artworks/cuadro2.webp"}
+          backgroundImage={
+            murals.length > 0
+              ? murals[0]?.url_imagen || "/assets/artworks/cuadro2.webp"
+              : "/assets/artworks/cuadro2.webp"
+          }
           buttons={[
             {
               text: "Explorar Museo",
@@ -393,8 +439,8 @@ export default function AcercaDe() {
             },
           ]}
         />
-        */}
       </main>
+      {/* Fondo animado movido arriba. */}
     </div>
   );
 }
