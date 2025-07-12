@@ -1,4 +1,8 @@
-import cloudinary from "../../../utils/cloudinary";
+import formidable from "formidable";
+import { v2 as cloudinary } from "cloudinary";
+import { getServerSession } from "next-auth";
+import { authOptions } from "../../../lib/auth";
+import { SentryLogger } from "../../../lib/sentryLogger";
 
 export async function POST(req) {
   try {
@@ -54,6 +58,18 @@ export async function POST(req) {
         .end(buffer);
     });
     console.log("Imagen subida a Cloudinary:", upload.secure_url);
+
+    // Log del evento en Sentry
+    const session = await getServerSession(authOptions);
+    if (session?.user?.id) {
+      SentryLogger.contentUpload(
+        session.user.id,
+        file.type || "unknown",
+        file.size,
+        file.name || "unnamed"
+      );
+    }
+
     return new Response(JSON.stringify({ url: upload.secure_url }), {
       status: 201,
       headers: { "Content-Type": "application/json" },

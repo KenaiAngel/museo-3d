@@ -1,5 +1,6 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { SentryLogger } from "../../../../lib/sentryLogger";
 
 export async function GET(req) {
   const session = await getServerSession(authOptions);
@@ -8,6 +9,14 @@ export async function GET(req) {
       status: 401,
     });
   }
+
+  // Log de acceso a panel de administración
+  SentryLogger.adminAction(
+    session.user.id,
+    "access_sentry_logs",
+    "sentry_logs",
+    { endpoint: "/api/admin/sentry-logs" }
+  );
 
   const SENTRY_TOKEN = process.env.SENTRY_TOKEN;
   const SENTRY_ORG = process.env.SENTRY_ORG;

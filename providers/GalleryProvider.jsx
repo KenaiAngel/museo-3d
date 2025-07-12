@@ -1,5 +1,6 @@
 "use client";
 import React, { createContext, useContext, useState, useCallback } from "react";
+import * as Sentry from "@sentry/nextjs";
 
 const GalleryContext = createContext();
 
@@ -54,9 +55,29 @@ export const GalleryProvider = ({ children }) => {
       }));
 
       setArtworks(transformedArtworks);
+
+      // Log exitoso de carga de galería
+      Sentry.addBreadcrumb({
+        message: `Galería cargada exitosamente para sala: ${roomId}`,
+        category: "api",
+        level: "info",
+        data: { roomId, artworkCount: transformedArtworks.length },
+      });
     } catch (err) {
       console.error("Error loading artworks:", err);
       setError(err.message);
+
+      // Capturar error en Sentry
+      Sentry.captureException(err, {
+        tags: {
+          action: "load_room_artworks",
+          roomId: roomId,
+        },
+        extra: {
+          roomId,
+          errorMessage: err.message,
+        },
+      });
       setArtworks([]);
     } finally {
       setLoading(false);

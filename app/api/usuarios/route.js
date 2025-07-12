@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../../lib/auth.js";
+import { SentryLogger } from "../../../lib/sentryLogger.js";
 
 const prisma = new PrismaClient();
 
@@ -298,6 +299,13 @@ export async function POST(req) {
     });
 
     console.log("Usuario creado:", usuario);
+
+    // Log del evento en Sentry
+    SentryLogger.userRegistration(
+      usuario.id,
+      usuario.email,
+      session ? "admin" : "public"
+    );
 
     return new Response(
       JSON.stringify({

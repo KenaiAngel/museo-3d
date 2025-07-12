@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { sendEmail } from "@/lib/sendEmail";
+import { SentryLogger } from "../../../lib/sentryLogger";
 
 const prisma = new PrismaClient();
 
@@ -313,6 +314,14 @@ export async function POST(req) {
         },
       },
     });
+
+    // Log del evento en Sentry
+    SentryLogger.roomCreated(
+      data.creadorId,
+      sala.id,
+      sala.nombre,
+      sala.publica
+    );
 
     // Notificar a los suscriptores
     try {

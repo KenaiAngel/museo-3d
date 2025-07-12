@@ -1,4 +1,5 @@
 import { prisma } from "../../../lib/prisma";
+import { SentryLogger } from "../../../lib/sentryLogger";
 
 const startTime = Date.now();
 
@@ -49,6 +50,21 @@ export async function GET() {
   const uptime = Math.floor((Date.now() - startTime) / 1000);
   const memoryUsage = process.memoryUsage();
   const version = process.env.npm_package_version || "1.0.0";
+
+  // Log métricas importantes en Sentry
+  if (dbLatency && dbLatency > 1000) {
+    SentryLogger.slowQuery("healthcheck", dbLatency, "/api/healthcheck");
+  }
+
+  if (memoryUsage.heapUsed > 100 * 1024 * 1024) {
+    // 100MB
+    SentryLogger.systemHealth("memory_usage", memoryUsage.heapUsed, "warning");
+  }
+
+  // Log estadísticas generales periódicamente
+  if (userCount > 0) {
+    SentryLogger.systemHealth("user_count", userCount);
+  }
 
   return Response.json({
     api: "OK",

@@ -1,6 +1,7 @@
 import { prisma } from "../../../lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../../lib/auth";
+import { SentryLogger } from "../../../lib/sentryLogger";
 
 /**
  * @swagger
@@ -136,6 +137,13 @@ export async function POST(req) {
       },
     });
 
+    // Log del evento en Sentry
+    SentryLogger.collectionAdd(
+      userId,
+      muralId,
+      newFavorite.mural?.titulo || "Mural sin título"
+    );
+
     return new Response(JSON.stringify(newFavorite), { status: 201 });
   } catch (error) {
     console.error("Error al añadir a la colección:", error);
@@ -212,6 +220,9 @@ export async function DELETE(req) {
         },
       },
     });
+
+    // Log del evento en Sentry
+    SentryLogger.collectionRemove(userId, muralId);
 
     return new Response(
       JSON.stringify({ message: "Mural eliminado de la colección" }),

@@ -2,6 +2,7 @@ import { Geist, Geist_Mono, Inter, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import ClientLayout from "../components/ClientLayout";
 import AppProviders from "../components/AppProviders";
+import SentryTracker from "../components/SentryTracker";
 import { Toaster } from "react-hot-toast";
 import toast from "react-hot-toast";
 
@@ -39,6 +40,7 @@ export default function RootLayout({ children }) {
         className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${playfair.variable} antialiased`}
       >
         <AppProviders>
+          <SentryTracker />
           <ClientLayout>{children}</ClientLayout>
         </AppProviders>
         <Toaster
