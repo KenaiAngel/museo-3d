@@ -9,7 +9,7 @@ import {
 } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
-import Unauthorized from "../../components/Unauthorized";
+import Unauthorized from "../../../components/Unauthorized.jsx";
 
 export default function AdminLogsPage() {
   const { data: session, status } = useSession();
