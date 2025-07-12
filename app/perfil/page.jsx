@@ -28,6 +28,7 @@ import { Input } from "../components/ui/input";
 import useSWR from "swr";
 import { useUser } from "../../providers/UserProvider";
 import toast from "react-hot-toast";
+import { GalleryHorizontal as GalleryIcon } from "lucide-react";
 
 const fetcher = (url) => fetch(url).then((res) => res.json());
 
@@ -1411,8 +1412,19 @@ function PerfilContent() {
                       Cargando colección...
                     </div>
                   ) : collection.length === 0 ? (
-                    <div className="text-center text-muted-foreground">
-                      No tienes obras guardadas en tu colección.
+                    <div className="flex flex-col items-center gap-4 text-center text-muted-foreground">
+                      <div>No tienes obras guardadas en tu colección.</div>
+                      <Button
+                        asChild
+                        variant="default"
+                        size="lg"
+                        className="shadow-lg transition-transform hover:scale-105 hover:shadow-xl gap-2"
+                      >
+                        <Link href="/galeria">
+                          <GalleryIcon className="w-5 h-5" />
+                          Explora la galería y empieza tu colección
+                        </Link>
+                      </Button>
                     </div>
                   ) : (
                     <div className="flex flex-col gap-6">
@@ -1562,11 +1574,9 @@ function parseColaboradores(colabString) {
 export default function PerfilPage() {
   return (
     <ProtectedRoute>
-      <div className="relative min-h-screen">
-        <div className="pointer-events-none absolute inset-0 w-full h-full z-0">
-          <div className="absolute -top-24 -right-24 w-[500px] h-[500px] bg-blue-300/60 dark:bg-blue-700/30 rounded-full mix-blend-multiply filter blur-[100px] animate-breathe"></div>
-          <div className="absolute -bottom-20 -left-24 w-[500px] h-[500px] bg-purple-200/60 dark:bg-purple-800/30 rounded-full mix-blend-multiply filter blur-[100px] animate-breathe-delayed"></div>
-        </div>
+      <div className="relative min-h-screen overflow-hidden">
+        {/* Fondo arcoíris con blobs controlados */}
+        <RainbowBackground />
         <div className="relative z-10">
           <PerfilContent />
         </div>
