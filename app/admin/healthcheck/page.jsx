@@ -146,7 +146,9 @@ export default function HealthcheckPage() {
               label="API"
               value={statusData.api || "Error"}
               icon={statusData.api === "OK" ? "✅" : "❌"}
-              color={statusData.api === "OK" ? "text-green-600" : "text-red-600"}
+              color={
+                statusData.api === "OK" ? "text-green-600" : "text-red-600"
+              }
               description={
                 statusData.api === "OK" ? "Operacional" : "Fuera de servicio"
               }
@@ -191,10 +193,14 @@ export default function HealthcheckPage() {
               color="text-blue-600"
               description="Tiempo en línea"
             />
-            <MemoryUsageCard memoryUsage={statusData.memoryUsage || { heapUsed: 0, heapTotal: 0, external: 0, rss: 0 }} />
+            <MemoryUsageCard memoryUsage={statusData.memoryUsage} />
             <MetricCard
               label="Versión"
-              value={statusData.version && statusData.version !== "Desconocida" ? statusData.version : "v1.0.0"}
+              value={
+                statusData.version && statusData.version !== "Desconocida"
+                  ? statusData.version
+                  : "v1.0.0"
+              }
               icon="🏷️"
               color="text-gray-600"
               description="Build actual"
@@ -222,15 +228,18 @@ export default function HealthcheckPage() {
               <div className="text-sm text-muted-foreground mb-2 md:mb-0 flex items-center gap-2">
                 <span className="font-medium">Última comprobación:</span>
                 <Badge variant="outline">
-                  {statusData.timestamp && statusData.timestamp !== "Desconocida" ? 
-                    (() => {
-                      try {
-                        return new Date(statusData.timestamp).toLocaleString("es-ES");
-                      } catch {
-                        return "No disponible";
-                      }
-                    })() : 
-                    "No disponible"}
+                  {statusData.timestamp &&
+                  statusData.timestamp !== "Desconocida"
+                    ? (() => {
+                        try {
+                          return new Date(statusData.timestamp).toLocaleString(
+                            "es-ES"
+                          );
+                        } catch {
+                          return "No disponible";
+                        }
+                      })()
+                    : "No disponible"}
                 </Badge>
               </div>
               <div className="text-sm text-muted-foreground flex items-center gap-2">

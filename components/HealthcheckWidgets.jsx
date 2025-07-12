@@ -70,18 +70,18 @@ export function MetricCard({
   trend,
 }) {
   return (
-    <Card className="transition-all duration-200 hover:shadow-md hover:scale-[1.02]">
-      <CardHeader className="pb-2">
+    <Card className="transition-shadow duration-200 hover:shadow-md p-2 md:p-3 min-w-[120px]">
+      <CardHeader className="pb-1 mb-0">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
+          <CardTitle className="text-xs font-medium text-muted-foreground">
             {label}
           </CardTitle>
-          <span className={`text-xl ${color}`}>{icon}</span>
+          <span className={`text-lg ${color}`}>{icon}</span>
         </div>
       </CardHeader>
       <CardContent className="pt-0">
-        <div className="flex items-baseline gap-2">
-          <div className="text-2xl font-bold text-foreground">{value}</div>
+        <div className="flex items-baseline gap-1">
+          <div className="text-lg font-bold text-foreground">{value}</div>
           {trend && (
             <Badge
               variant={
@@ -91,7 +91,7 @@ export function MetricCard({
                     ? "destructive"
                     : "secondary"
               }
-              className="text-xs"
+              className="text-[10px]"
             >
               {trend.type === "up" ? "↗" : trend.type === "down" ? "↘" : "→"}{" "}
               {trend.value}
@@ -99,7 +99,9 @@ export function MetricCard({
           )}
         </div>
         {description && (
-          <p className="text-xs text-muted-foreground mt-1">{description}</p>
+          <p className="text-[10px] text-muted-foreground mt-0.5">
+            {description}
+          </p>
         )}
       </CardContent>
     </Card>
@@ -108,43 +110,46 @@ export function MetricCard({
 
 export function MetricSection({ title, icon, children }) {
   return (
-    <div className="mb-8">
-      <div className="flex items-center gap-2 mb-4">
-        <span className="text-xl">{icon}</span>
-        <h3 className="text-lg font-semibold text-foreground">{title}</h3>
+    <div className="mb-4">
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-lg">{icon}</span>
+        <h3 className="text-base font-semibold text-foreground">{title}</h3>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {children}
-      </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">{children}</div>
     </div>
   );
 }
 
 export function MemoryUsageCard({ memoryUsage }) {
-  if (!memoryUsage) return null;
+  if (
+    !memoryUsage ||
+    typeof memoryUsage.heapUsed !== "number" ||
+    typeof memoryUsage.heapTotal !== "number"
+  )
+    return null;
 
-  const used = Math.round(memoryUsage.used / 1024 / 1024);
+  const used = Math.round(memoryUsage.heapUsed / 1024 / 1024);
   const total = Math.round(memoryUsage.heapTotal / 1024 / 1024);
-  const percentage = Math.round((used / total) * 100);
+  const percentage = total > 0 ? Math.round((used / total) * 100) : 0;
 
   return (
-    <Card className="transition-all duration-200 hover:shadow-md hover:scale-[1.02]">
-      <CardHeader className="pb-2">
+    <Card className="transition-shadow duration-200 hover:shadow-md p-2 md:p-3 min-w-[120px]">
+      <CardHeader className="pb-1 mb-0">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
+          <CardTitle className="text-xs font-medium text-muted-foreground">
             Memoria en uso
           </CardTitle>
-          <span className="text-xl text-orange-600">🧠</span>
+          <span className="text-lg text-orange-600">🧠</span>
         </div>
       </CardHeader>
       <CardContent className="pt-0">
-        <div className="space-y-2">
-          <div className="flex items-baseline gap-2">
-            <div className="text-2xl font-bold text-foreground">{used}MB</div>
-            <span className="text-sm text-muted-foreground">/ {total}MB</span>
+        <div className="space-y-1">
+          <div className="flex items-baseline gap-1">
+            <div className="text-lg font-bold text-foreground">{used}MB</div>
+            <span className="text-xs text-muted-foreground">/ {total}MB</span>
           </div>
-          <Progress value={percentage} className="h-2" />
-          <p className="text-xs text-muted-foreground">
+          <Progress value={percentage} className="h-1.5" />
+          <p className="text-[10px] text-muted-foreground mt-0.5">
             {percentage}% del heap utilizado
           </p>
         </div>
