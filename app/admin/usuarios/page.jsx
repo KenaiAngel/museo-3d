@@ -14,8 +14,8 @@ import {
   User2 as User2Icon,
   Settings as SettingsIcon,
 } from "lucide-react";
-import UserAvatarCell from "../components/admin/usuarios/UserAvatarCell";
-import MobileUserCard from "../components/admin/usuarios/MobileUserCard";
+import UserAvatarCell from "../../components/admin/usuarios/UserAvatarCell";
+import MobileUserCard from "../../components/admin/usuarios/MobileUserCard";
 import {
   AnimatedBlobsBackground,
   DotsPattern,
