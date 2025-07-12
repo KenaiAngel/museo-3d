@@ -5,58 +5,32 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useRandomMurals } from "../hooks/useRandomMurals";
 import { SectionLoader } from "../../components/LoadingSpinner";
 import React, { useState } from "react";
+// import { PageSection, HeroSection } from "../../components/shared/PageSection";
+// PageSection component
+function PageSection({ children, delay = 0, className = "" }) {
+  return (
+    <section
+      className={`animate-fade-in-up${delay ? ` delay-${delay}` : ""} ${className}`.trim()}
+    >
+      {children}
+    </section>
+  );
+}
 
-const equipo = [
-  {
-    nombre: "Mario Leopoldo Bustillo Eguiluz",
-    rol: "Experto en tecnologías digitales",
-    img: "/images/Equipo_5.webp",
-    color: "bg-gradient-to-br from-blue-400 to-purple-500",
-  },
-  {
-    nombre: "Ángel Hernández Gonzalez",
-    rol: "Área de gestión y modelado de base datos",
-    img: "/images/Equipo_4.webp",
-    color: "bg-gradient-to-br from-green-400 to-teal-500",
-  },
-  {
-    nombre: "Dayron Jesus Salazar Alfaro",
-    rol: "Área de gestión y modelado de base datos",
-    img: "/images/Equipo_2.webp",
-    color: "bg-gradient-to-br from-orange-400 to-red-500",
-  },
-  {
-    nombre: "Andrei Carro Flores",
-    rol: "Front-end / Diseñador UI/UX",
-    img: "/images/Equipo_2.webp",
-    color: "bg-gradient-to-br from-pink-400 to-rose-500",
-  },
-  {
-    nombre: "Angel Kenai Sanchez Rojas",
-    rol: "Front-end / Diseñador UI/UX",
-    img: "/images/Equipo_4.webp",
-    color: "bg-gradient-to-br from-indigo-400 to-blue-500",
-  },
-  {
-    nombre: "Ixcheel Jasmin Huerta Ramos",
-    rol: "Front-end",
-    img: "/images/Equipo_3.webp",
-    color: "bg-gradient-to-br from-emerald-400 to-green-500",
-  },
-  {
-    nombre: "Dante Castelán Carpinteyro",
-    rol: "DevOps",
-    img: "/images/Equipo_1.webp",
-    color: "bg-gradient-to-br from-violet-400 to-purple-500",
-  },
-  {
-    nombre: "Daniela Estefanía Díaz Merino",
-    rol: "Front-end / Diseñadora UI/UX",
-    img: "/images/Equipo_3.webp",
-    color: "bg-gradient-to-br from-emerald-400 to-green-500",
-  }
-];
-
+// HeroSection component
+function HeroSection({ title, subtitle }) {
+  return (
+    <section className="text-center px-4 sm:px-0 animate-fade-in-up">
+      <h1 className="text-5xl font-bold mb-6 font-playfair text-foreground">
+        {title}
+      </h1>
+      <p className="text-xl text-muted-foreground max-w-2xl mx-auto font-normal animate-fade-in font-inter">
+        {subtitle}
+      </p>
+    </section>
+  );
+}
+// import { MuralImage } from "../../components/shared/MuralImage";
 // Componente de imagen con fallback
 function MuralImage({
   src,
@@ -78,48 +52,11 @@ function MuralImage({
     <img src={imgSrc} alt={alt} className={className} onError={handleError} />
   );
 }
-
-// Fondo animado de blobs para la página Acerca de
-function AnimatedBlobsBackground() {
-  return (
-    <>
-      {/* Blob superior izquierdo: celeste suave */}
-      <div className="absolute top-0 left-0 w-[520px] h-[520px] bg-sky-200/60 dark:bg-orange-700/30 rounded-full mix-blend-multiply filter blur-[100px] animate-breathe" />
-      {/* Blob inferior derecho: lila suave */}
-      <div className="absolute bottom-0 right-0 w-[520px] h-[520px] bg-violet-200/60 dark:bg-pink-700/30 rounded-full mix-blend-multiply filter blur-[100px] animate-breathe-delayed" />
-      {/* Blob central: amarillo pastel */}
-      <div
-        className="absolute top-1/2 left-1/2 w-[340px] h-[340px] bg-yellow-100/50 dark:bg-fuchsia-800/20 rounded-full mix-blend-multiply filter blur-[100px] animate-breathe"
-        style={{ transform: "translate(-50%,-50%) scale(1.2)" }}
-      />
-    </>
-  );
-}
-
-function DotsPattern() {
-  return (
-    <svg
-      className="absolute inset-0 w-full h-full z-0 pointer-events-none hidden dark:block"
-      width="100%"
-      height="100%"
-      style={{ opacity: 0.13 }}
-    >
-      <defs>
-        <pattern
-          id="dots"
-          x="0"
-          y="0"
-          width="32"
-          height="32"
-          patternUnits="userSpaceOnUse"
-        >
-          <circle cx="2" cy="2" r="1.5" fill="#fff" />
-        </pattern>
-      </defs>
-      <rect width="100%" height="100%" fill="url(#dots)" />
-    </svg>
-  );
-}
+import {
+  AnimatedBlobsBackground,
+  DotsPattern,
+} from "../../components/shared/AnimatedBackground";
+import equipo from "./equipo.json";
 
 export default function AcercaDe() {
   const { murals, loading, error } = useRandomMurals(4);
@@ -150,18 +87,15 @@ export default function AcercaDe() {
       </div>
       <main className="relative z-10 w-full max-w-5xl mx-auto flex flex-col gap-16 px-4 sm:px-8 py-8 md:py-12">
         {/* Hero Section */}
-        <section className="text-center px-4 sm:px-0 animate-fade-in-up">
-          <h1 className="text-5xl font-bold mb-6 font-playfair text-foreground">
-            Acerca del Mural ARPA
-          </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto font-normal animate-fade-in font-inter">
-            Una iniciativa cultural que busca preservar y difundir el arte mural
-            mexicano a través de la tecnología y la experiencia digital.
-          </p>
-        </section>
-
+        <HeroSection
+          title="Acerca del Mural ARPA"
+          subtitle="Una iniciativa cultural que busca preservar y difundir el arte mural mexicano a través de la tecnología y la experiencia digital."
+        />
         {/* Historia Section - Collage con murales aleatorios */}
-        <section className="grid md:grid-cols-2 gap-12 mx-6 sm:mx-0 items-center animate-fade-in-up delay-100">
+        <PageSection
+          delay={100}
+          className="grid md:grid-cols-2 gap-12 mx-6 sm:mx-0 items-center"
+        >
           <div>
             <h2 className="text-3xl font-bold mb-6 font-playfair text-foreground">
               Nuestra Historia
@@ -198,10 +132,10 @@ export default function AcercaDe() {
                       i === 0
                         ? "animate-diagonal-tl"
                         : i === 1
-                        ? "animate-diagonal-tr"
-                        : i === 2
-                        ? "animate-diagonal-bl"
-                        : "animate-diagonal-br"
+                          ? "animate-diagonal-tr"
+                          : i === 2
+                            ? "animate-diagonal-bl"
+                            : "animate-diagonal-br"
                     }`}
                     fallbackSrc="/assets/artworks/cuadro1.webp"
                   />
@@ -218,10 +152,10 @@ export default function AcercaDe() {
                       i === 0
                         ? "animate-diagonal-tl"
                         : i === 1
-                        ? "animate-diagonal-tr"
-                        : i === 2
-                        ? "animate-diagonal-bl"
-                        : "animate-diagonal-br"
+                          ? "animate-diagonal-tr"
+                          : i === 2
+                            ? "animate-diagonal-bl"
+                            : "animate-diagonal-br"
                     }`}
                     fallbackSrc={
                       fallbackImages[i] || "/assets/artworks/cuadro1.webp"
@@ -231,10 +165,9 @@ export default function AcercaDe() {
               </div>
             )}
           </div>
-        </section>
-
+        </PageSection>
         {/* Misión y Visión - Ahora en una columna */}
-        <section className="mx-6 sm:mx-0 animate-fade-in-up delay-200">
+        <PageSection delay={200} className="mx-6 sm:mx-0">
           <div className="max-w-4xl mx-auto space-y-12">
             <div>
               <h2 className="text-3xl font-bold mb-6 font-playfair text-foreground text-center">
@@ -313,10 +246,9 @@ export default function AcercaDe() {
               </div>
             </div>
           </div>
-        </section>
-
+        </PageSection>
         {/* Valores y Principios */}
-        <section className="mx-6 sm:mx-0 animate-fade-in-up delay-250">
+        <PageSection delay={250} className="mx-6 sm:mx-0">
           <div className="max-w-4xl mx-auto">
             <h2 className="text-3xl font-bold mb-8 font-playfair text-foreground text-center">
               Nuestros Valores y Principios
@@ -371,10 +303,9 @@ export default function AcercaDe() {
               </div>
             </div>
           </div>
-        </section>
-
+        </PageSection>
         {/* Apoyo */}
-        <section className="mx-6 sm:mx-0 text-center animate-fade-in-up delay-300">
+        <PageSection delay={300} className="mx-6 sm:mx-0 text-center">
           <h2 className="text-3xl font-bold mb-8 font-playfair text-foreground">
             Con apoyo de:
           </h2>
@@ -403,10 +334,9 @@ export default function AcercaDe() {
               </p>
             </div>
           </div>
-        </section>
-
+        </PageSection>
         {/* Equipo en grid de 4 columnas */}
-        <section className="animate-fade-in-up delay-400">
+        <PageSection delay={400}>
           <h2 className="text-3xl font-bold text-center mb-12 font-playfair text-foreground">
             Nuestro Equipo
           </h2>
@@ -439,48 +369,31 @@ export default function AcercaDe() {
               </article>
             ))}
           </div>
-        </section>
-
+        </PageSection>
         {/* Call to Action con banner de mural aleatorio */}
-        <section className="relative overflow-hidden rounded-3xl animate-fade-in-up delay-500">
-          <div className="absolute inset-0 bg-gradient-to-r from-orange-500/20 to-pink-500/20 backdrop-blur-sm" />
-          <div
-            className="absolute inset-0 bg-cover bg-center opacity-10"
-            style={{
-              backgroundImage:
-                murals.length > 0
-                  ? `url(${
-                      murals[0]?.url_imagen || "/assets/artworks/cuadro2.webp"
-                    })`
-                  : "url(/assets/artworks/cuadro2.webp)",
-            }}
-          />
-          <div className="relative z-10 text-center py-16 px-8">
-            <h2 className="text-3xl font-bold mb-6 font-playfair text-foreground">
-              Únete a Nuestra Misión
-            </h2>
-            <p className="text-xl mb-8 text-muted-foreground font-inter max-w-2xl mx-auto">
-              Ayúdanos a preservar el patrimonio cultural mexicano para las
-              futuras generaciones.
-            </p>
-            <div className="flex gap-4 justify-center flex-wrap">
-              <Button
-                asChild
-                variant="default"
-                className="px-6 py-3 rounded-lg font-semibold text-lg bg-black text-white shadow-lg hover:bg-neutral-800 focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:bg-white dark:text-black dark:hover:bg-gray-100"
-              >
-                <a href="/museo">Explorar Museo</a>
-              </Button>
-              <Button
-                asChild
-                variant="outline"
-                className="px-6 py-3 rounded-lg font-semibold text-lg border-primary text-primary hover:bg-primary/10 dark:border-white dark:text-white dark:hover:bg-white/10"
-              >
-                <a href="/crear-sala">Contribuir</a>
-              </Button>
-            </div>
-          </div>
-        </section>
+        {/* CallToAction component removed: file not found. Restore when available.
+        <CallToAction
+          title="Únete a Nuestra Misión"
+          subtitle="Ayúdanos a preservar el patrimonio cultural mexicano para las futuras generaciones."
+          backgroundImage={murals.length > 0 ? murals[0]?.url_imagen || "/assets/artworks/cuadro2.webp" : "/assets/artworks/cuadro2.webp"}
+          buttons={[
+            {
+              text: "Explorar Museo",
+              href: "/museo",
+              variant: "default",
+              className:
+                "px-6 py-3 rounded-lg font-semibold text-lg bg-black text-white shadow-lg hover:bg-neutral-800 focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:bg-white dark:text-black dark:hover:bg-gray-100",
+            },
+            {
+              text: "Contribuir",
+              href: "/crear-sala",
+              variant: "outline",
+              className:
+                "px-6 py-3 rounded-lg font-semibold text-lg border-primary text-primary hover:bg-primary/10 dark:border-white dark:text-white dark:hover:bg-white/10",
+            },
+          ]}
+        />
+        */}
       </main>
     </div>
   );

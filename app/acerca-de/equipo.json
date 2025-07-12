@@ -1,0 +1,50 @@
+[
+  {
+    "nombre": "Mario Leopoldo Bustillo Eguiluz",
+    "rol": "Experto en tecnologías digitales",
+    "img": "/images/Equipo_5.webp",
+    "color": "bg-gradient-to-br from-blue-400 to-purple-500"
+  },
+  {
+    "nombre": "Ángel Hernández Gonzalez",
+    "rol": "Área de gestión y modelado de base datos",
+    "img": "/images/Equipo_4.webp",
+    "color": "bg-gradient-to-br from-green-400 to-teal-500"
+  },
+  {
+    "nombre": "Dayron Jesus Salazar Alfaro",
+    "rol": "Área de gestión y modelado de base datos",
+    "img": "/images/Equipo_2.webp",
+    "color": "bg-gradient-to-br from-orange-400 to-red-500"
+  },
+  {
+    "nombre": "Andrei Carro Flores",
+    "rol": "Front-end / Diseñador UI/UX",
+    "img": "/images/Equipo_2.webp",
+    "color": "bg-gradient-to-br from-pink-400 to-rose-500"
+  },
+  {
+    "nombre": "Angel Kenai Sanchez Rojas",
+    "rol": "Front-end / Diseñador UI/UX",
+    "img": "/images/Equipo_4.webp",
+    "color": "bg-gradient-to-br from-indigo-400 to-blue-500"
+  },
+  {
+    "nombre": "Ixcheel Jasmin Huerta Ramos",
+    "rol": "Front-end",
+    "img": "/images/Equipo_3.webp",
+    "color": "bg-gradient-to-br from-emerald-400 to-green-500"
+  },
+  {
+    "nombre": "Dante Castelán Carpinteyro",
+    "rol": "DevOps",
+    "img": "/images/Equipo_1.webp",
+    "color": "bg-gradient-to-br from-violet-400 to-purple-500"
+  },
+  {
+    "nombre": "Daniela Estefanía Díaz Merino",
+    "rol": "Front-end / Diseñadora UI/UX",
+    "img": "/images/Equipo_3.webp",
+    "color": "bg-gradient-to-br from-emerald-400 to-green-500"
+  }
+]
