@@ -9,58 +9,32 @@ import { useRouter } from "next/navigation";
 import { useCollection } from "../../providers/CollectionProvider";
 import { Heart } from "lucide-react";
 import ReactDOM from "react-dom";
-import { Tooltip, TooltipTrigger, TooltipContent } from "../../components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "../../components/ui/tooltip";
+import AnimatedBackground from "../../components/shared/AnimatedBackground";
 
 // Componentes de fondo animado (copiados de acerca-de)
-function AnimatedBlobsBackground() {
-  return (
-    <>
-      <div className="absolute top-0 left-0 w-[520px] h-[520px] bg-orange-300/60 dark:bg-orange-700/30 rounded-full mix-blend-multiply filter blur-[100px] animate-breathe" />
-      <div className="absolute bottom-0 right-0 w-[520px] h-[520px] bg-pink-300/60 dark:bg-pink-700/30 rounded-full mix-blend-multiply filter blur-[100px] animate-breathe-delayed" />
-      <div
-        className="absolute top-1/2 left-1/2 w-[340px] h-[340px] bg-fuchsia-200/50 dark:bg-fuchsia-800/20 rounded-full mix-blend-multiply filter blur-[100px] animate-breathe"
-        style={{ transform: "translate(-50%,-50%) scale(1.2)" }}
-      />
-    </>
-  );
-}
-
-function DotsPattern() {
-  return (
-    <svg
-      className="absolute inset-0 w-full h-full z-0 pointer-events-none hidden dark:block"
-      width="100%"
-      height="100%"
-      style={{ opacity: 0.13 }}
-    >
-      <defs>
-        <pattern
-          id="dots"
-          x="0"
-          y="0"
-          width="32"
-          height="32"
-          patternUnits="userSpaceOnUse"
-        >
-          <circle cx="2" cy="2" r="1.5" fill="#fff" />
-        </pattern>
-      </defs>
-      <rect width="100%" height="100%" fill="url(#dots)" />
-    </svg>
-  );
-}
 
 // Agrega la función utilitaria al inicio del archivo:
 function parseAutores(autorString) {
   return autorString
-    ? autorString.split(",").map((a) => a.trim()).filter(Boolean)
+    ? autorString
+        .split(",")
+        .map((a) => a.trim())
+        .filter(Boolean)
     : [];
 }
 
 // Agrega la función utilitaria para colaboradores al inicio del archivo:
 function parseColaboradores(colabString) {
   return colabString
-    ? colabString.split(",").map((c) => c.trim()).filter(Boolean)
+    ? colabString
+        .split(",")
+        .map((c) => c.trim())
+        .filter(Boolean)
     : [];
 }
 
@@ -337,8 +311,9 @@ export default function GaleriaPage() {
     return <PageLoader text="Cargando galería..." />;
   }
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-100 p-4">
-      <div className="max-w-7xl mx-auto">
+    <div className="relative min-h-screen bg-gradient-to-br from-purple-50 to-blue-100 p-4 overflow-hidden">
+      <AnimatedBackground />
+      <div className="max-w-7xl mx-auto relative z-10">
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-4">
             Galería Virtual
@@ -449,9 +424,15 @@ export default function GaleriaPage() {
                     <div className="gallery-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                       {murales.map((mural, idx) => {
                         const autores = parseAutores(mural.autor);
-                        const extraAutores = autores.length > 3 ? autores.slice(3) : [];
-                        const colaboradores = parseColaboradores(mural.colaboradores);
-                        const extraColabs = colaboradores.length > 3 ? colaboradores.slice(3) : [];
+                        const extraAutores =
+                          autores.length > 3 ? autores.slice(3) : [];
+                        const colaboradores = parseColaboradores(
+                          mural.colaboradores
+                        );
+                        const extraColabs =
+                          colaboradores.length > 3
+                            ? colaboradores.slice(3)
+                            : [];
                         return (
                           <motion.div
                             key={mural.id}
@@ -473,7 +454,9 @@ export default function GaleriaPage() {
                               onClick={async (e) => {
                                 e.stopPropagation();
                                 if (!mural.id) {
-                                  toast.error("No se puede guardar: el mural no tiene ID válido");
+                                  toast.error(
+                                    "No se puede guardar: el mural no tiene ID válido"
+                                  );
                                   return;
                                 }
                                 try {
@@ -506,7 +489,11 @@ export default function GaleriaPage() {
                               }
                             >
                               <Heart
-                                fill={isInCollection(mural.id) ? `url(#heart-gradient-${mural.id})` : "none"}
+                                fill={
+                                  isInCollection(mural.id)
+                                    ? `url(#heart-gradient-${mural.id})`
+                                    : "none"
+                                }
                                 stroke="currentColor"
                                 strokeWidth={2.5}
                                 className={`w-7 h-7 transition-all duration-200 ${
@@ -518,7 +505,13 @@ export default function GaleriaPage() {
                             </button>
                             <svg width="0" height="0">
                               <defs>
-                                <linearGradient id={`heart-gradient-${mural.id}`} x1="0" y1="0" x2="1" y2="1">
+                                <linearGradient
+                                  id={`heart-gradient-${mural.id}`}
+                                  x1="0"
+                                  y1="0"
+                                  x2="1"
+                                  y2="1"
+                                >
                                   <stop offset="0%" stopColor="#ec4899" />
                                   <stop offset="100%" stopColor="#f472b6" />
                                 </linearGradient>
@@ -534,7 +527,8 @@ export default function GaleriaPage() {
                                 alt={mural.titulo}
                                 className="w-full h-full object-cover"
                                 onError={(e) => {
-                                  e.target.src = "/assets/artworks/cuadro1.webp";
+                                  e.target.src =
+                                    "/assets/artworks/cuadro1.webp";
                                 }}
                               />
                             </div>
@@ -544,7 +538,10 @@ export default function GaleriaPage() {
                               </h3>
                               <div className="flex flex-wrap gap-1 mb-2 items-center">
                                 {autores.slice(0, 3).map((autor, idx) => (
-                                  <span key={idx} className="inline-block bg-pink-100 dark:bg-pink-900/40 text-pink-700 dark:text-pink-200 px-2 py-0.5 rounded-full text-xs font-semibold">
+                                  <span
+                                    key={idx}
+                                    className="inline-block bg-pink-100 dark:bg-pink-900/40 text-pink-700 dark:text-pink-200 px-2 py-0.5 rounded-full text-xs font-semibold"
+                                  >
                                     {autor}
                                   </span>
                                 ))}
@@ -552,19 +549,28 @@ export default function GaleriaPage() {
                                   <Tooltip>
                                     <TooltipTrigger>
                                       <span
-                                        ref={el => {
-                                          if (showTooltipIdx === mural.id) setTooltipAnchor(el);
+                                        ref={(el) => {
+                                          if (showTooltipIdx === mural.id)
+                                            setTooltipAnchor(el);
                                         }}
                                         className="inline-block bg-pink-200 dark:bg-pink-800/60 text-pink-900 dark:text-pink-100 px-2 py-0.5 rounded-full text-xs font-semibold cursor-pointer relative"
                                         tabIndex={0}
                                         aria-label="Ver todos los autores"
-                                        onMouseEnter={() => setShowTooltipIdx(mural.id)}
-                                        onMouseLeave={() => setShowTooltipIdx(null)}
+                                        onMouseEnter={() =>
+                                          setShowTooltipIdx(mural.id)
+                                        }
+                                        onMouseLeave={() =>
+                                          setShowTooltipIdx(null)
+                                        }
                                       >
                                         ...
                                       </span>
                                     </TooltipTrigger>
-                                    <TooltipContent anchorRef={{ current: tooltipAnchor }} side="top" open={showTooltipIdx === mural.id}>
+                                    <TooltipContent
+                                      anchorRef={{ current: tooltipAnchor }}
+                                      side="top"
+                                      open={showTooltipIdx === mural.id}
+                                    >
                                       {extraAutores.join("\n")}
                                     </TooltipContent>
                                   </Tooltip>
@@ -572,28 +578,49 @@ export default function GaleriaPage() {
                               </div>
                               {colaboradores.length > 0 && (
                                 <div className="flex flex-wrap gap-1 mb-2 items-center">
-                                  {colaboradores.slice(0, 3).map((colab, idx) => (
-                                    <span key={idx} className="inline-block bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-200 px-2 py-0.5 rounded-full text-xs font-semibold">
-                                      {colab}
-                                    </span>
-                                  ))}
+                                  {colaboradores
+                                    .slice(0, 3)
+                                    .map((colab, idx) => (
+                                      <span
+                                        key={idx}
+                                        className="inline-block bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-200 px-2 py-0.5 rounded-full text-xs font-semibold"
+                                      >
+                                        {colab}
+                                      </span>
+                                    ))}
                                   {extraColabs.length > 0 && (
                                     <Tooltip>
                                       <TooltipTrigger>
                                         <span
-                                          ref={el => {
-                                            if (showTooltipIdx === mural.id + '-colab') setTooltipAnchor(el);
+                                          ref={(el) => {
+                                            if (
+                                              showTooltipIdx ===
+                                              mural.id + "-colab"
+                                            )
+                                              setTooltipAnchor(el);
                                           }}
                                           className="inline-block bg-blue-200 dark:bg-blue-800/60 text-blue-900 dark:text-blue-100 px-2 py-0.5 rounded-full text-xs font-semibold cursor-pointer relative"
                                           tabIndex={0}
                                           aria-label="Ver todos los colaboradores"
-                                          onMouseEnter={() => setShowTooltipIdx(mural.id + '-colab')}
-                                          onMouseLeave={() => setShowTooltipIdx(null)}
+                                          onMouseEnter={() =>
+                                            setShowTooltipIdx(
+                                              mural.id + "-colab"
+                                            )
+                                          }
+                                          onMouseLeave={() =>
+                                            setShowTooltipIdx(null)
+                                          }
                                         >
                                           ...
                                         </span>
                                       </TooltipTrigger>
-                                      <TooltipContent anchorRef={{ current: tooltipAnchor }} side="top" open={showTooltipIdx === mural.id + '-colab'}>
+                                      <TooltipContent
+                                        anchorRef={{ current: tooltipAnchor }}
+                                        side="top"
+                                        open={
+                                          showTooltipIdx === mural.id + "-colab"
+                                        }
+                                      >
                                         {extraColabs.join("\n")}
                                       </TooltipContent>
                                     </Tooltip>
@@ -738,9 +765,11 @@ export default function GaleriaPage() {
               <div className="gallery-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {filteredMurales.map((mural) => {
                   const autores = parseAutores(mural.autor);
-                  const extraAutores = autores.length > 3 ? autores.slice(3) : [];
+                  const extraAutores =
+                    autores.length > 3 ? autores.slice(3) : [];
                   const colaboradores = parseColaboradores(mural.colaboradores);
-                  const extraColabs = colaboradores.length > 3 ? colaboradores.slice(3) : [];
+                  const extraColabs =
+                    colaboradores.length > 3 ? colaboradores.slice(3) : [];
                   return (
                     <div
                       key={mural.id}
@@ -754,7 +783,9 @@ export default function GaleriaPage() {
                         onClick={async (e) => {
                           e.stopPropagation();
                           if (!mural.id) {
-                            toast.error("No se puede guardar: el mural no tiene ID válido");
+                            toast.error(
+                              "No se puede guardar: el mural no tiene ID válido"
+                            );
                             return;
                           }
                           try {
@@ -779,7 +810,11 @@ export default function GaleriaPage() {
                         }
                       >
                         <Heart
-                          fill={isInCollection(mural.id) ? `url(#heart-gradient-${mural.id})` : "none"}
+                          fill={
+                            isInCollection(mural.id)
+                              ? `url(#heart-gradient-${mural.id})`
+                              : "none"
+                          }
                           stroke="currentColor"
                           strokeWidth={2.5}
                           className={`w-6 h-6 transition-all duration-200 ${
@@ -791,7 +826,13 @@ export default function GaleriaPage() {
                       </button>
                       <svg width="0" height="0">
                         <defs>
-                          <linearGradient id={`heart-gradient-${mural.id}`} x1="0" y1="0" x2="1" y2="1">
+                          <linearGradient
+                            id={`heart-gradient-${mural.id}`}
+                            x1="0"
+                            y1="0"
+                            x2="1"
+                            y2="1"
+                          >
                             <stop offset="0%" stopColor="#ec4899" />
                             <stop offset="100%" stopColor="#f472b6" />
                           </linearGradient>
@@ -825,7 +866,10 @@ export default function GaleriaPage() {
                         </h3>
                         <div className="flex flex-wrap gap-1 mb-2 items-center">
                           {autores.slice(0, 3).map((autor, idx) => (
-                            <span key={idx} className="inline-block bg-pink-100 dark:bg-pink-900/40 text-pink-700 dark:text-pink-200 px-2 py-0.5 rounded-full text-xs font-semibold">
+                            <span
+                              key={idx}
+                              className="inline-block bg-pink-100 dark:bg-pink-900/40 text-pink-700 dark:text-pink-200 px-2 py-0.5 rounded-full text-xs font-semibold"
+                            >
                               {autor}
                             </span>
                           ))}
@@ -833,19 +877,26 @@ export default function GaleriaPage() {
                             <Tooltip>
                               <TooltipTrigger>
                                 <span
-                                  ref={el => {
-                                    if (showTooltipIdx === mural.id) setTooltipAnchor(el);
+                                  ref={(el) => {
+                                    if (showTooltipIdx === mural.id)
+                                      setTooltipAnchor(el);
                                   }}
                                   className="inline-block bg-pink-200 dark:bg-pink-800/60 text-pink-900 dark:text-pink-100 px-2 py-0.5 rounded-full text-xs font-semibold cursor-pointer relative"
                                   tabIndex={0}
                                   aria-label="Ver todos los autores"
-                                  onMouseEnter={() => setShowTooltipIdx(mural.id)}
+                                  onMouseEnter={() =>
+                                    setShowTooltipIdx(mural.id)
+                                  }
                                   onMouseLeave={() => setShowTooltipIdx(null)}
                                 >
                                   ...
                                 </span>
                               </TooltipTrigger>
-                              <TooltipContent anchorRef={{ current: tooltipAnchor }} side="top" open={showTooltipIdx === mural.id}>
+                              <TooltipContent
+                                anchorRef={{ current: tooltipAnchor }}
+                                side="top"
+                                open={showTooltipIdx === mural.id}
+                              >
                                 {extraAutores.join("\n")}
                               </TooltipContent>
                             </Tooltip>
@@ -854,7 +905,10 @@ export default function GaleriaPage() {
                         {colaboradores.length > 0 && (
                           <div className="flex flex-wrap gap-1 mb-2 items-center">
                             {colaboradores.slice(0, 3).map((colab, idx) => (
-                              <span key={idx} className="inline-block bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-200 px-2 py-0.5 rounded-full text-xs font-semibold">
+                              <span
+                                key={idx}
+                                className="inline-block bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-200 px-2 py-0.5 rounded-full text-xs font-semibold"
+                              >
                                 {colab}
                               </span>
                             ))}
@@ -862,19 +916,29 @@ export default function GaleriaPage() {
                               <Tooltip>
                                 <TooltipTrigger>
                                   <span
-                                    ref={el => {
-                                      if (showTooltipIdx === mural.id + '-colab') setTooltipAnchor(el);
+                                    ref={(el) => {
+                                      if (
+                                        showTooltipIdx ===
+                                        mural.id + "-colab"
+                                      )
+                                        setTooltipAnchor(el);
                                     }}
                                     className="inline-block bg-blue-200 dark:bg-blue-800/60 text-blue-900 dark:text-blue-100 px-2 py-0.5 rounded-full text-xs font-semibold cursor-pointer relative"
                                     tabIndex={0}
                                     aria-label="Ver todos los colaboradores"
-                                    onMouseEnter={() => setShowTooltipIdx(mural.id + '-colab')}
+                                    onMouseEnter={() =>
+                                      setShowTooltipIdx(mural.id + "-colab")
+                                    }
                                     onMouseLeave={() => setShowTooltipIdx(null)}
                                   >
                                     ...
                                   </span>
                                 </TooltipTrigger>
-                                <TooltipContent anchorRef={{ current: tooltipAnchor }} side="top" open={showTooltipIdx === mural.id + '-colab'}>
+                                <TooltipContent
+                                  anchorRef={{ current: tooltipAnchor }}
+                                  side="top"
+                                  open={showTooltipIdx === mural.id + "-colab"}
+                                >
                                   {extraColabs.join("\n")}
                                 </TooltipContent>
                               </Tooltip>
@@ -1056,13 +1120,20 @@ function ModalZoomImage({ mural, rect, onClose }) {
           {mural.titulo}
         </h2>
         <div className="flex flex-wrap gap-1 mb-2 items-center">
-          {parseAutores(mural.autor).length > 0
-            ? parseAutores(mural.autor).slice(0, 3).map((autor, idx) => (
-                <span key={idx} className="inline-block bg-pink-100 dark:bg-pink-900/40 text-pink-700 dark:text-pink-200 px-2 py-0.5 rounded-full text-xs font-semibold">
+          {parseAutores(mural.autor).length > 0 ? (
+            parseAutores(mural.autor)
+              .slice(0, 3)
+              .map((autor, idx) => (
+                <span
+                  key={idx}
+                  className="inline-block bg-pink-100 dark:bg-pink-900/40 text-pink-700 dark:text-pink-200 px-2 py-0.5 rounded-full text-xs font-semibold"
+                >
                   {autor}
                 </span>
               ))
-            : <span className="text-muted-foreground">Artista desconocido</span>}
+          ) : (
+            <span className="text-muted-foreground">Artista desconocido</span>
+          )}
           {parseAutores(mural.autor).length > 3 && (
             <Tooltip>
               <TooltipTrigger>
@@ -1075,17 +1146,26 @@ function ModalZoomImage({ mural, rect, onClose }) {
                   ...
                 </span>
               </TooltipTrigger>
-              <TooltipContent anchorRef={cardRefs.current[mural.id]} side="top" open={showTooltipIdx === mural.id}>
+              <TooltipContent
+                anchorRef={cardRefs.current[mural.id]}
+                side="top"
+                open={showTooltipIdx === mural.id}
+              >
                 {parseAutores(mural.autor).slice(3).join("\n")}
               </TooltipContent>
             </Tooltip>
           )}
-          {parseAutores(mural.autor).length === 0 && <span className="text-muted-foreground">Artista desconocido</span>}
+          {parseAutores(mural.autor).length === 0 && (
+            <span className="text-muted-foreground">Artista desconocido</span>
+          )}
         </div>
         {colaboradores.length > 0 && (
           <div className="flex flex-wrap gap-1 mb-2 items-center">
             {colaboradores.slice(0, 3).map((colab, idx) => (
-              <span key={idx} className="inline-block bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-200 px-2 py-0.5 rounded-full text-xs font-semibold">
+              <span
+                key={idx}
+                className="inline-block bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-200 px-2 py-0.5 rounded-full text-xs font-semibold"
+              >
                 {colab}
               </span>
             ))}
@@ -1093,19 +1173,24 @@ function ModalZoomImage({ mural, rect, onClose }) {
               <Tooltip>
                 <TooltipTrigger>
                   <span
-                    ref={el => {
-                      if (showTooltipIdx === mural.id + '-colab') setTooltipAnchor(el);
+                    ref={(el) => {
+                      if (showTooltipIdx === mural.id + "-colab")
+                        setTooltipAnchor(el);
                     }}
                     className="inline-block bg-blue-200 dark:bg-blue-800/60 text-blue-900 dark:text-blue-100 px-2 py-0.5 rounded-full text-xs font-semibold cursor-pointer relative"
                     tabIndex={0}
                     aria-label="Ver todos los colaboradores"
-                    onMouseEnter={() => setShowTooltipIdx(mural.id + '-colab')}
+                    onMouseEnter={() => setShowTooltipIdx(mural.id + "-colab")}
                     onMouseLeave={() => setShowTooltipIdx(null)}
                   >
                     ...
                   </span>
                 </TooltipTrigger>
-                <TooltipContent anchorRef={{ current: tooltipAnchor }} side="top" open={showTooltipIdx === mural.id + '-colab'}>
+                <TooltipContent
+                  anchorRef={{ current: tooltipAnchor }}
+                  side="top"
+                  open={showTooltipIdx === mural.id + "-colab"}
+                >
                   {extraColabs.join("\n")}
                 </TooltipContent>
               </Tooltip>
