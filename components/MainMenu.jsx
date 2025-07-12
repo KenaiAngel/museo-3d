@@ -210,12 +210,6 @@ export default function MainMenu({ onSubirArchivo }) {
             </div>
           </Link>
           {/* Título a la izquierda en mobile, junto al logo */}
-          <div className="flex items-center gap-2 md:hidden">
-            <span className="text-lg font-bold tracking-wide text-gray-900 dark:text-white">
-              Mural ARPA
-            </span>
-          </div>
-          {/* Navigation Menu */}
           <NavigationMenu className="hidden md:block">
             {/* DESKTOP: solo enlaces directos */}
             <NavigationMenuList className="text-sm font-medium">
@@ -224,7 +218,9 @@ export default function MainMenu({ onSubirArchivo }) {
                   <Link
                     href="/galeria"
                     className={`navbar-link hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-all ${
-                      pathname.startsWith("/galeria") ? "elegant-active-menu" : ""
+                      pathname.startsWith("/galeria")
+                        ? "elegant-active-menu"
+                        : ""
                     }`}
                   >
                     Galería
@@ -236,7 +232,9 @@ export default function MainMenu({ onSubirArchivo }) {
                   <Link
                     href="/acerca-de"
                     className={`navbar-link hover:text-primary transition-all px-3 py-2 rounded-lg ${
-                      pathname.startsWith("/acerca-de") ? "elegant-active-menu" : ""
+                      pathname.startsWith("/acerca-de")
+                        ? "elegant-active-menu"
+                        : ""
                     }`}
                   >
                     Acerca de
@@ -307,8 +305,8 @@ export default function MainMenu({ onSubirArchivo }) {
                                     role === "admin"
                                       ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
                                       : role === "moderator"
-                                      ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
-                                      : "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+                                        ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
+                                        : "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
                                   }`}
                                 >
                                   {role}
@@ -328,8 +326,8 @@ export default function MainMenu({ onSubirArchivo }) {
                                     isSessionExpiringSoon
                                       ? "text-yellow-600 dark:text-yellow-400"
                                       : isSessionExpired
-                                      ? "text-red-600 dark:text-red-400"
-                                      : "text-green-600 dark:text-green-400"
+                                        ? "text-red-600 dark:text-red-400"
+                                        : "text-green-600 dark:text-green-400"
                                   }`}
                                 >
                                   {sessionDuration}
@@ -556,7 +554,9 @@ export default function MainMenu({ onSubirArchivo }) {
                   href="/acerca-de"
                   onClick={() => setMobileMenuOpen(false)}
                   className={`navbar-link block py-1 text-sm font-medium hover:text-primary transition-colors ${
-                    pathname.startsWith("/acerca-de") ? "elegant-active-menu" : ""
+                    pathname.startsWith("/acerca-de")
+                      ? "elegant-active-menu"
+                      : ""
                   }`}
                 >
                   Acerca de
@@ -597,8 +597,8 @@ export default function MainMenu({ onSubirArchivo }) {
                                   role === "admin"
                                     ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
                                     : role === "moderator"
-                                    ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
-                                    : "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+                                      ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
+                                      : "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
                                 }`}
                               >
                                 {role}
@@ -618,8 +618,8 @@ export default function MainMenu({ onSubirArchivo }) {
                                   isSessionExpiringSoon
                                     ? "text-yellow-600 dark:text-yellow-400"
                                     : isSessionExpired
-                                    ? "text-red-600 dark:text-red-400"
-                                    : "text-green-600 dark:text-green-400"
+                                      ? "text-red-600 dark:text-red-400"
+                                      : "text-green-600 dark:text-green-400"
                                 }`}
                               >
                                 {sessionDuration}

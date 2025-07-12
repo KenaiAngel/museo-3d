@@ -115,8 +115,8 @@ export default function AcercaDe() {
   return (
     <div className="relative w-full flex flex-col items-center justify-start bg-transparent">
       {/* Fondo animado blobs y puntos arriba */}
-      <div className="w-full flex items-center justify-center z-0 pointer-events-none pt-8">
-        <div className="w-full min-h-[180px] max-h-[300px] flex items-center justify-center overflow-visible">
+      <div className="w-full flex items-center justify-center z-0 pointer-events-none">
+        <div className="w-full min-h-[60px] max-h-[120px] flex items-center justify-center overflow-visible">
           <AnimatedBlobsBackground />
           <DotsPattern />
         </div>
