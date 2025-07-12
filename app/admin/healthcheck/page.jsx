@@ -176,54 +176,7 @@ export default function HealthcheckPage() {
             />
           </MetricSection>
 
-          {/* Estadísticas de Contenido */}
-          <MetricSection title="Estadísticas de Contenido" icon="📈">
-            <MetricCard
-              label="Usuarios registrados"
-              value={
-                statusData.userCount !== null && statusData.userCount !== undefined
-                  ? statusData.userCount.toLocaleString()
-                  : "0"
-              }
-              icon="👤"
-              color="text-indigo-600"
-              description="Total de cuentas activas"
-            />
-            <MetricCard
-              label="Murales registrados"
-              value={
-                statusData.muralCount !== null && statusData.muralCount !== undefined
-                  ? statusData.muralCount.toLocaleString()
-                  : "0"
-              }
-              icon="🖼️"
-              color="text-pink-600"
-              description="Obras digitalizadas"
-            />
-            <MetricCard
-              label="Salas creadas"
-              value={
-                statusData.roomCount !== null && statusData.roomCount !== undefined
-                  ? statusData.roomCount.toLocaleString()
-                  : "0"
-              }
-              icon="🏛️"
-              color="text-amber-600"
-              description="Galerías virtuales"
-            />
-            <MetricCard
-              label="Sesiones activas"
-              value={
-                statusData.activeSessionsCount !== null &&
-                statusData.activeSessionsCount !== undefined
-                  ? statusData.activeSessionsCount.toLocaleString()
-                  : "0"
-              }
-              icon="🔗"
-              color="text-emerald-600"
-              description="Últimas 24 horas"
-            />
-          </MetricSection>
+          {/* ...se elimina el bloque de estadísticas de contenido... */}
 
           {/* Información del Sistema */}
           <MetricSection title="Información del Sistema" icon="💻">

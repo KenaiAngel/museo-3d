@@ -130,9 +130,6 @@ export default function AdminLogsPage() {
     const query = q.toLowerCase();
     let filtered = logsArr.filter((log) => {
       const user = log.user || {};
-      const browser = log.contexts?.browser;
-      const os = log.contexts?.os;
-      const device = log.contexts?.device;
       return (
         (log.title || "").toLowerCase().includes(query) ||
         (log.message || "").toLowerCase().includes(query) ||
@@ -143,13 +140,7 @@ export default function AdminLogsPage() {
         (user.email || "").toLowerCase().includes(query) ||
         (user.username || "").toLowerCase().includes(query) ||
         (user.id || "").toLowerCase().includes(query) ||
-        (user.ip_address || "").toLowerCase().includes(query) ||
-        (browser?.name || "").toLowerCase().includes(query) ||
-        (browser?.version || "").toLowerCase().includes(query) ||
-        (os?.name || "").toLowerCase().includes(query) ||
-        (os?.version || "").toLowerCase().includes(query) ||
-        (device?.model || "").toLowerCase().includes(query) ||
-        (device?.name || "").toLowerCase().includes(query)
+        (user.ip_address || "").toLowerCase().includes(query)
       );
     });
 
@@ -265,15 +256,7 @@ export default function AdminLogsPage() {
                           <th className="px-4 py-3 text-left font-medium">
                             Usuario
                           </th>
-                          <th className="px-4 py-3 text-left font-medium">
-                            Navegador
-                          </th>
-                          <th className="px-4 py-3 text-left font-medium">
-                            SO
-                          </th>
-                          <th className="px-4 py-3 text-left font-medium">
-                            Dispositivo
-                          </th>
+                          {/* Removed columns: Navegador, SO, Dispositivo */}
                         </tr>
                       </thead>
                       <tbody>
@@ -384,32 +367,7 @@ export default function AdminLogsPage() {
                                   query={search}
                                 />
                               </td>
-                              <td className="px-4 py-3 text-sm">
-                                <Highlight
-                                  text={
-                                    browser?.name
-                                      ? `${browser.name} ${browser.version || ""}`.trim()
-                                      : "-"
-                                  }
-                                  query={search}
-                                />
-                              </td>
-                              <td className="px-4 py-3 text-sm">
-                                <Highlight
-                                  text={
-                                    os?.name
-                                      ? `${os.name} ${os.version || ""}`.trim()
-                                      : "-"
-                                  }
-                                  query={search}
-                                />
-                              </td>
-                              <td className="px-4 py-3 text-sm">
-                                <Highlight
-                                  text={device?.model || device?.name || "-"}
-                                  query={search}
-                                />
-                              </td>
+                              {/* Removed columns: Navegador, SO, Dispositivo */}
                             </tr>
                           );
                         })}
