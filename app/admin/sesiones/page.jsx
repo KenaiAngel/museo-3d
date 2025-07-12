@@ -1,6 +1,24 @@
 "use client";
+import { useSession } from "next-auth/react";
+import Unauthorized from "../../../components/Unauthorized";
 
 export default function AdminSesiones() {
+  const { data: session, status } = useSession();
+
+  // Verificación de autorización
+  if (status === "loading") return <div>Cargando...</div>;
+  if (!session?.user || session.user.role !== "ADMIN") {
+    return (
+      <Unauthorized
+        title="Acceso denegado"
+        message="Esta sección es solo para administradores."
+        error="403"
+        showLogin={true}
+        redirectPath="/"
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="text-center">

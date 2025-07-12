@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import toast from "react-hot-toast";
 import { Badge } from "../../../components/ui/badge";
 import { DatePicker } from "../../../components/ui/date-picker";
@@ -10,6 +11,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "../../../components/ui
 import { Button } from "../../../components/ui/button";
 import { ChevronDown } from "lucide-react";
 import { AnimatedBlobsBackground, DotsPattern } from "../../../components/admin/usuarios/Backgrounds";
+import Unauthorized from "../../../../components/Unauthorized";
 
 const schema = yup.object().shape({
   nombre: yup.string().required("El nombre es obligatorio").min(3),
@@ -41,11 +43,26 @@ function AccordionSection({ title, open, onToggle, children }) {
 }
 
 export default function EditarSala() {
+  const { data: sessionAuth, status } = useSession();
   const router = useRouter();
   const { id } = useParams();
   const { session } = useSessionData();
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Verificación de autorización
+  if (status === "loading") return <div>Cargando...</div>;
+  if (!sessionAuth?.user || sessionAuth.user.role !== "ADMIN") {
+    return (
+      <Unauthorized
+        title="Acceso denegado"
+        message="Esta sección es solo para administradores."
+        error="403"
+        showLogin={true}
+        redirectPath="/"
+      />
+    );
+  }
   const [sala, setSala] = useState(null);
   const [form, setForm] = useState(null);
   const [muralesDisponibles, setMuralesDisponibles] = useState([]);

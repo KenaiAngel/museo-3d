@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, useRef, useCallback } from "react";
+import { useSession } from "next-auth/react";
 import {
   Card,
   CardContent,
@@ -8,8 +9,10 @@ import {
 } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
+import Unauthorized from "../../components/Unauthorized";
 
 export default function AdminLogsPage() {
+  const { data: session, status } = useSession();
   const [logs, setLogs] = useState([]);
   const [allLogs, setAllLogs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -25,6 +28,20 @@ export default function AdminLogsPage() {
   const [openTooltipIdx, setOpenTooltipIdx] = useState(null);
   const tooltipRef = useRef();
   const logsCache = useRef({ data: null, timestamp: 0 });
+
+  // Verificación de autorización
+  if (status === "loading") return <div>Cargando...</div>;
+  if (!session?.user || session.user.role !== "ADMIN") {
+    return (
+      <Unauthorized
+        title="Acceso denegado"
+        message="Esta sección es solo para administradores."
+        error="403"
+        showLogin={true}
+        redirectPath="/"
+      />
+    );
+  }
   // Cerrar tooltip al hacer tap fuera (mobile/desktop)
   useEffect(() => {
     if (openTooltipIdx === null) return;

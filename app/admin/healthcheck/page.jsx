@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import {
   StatusBar,
   MetricCard,
@@ -13,11 +14,27 @@ import {
   CardTitle,
 } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
+import Unauthorized from "../../../components/Unauthorized";
 
 export default function HealthcheckPage() {
-  const [status, setStatus] = useState(null);
+  const { data: session, status } = useSession();
+  const [statusData, setStatusData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Verificación de autorización
+  if (status === "loading") return <div>Cargando...</div>;
+  if (!session?.user || session.user.role !== "ADMIN") {
+    return (
+      <Unauthorized
+        title="Acceso denegado"
+        message="Esta sección es solo para administradores."
+        error="403"
+        showLogin={true}
+        redirectPath="/"
+      />
+    );
+  }
   const [latency, setLatency] = useState({ api: null, db: null });
 
   useEffect(() => {
@@ -30,7 +47,7 @@ export default function HealthcheckPage() {
         const t1 = performance.now();
         if (!res.ok) throw new Error("Error al consultar el estado");
         const data = await res.json();
-        setStatus(data);
+        setStatusData(data);
         setLatency({
           api: (t1 - t0).toFixed(0) + " ms",
           db:
@@ -106,13 +123,13 @@ export default function HealthcheckPage() {
               <Badge variant="destructive">Sistema no disponible</Badge>
             </div>
           </CardContent>
-        ) : status ? (
+        ) : statusData ? (
           <CardContent>
             <StatusBar
               status={
-                status.api === "OK" && status.db === "OK"
+                statusData.api === "OK" && statusData.db === "OK"
                   ? "OK"
-                  : status.db === "Error"
+                  : statusData.db === "Error"
                     ? "Error"
                     : "Warning"
               }
