@@ -151,13 +151,10 @@ export default function MisObras() {
     editingMural,
     showFilters,
     showUploadModal,
-    showCrearObraModal,
     setView,
     setShowFilters,
-    openCreateModal,
     openCanvasEditor,
     closeCanvasEditor,
-    closeCreateModal,
     closeUploadModal,
   } = useUIState();
 
@@ -223,8 +220,11 @@ export default function MisObras() {
     );
   }
 
+  // Redirigir a la página de creación de obra
+  const goToCrearObra = () => router.push("/mis-obras/crear");
+
   return (
-    <div className="relative">
+    <div className="relative min-h-screen overflow-hidden">
       {/* Fondo animado */}
       <AnimatedBackground />
 
@@ -235,7 +235,7 @@ export default function MisObras() {
           transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
         >
           {/* Header */}
-          <PageHeader onCreateNew={() => router.push("/mis-obras/crear")} />
+          <PageHeader onCreateNew={goToCrearObra} />
 
           {/* Controles de vista y filtros */}
           <div className="mb-16 md:mb-20">
@@ -298,7 +298,7 @@ export default function MisObras() {
           {propiosFiltrados.length === 0 && favoritosFiltrados.length === 0 && (
             <EmptyState
               hasAnyMurales={propios.length + favoritos.length > 0}
-              onCreateNew={openCreateModal}
+              onCreateNew={goToCrearObra}
             />
           )}
         </motion.div>
@@ -319,14 +319,6 @@ export default function MisObras() {
         onClose={closeCanvasEditor}
         onSave={handleCanvasSaveWrapper}
         editingMural={editingMural}
-      />
-
-      {/* Crear Obra Modal */}
-      <CrearObraModal
-        isOpen={showCrearObraModal}
-        onClose={closeCreateModal}
-        onCreate={addMural}
-        session={session}
       />
     </div>
   );

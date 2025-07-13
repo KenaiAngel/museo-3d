@@ -164,10 +164,8 @@ export default function MisSalas() {
 
   // UI igual a admin/salas: tabla en desktop, cards en mobile, controles solo para admin
   return (
-    <div className="relative w-full flex flex-col items-center justify-start bg-transparent min-h-screen">
-      <div className="pointer-events-none absolute inset-0 w-full h-full z-0">
-        <AnimatedBackground />
-      </div>
+    <div className="relative min-h-screen overflow-hidden">
+      <AnimatedBackground />
       <div className="relative z-10 w-full max-w-6xl mx-auto p-4 sm:p-8">
         <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
           <h1 className="text-2xl sm:text-3xl font-bold">Mis Salas</h1>

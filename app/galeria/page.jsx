@@ -311,7 +311,7 @@ export default function GaleriaPage() {
     return <PageLoader text="Cargando galería..." />;
   }
   return (
-    <div className="relative min-h-screen bg-gradient-to-br from-purple-50 to-blue-100 p-4 overflow-hidden">
+    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-purple-50 to-blue-100 p-4">
       <AnimatedBackground />
       <div className="max-w-7xl mx-auto relative z-10">
         <div className="text-center mb-12">
