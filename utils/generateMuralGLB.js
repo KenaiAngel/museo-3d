@@ -21,7 +21,7 @@ export async function generateMuralGLB(imageUrl) {
         (texture) => {
           try {
             // Configurar la textura para mejor calidad
-            texture.flipY = false; // Importante para GLTF
+            texture.flipY = true; // Cambiar a true para corregir orientación
             texture.wrapS = THREE.ClampToEdgeWrapping;
             texture.wrapT = THREE.ClampToEdgeWrapping;
             texture.minFilter = THREE.LinearFilter;
@@ -307,7 +307,7 @@ export async function generateMuralGLBFallback(color = "#ffffff", text = "TEST")
 
       // Crear textura de Three.js desde el canvas
       const texture = new THREE.CanvasTexture(canvas);
-      texture.flipY = false;
+      texture.flipY = true; // Cambiar a true para corregir orientación
       texture.wrapS = THREE.ClampToEdgeWrapping;
       texture.wrapT = THREE.ClampToEdgeWrapping;
       texture.minFilter = THREE.LinearFilter;
