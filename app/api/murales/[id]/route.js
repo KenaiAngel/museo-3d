@@ -26,7 +26,7 @@ export async function GET(req, context) {
     const mural = await prisma.mural.findUnique({
       where: { id: muralId },
       include: {
-        salas: {
+        SalaMural: {
           include: {
             sala: {
               select: {

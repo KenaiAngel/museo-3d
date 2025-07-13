@@ -3,8 +3,10 @@ import AutoresTooltip from "./AutoresTooltip";
 import { parseAutores, parseColaboradores } from "./utils";
 import { MdViewInAr } from "react-icons/md";
 import { toast } from "react-hot-toast";
+import { useRouter } from "next/navigation";
 
 export default function MuralCard({ mural, onClick, onLike, isLiked, view = "grid", onARClick }) {
+  const router = useRouter();
   const autores = parseAutores(mural.autor);
   const colaboradores = parseColaboradores(mural.colaboradores);
   const [showAutoresTooltip, setShowAutoresTooltip] = useState(false);
@@ -30,10 +32,10 @@ export default function MuralCard({ mural, onClick, onLike, isLiked, view = "gri
 
   const handleARClick = (e) => {
     e.stopPropagation();
-    if (onARClick) {
-      onARClick(mural);
+    if (mural.modelo3dUrl) {
+      router.push(`/galeria/${mural.id}/ar`);
     } else {
-      toast("Próximamente: Realidad Aumentada");
+      toast("Este mural no tiene modelo 3D para AR");
     }
   };
 
