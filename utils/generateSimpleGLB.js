@@ -6,8 +6,9 @@ export async function generateSimpleGLB(asBinary = true) {
       const { GLTFExporter } = await import('three/examples/jsm/exporters/GLTFExporter');
       
       const scene = new THREE.Scene();
-      const width = 2;
-      const height = 1.5;
+      // Hacer el modelo más pequeño para AR
+      const width = 0.8;
+      const height = 0.6;
 
       // Crear un plano con geometría más robusta
       const geometry = new THREE.PlaneGeometry(width, height, 1, 1);
