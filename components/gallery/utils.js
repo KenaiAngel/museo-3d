@@ -115,3 +115,48 @@ export function calculateGalleryDimensions(artworks) {
     wallMarginFinal: WALL_MARGIN_FINAL,
   };
 }
+
+export function parseAutores(autorString) {
+  return autorString
+    ? autorString
+        .split(",")
+        .map((a) => a.trim())
+        .filter(Boolean)
+    : [];
+}
+
+export function parseColaboradores(colabString) {
+  return colabString
+    ? colabString
+        .split(",")
+        .map((c) => c.trim())
+        .filter(Boolean)
+    : [];
+}
+
+export function normalizeTecnica(tecnica) {
+  if (!tecnica) return tecnica;
+  const normalized = tecnica.toLowerCase();
+  if (
+    normalized.includes("acrílico") ||
+    normalized.includes("acrilico") ||
+    normalized.includes("acrílica") ||
+    normalized.includes("acrilica")
+  ) {
+    return "Acrílico";
+  }
+  if (
+    normalized.includes("vinílica") ||
+    normalized.includes("vinilica") ||
+    normalized.includes("vinil")
+  ) {
+    return "Pintura vinílica";
+  }
+  if (normalized.includes("óleo") || normalized.includes("oleo")) {
+    return "Óleo";
+  }
+  if (normalized.includes("acuarela")) {
+    return "Acuarela";
+  }
+  return tecnica.charAt(0).toUpperCase() + tecnica.slice(1).toLowerCase();
+}
