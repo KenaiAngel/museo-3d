@@ -6,6 +6,7 @@ export default function MuralesList({
   onLike,
   likedMurales,
   view = "grid",
+  onARClick,
 }) {
   return (
     <div
@@ -23,6 +24,7 @@ export default function MuralesList({
           onLike={() => onLike(mural)}
           isLiked={likedMurales?.includes(mural.id)}
           view={view}
+          onARClick={onARClick}
         />
       ))}
     </div>

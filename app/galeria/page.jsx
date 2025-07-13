@@ -94,6 +94,12 @@ export default function GaleriaPage() {
     ...new Set(allMurales.map((m) => m.anio).filter(Boolean)),
   ].sort((a, b) => b - a);
 
+  // Función para manejar click en AR
+  const handleARClick = (mural) => {
+    toast(`AR: ${mural.titulo} (próximamente)`);
+    // Aquí puedes abrir un modal, redirigir, etc.
+  };
+
   // Cargar todos los murales al montar la galería (para el carrusel)
   useEffect(() => {
     fetchAllMurales();
@@ -185,6 +191,7 @@ export default function GaleriaPage() {
             onLike={handleLike}
             likedMurales={likedMurales}
             view={view}
+            onARClick={handleARClick}
           />
         ) : (
           <div className="bg-card rounded-2xl shadow-lg p-12 text-center border border-border mt-8">

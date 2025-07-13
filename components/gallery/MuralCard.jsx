@@ -1,8 +1,10 @@
 import { useRef, useState } from "react";
 import AutoresTooltip from "./AutoresTooltip";
 import { parseAutores, parseColaboradores } from "./utils";
+import { MdViewInAr } from "react-icons/md";
+import { toast } from "react-hot-toast";
 
-export default function MuralCard({ mural, onClick, onLike, isLiked, view = "grid" }) {
+export default function MuralCard({ mural, onClick, onLike, isLiked, view = "grid", onARClick }) {
   const autores = parseAutores(mural.autor);
   const colaboradores = parseColaboradores(mural.colaboradores);
   const [showAutoresTooltip, setShowAutoresTooltip] = useState(false);
@@ -26,6 +28,15 @@ export default function MuralCard({ mural, onClick, onLike, isLiked, view = "gri
     setTimeout(() => setAnimating(false), 350);
   };
 
+  const handleARClick = (e) => {
+    e.stopPropagation();
+    if (onARClick) {
+      onARClick(mural);
+    } else {
+      toast("Próximamente: Realidad Aumentada");
+    }
+  };
+
   if (view === "list") {
     return (
       <div
@@ -42,6 +53,15 @@ export default function MuralCard({ mural, onClick, onLike, isLiked, view = "gri
               e.target.src = "/assets/artworks/cuadro1.webp";
             }}
           />
+          {/* Icono de AR en la esquina superior derecha */}
+          <button
+            type="button"
+            onClick={handleARClick}
+            className="absolute top-2 right-2 bg-white/80 dark:bg-neutral-900/80 rounded-full p-1 shadow-md z-10 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 focus:outline-none"
+            title="Ver en Realidad Aumentada"
+          >
+            <MdViewInAr size={24} color="#6366f1" />
+          </button>
         </div>
         {/* Info detallada */}
         <div className="flex-1 min-w-0 flex flex-col gap-1">
@@ -95,6 +115,7 @@ export default function MuralCard({ mural, onClick, onLike, isLiked, view = "gri
       className="rounded-lg shadow-md bg-white dark:bg-neutral-900 p-3 cursor-pointer hover:shadow-lg transition"
       onClick={onClick}
     >
+      <div className="relative">
       <img
         src={imagenSrc}
         alt={mural.titulo}
@@ -103,6 +124,16 @@ export default function MuralCard({ mural, onClick, onLike, isLiked, view = "gri
           e.target.src = "/assets/artworks/cuadro1.webp";
         }}
       />
+      {/* Icono de AR en la esquina superior derecha */}
+      <button
+        type="button"
+        onClick={handleARClick}
+        className="absolute top-2 right-2 bg-white/80 dark:bg-neutral-900/80 rounded-full p-1 shadow-md z-10 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 focus:outline-none"
+        title="Ver en Realidad Aumentada"
+      >
+        <MdViewInAr size={24} color="#6366f1" />
+      </button>
+      </div>
       <div className="font-bold text-lg mb-1">{mural.titulo}</div>
       <div className="flex flex-wrap gap-1 mb-1">
         {autores.slice(0, 2).map((autor, idx) => (
