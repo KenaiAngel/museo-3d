@@ -16,6 +16,9 @@ export const GalleryProvider = ({ children }) => {
   const [artworks, setArtworks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [allMurales, setAllMurales] = useState([]);
+  const [loadingAllMurales, setLoadingAllMurales] = useState(false);
+  const [allMuralesLoaded, setAllMuralesLoaded] = useState(false);
 
   const loadArtworksForRoom = useCallback(async (roomId) => {
     setLoading(true);
@@ -83,6 +86,26 @@ export const GalleryProvider = ({ children }) => {
       setLoading(false);
     }
   }, []);
+
+  // Cargar todos los murales (para galería general, filtros, carrusel, etc.)
+  const fetchAllMurales = useCallback(async (force = false) => {
+    if (allMuralesLoaded && !force) return;
+    setLoadingAllMurales(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/murales");
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      const data = await response.json();
+      setAllMurales(data.murales || []);
+      setAllMuralesLoaded(true);
+    } catch (err) {
+      console.error("Error loading all murales:", err);
+      setError(err.message);
+      setAllMurales([]);
+    } finally {
+      setLoadingAllMurales(false);
+    }
+  }, [allMuralesLoaded]);
 
   const getGalleryStats = useCallback(() => {
     if (artworks.length === 0) {
@@ -170,6 +193,10 @@ export const GalleryProvider = ({ children }) => {
     getGalleryStats,
     addArtworkToCollection,
     removeArtworkFromCollection,
+    // NUEVO: para galería general
+    allMurales,
+    loadingAllMurales,
+    fetchAllMurales,
   };
 
   return (

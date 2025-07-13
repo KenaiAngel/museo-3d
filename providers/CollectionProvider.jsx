@@ -84,8 +84,10 @@ export const CollectionProvider = ({ children }) => {
       if (!session?.user?.id) {
         throw new Error("Debes iniciar sesión para modificar tu colección");
       }
-      const response = await fetch(`/api/collection?itemId=${itemId}`, {
+      const response = await fetch("/api/collection", {
         method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ muralId: Number(itemId) }),
       });
       if (!response.ok) {
         const errorData = await response.json();

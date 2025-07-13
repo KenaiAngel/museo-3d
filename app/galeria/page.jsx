@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { PageLoader } from "../../components/LoadingSpinner";
 import AnimatedBackground from "../../components/shared/AnimatedBackground";
-import useGaleriaData from "@/app/hooks/useGaleriaData";
+import { useGallery } from "../../providers/GalleryProvider";
 import useMuralFilters from "@/app/hooks/useMuralFilters";
 import FilterControls from "../mis-obras/components/FilterControls";
 import { useUIState } from "../mis-obras/hooks/useUIState";
@@ -16,16 +16,14 @@ import GalleryCarousel from "../../components/GalleryCarousel";
 
 export default function GaleriaPage() {
   const {
-    salas,
-    murales,
     allMurales,
-    loading,
-    loadingMurales,
-    selectedSala,
-    setSelectedSala,
-    handleSalaSelect,
+    loadingAllMurales,
     fetchAllMurales,
-  } = useGaleriaData();
+    artworks: murales,
+    loading,
+    // Si tienes salas en el provider, agrégalas aquí
+  } = useGallery();
+  // Si las salas no están en el provider, puedes mantener un estado local o migrar la lógica después.
 
   // Estado de filtros y UI (adaptado de mis obras)
   const [filters, setFilters] = useState({
@@ -109,7 +107,7 @@ export default function GaleriaPage() {
   // Estado para el modal de zoom
   const [zoomMural, setZoomMural] = useState(null);
 
-  if (loading) return <PageLoader text="Cargando galería..." />;
+  if (loading || loadingAllMurales) return <PageLoader text="Cargando galería..." />;
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-purple-50 to-blue-100 p-4">
@@ -139,7 +137,10 @@ export default function GaleriaPage() {
         )}
 
         {/* Sección de selección de salas */}
-        {salas && salas.length > 0 && (
+        {/* salas y murales ahora vienen del provider, no del hook */}
+        {/* Si necesitas acceder a salas, asegúrate de que estén en el provider */}
+        {/* Por ahora, solo mostramos la selección de sala si muralesFiltradosPorSala tiene salas */}
+        {muralesFiltradosPorSala.length > 0 && muralesFiltradosPorSala[0].SalaMural && muralesFiltradosPorSala[0].SalaMural.length > 0 && (
           <div className="mb-4 flex flex-wrap gap-2 items-center">
             <span className="font-semibold text-muted-foreground">Filtrar por sala:</span>
             <button
@@ -148,11 +149,11 @@ export default function GaleriaPage() {
             >
               Todas
             </button>
-            {salas.map((sala) => (
+            {muralesFiltradosPorSala[0].SalaMural.map((sala) => (
               <button
-                key={sala.id}
-                className={`px-3 py-1 rounded-lg border text-sm font-medium transition ${selectedSalaId === sala.id ? "bg-indigo-600 text-white" : "bg-white dark:bg-neutral-800 text-foreground border-border hover:bg-indigo-50 dark:hover:bg-neutral-700"}`}
-                onClick={() => setSelectedSalaId(sala.id)}
+                key={sala.salaId}
+                className={`px-3 py-1 rounded-lg border text-sm font-medium transition ${selectedSalaId === sala.salaId ? "bg-indigo-600 text-white" : "bg-white dark:bg-neutral-800 text-foreground border-border hover:bg-indigo-50 dark:hover:bg-neutral-700"}`}
+                onClick={() => setSelectedSalaId(sala.salaId)}
               >
                 {sala.nombre}
               </button>

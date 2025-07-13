@@ -200,29 +200,36 @@ export async function DELETE(req) {
     });
   }
 
+  let muralId;
   try {
-    const userId = session.user.id;
-    const { muralId } = await req.json();
-
-    if (!muralId) {
-      return new Response(
-        JSON.stringify({ error: "El ID del mural es requerido" }),
-        { status: 400 }
-      );
+    const body = await req.text();
+    if (body) {
+      ({ muralId } = JSON.parse(body));
     }
+  } catch (e) {
+    // body inválido o vacío
+  }
 
+  if (!muralId) {
+    return new Response(
+      JSON.stringify({ error: "El ID del mural es requerido" }),
+      { status: 400 }
+    );
+  }
+
+  try {
     // Eliminar la relación
     await prisma.userMuralFavorite.delete({
       where: {
         userId_muralId: {
-          userId,
+          userId: session.user.id,
           muralId,
         },
       },
     });
 
     // Log del evento en Sentry
-    SentryLogger.collectionRemove(userId, muralId);
+    SentryLogger.collectionRemove(session.user.id, muralId);
 
     return new Response(
       JSON.stringify({ message: "Mural eliminado de la colección" }),
