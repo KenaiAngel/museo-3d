@@ -33,6 +33,7 @@
     "@sentry/replay": "^7.116.0",
     "@sentry/tracing": "^7.120.3",
     "bcryptjs": "^3.0.2",
+    "canvas": "^3.1.2",
     "class-variance-authority": "^0.7.1",
     "cloudinary": "^2.6.1",
     "clsx": "^2.1.1",
@@ -61,7 +62,8 @@
     "swiper": "^11.2.8",
     "swr": "^2.3.3",
     "tailwind-merge": "^3.3.1",
-    "three": "^0.177.0",
+    "three": "^0.178.0",
+    "three-stdlib": "^2.36.0",
     "web-push": "^3.6.7",
     "yup": "^1.6.1",
     "zustand": "^4.5.2"

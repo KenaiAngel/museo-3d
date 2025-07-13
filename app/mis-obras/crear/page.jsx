@@ -8,11 +8,27 @@ import { ArrowLeft } from "lucide-react";
 import ProtectedRoute from "../../../components/ProtectedRoute";
 import { Button } from "../../components/ui/button";
 import { useUser } from '../../../providers/UserProvider';
+import { generateSimpleGLB } from "../../../utils/generateSimpleGLB";
+import { uploadModelToCloudinary } from "../../../utils/uploadToCloudinary";
+import toast from "react-hot-toast";
 
 export default function CrearObraPage() {
   const router = useRouter();
   const [created, setCreated] = useState(false);
   const { user, userProfile } = useUser();
+
+  // Botón de prueba para subir un modelo GLB simple
+  const handleTestSimpleGLB = async () => {
+    try {
+      const glbBlob = await generateSimpleGLB();
+      const url = await uploadModelToCloudinary(glbBlob, "test-simple.glb");
+      toast.success("Modelo simple subido: " + url);
+      window.open(url, "_blank");
+    } catch (err) {
+      toast.error("Error al subir modelo simple");
+      console.error(err);
+    }
+  };
 
   return (
     <ProtectedRoute>
@@ -36,6 +52,13 @@ export default function CrearObraPage() {
                 session={{ user: userProfile || user }}
                 hideClose={true}
               />
+              {/* Botón temporal para pruebas de modelo GLB simple */}
+              <button
+                onClick={handleTestSimpleGLB}
+                className="mt-8 px-4 py-2 bg-blue-600 text-white rounded shadow-lg hover:bg-blue-700"
+              >
+                Subir modelo GLB simple (prueba)
+              </button>
             </div>
           </motion.div>
         </div>

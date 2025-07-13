@@ -44,6 +44,10 @@ import {
   CardTitle,
 } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
+import { generateMuralGLB, generateMuralGLBFallback } from "../../../utils/generateMuralGLB";
+import { uploadModelToCloudinary } from "../../../utils/uploadToCloudinary";
+import { generateSimpleGLB } from "../../../utils/generateSimpleGLB";
+import { validateGLB, diagnoseModel } from "../../../utils/validateGLB";
 
 // Tamaño máximo permitido para imagen de fondo (5MB)
 const MAX_BG_IMAGE_SIZE = 5 * 1024 * 1024;
@@ -431,6 +435,24 @@ export default function CrearObraModal({
   const [artistList, setArtistList] = useState([]);
   const scrollYRef = useRef(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [generatingModel, setGeneratingModel] = useState(false);
+  const [modelGenerationStep, setModelGenerationStep] = useState("");
+
+  // Función auxiliar para obtener texto del botón de crear
+  const getCreateButtonText = () => {
+    if (!isSubmitting) return "Crear obra";
+    
+    if (generatingModel && modelGenerationStep) {
+      return (
+        <span className="flex items-center gap-2">
+          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+          <span className="text-sm">{modelGenerationStep}</span>
+        </span>
+      );
+    }
+    
+    return "Creando...";
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -2057,7 +2079,13 @@ export default function CrearObraModal({
     // eslint-disable-next-line
   }, [isOpen, imgMode]);
 
+  const canCreate = !!session?.user?.id;
+
   const handleCreate = async () => {
+    if (!canCreate) {
+      toast.error("No se ha cargado el perfil de usuario. Intenta de nuevo en unos segundos.");
+      return;
+    }
     if (isSubmitting) return;
     setIsSubmitting(true);
     if (!validateStep()) {
@@ -2089,34 +2117,183 @@ export default function CrearObraModal({
     await sendForm(imgFile);
   };
 
+  // Función mejorada para generar modelo 3D con fallbacks
+  const generateAndValidateModel = async (imageUrl, title = "mural") => {
+    setGeneratingModel(true);
+    console.log("🚀 Iniciando generación de modelo 3D para:", title);
+    
+    let glbBlob = null;
+    let generationMethod = "";
+    
+    try {
+      // Intentar primero con la imagen real
+      setModelGenerationStep("Generando modelo 3D con imagen...");
+      console.log("📸 Intentando generar modelo con imagen:", imageUrl);
+      glbBlob = await generateMuralGLB(imageUrl);
+      generationMethod = "imagen_real";
+      
+      // Validar el modelo generado
+      setModelGenerationStep("Validando modelo generado...");
+      const validation = await validateGLB(glbBlob);
+      if (!validation.isValid) {
+        throw new Error(`Modelo inválido: ${validation.error}`);
+      }
+      
+      console.log("✅ Modelo generado exitosamente con imagen real");
+      
+    } catch (error) {
+      console.warn("⚠️ Error con imagen real, intentando fallback:", error.message);
+      
+      try {
+        // Fallback: generar con textura programática
+        setModelGenerationStep("Generando modelo alternativo...");
+        const fallbackColor = "#4A90E2"; // Azul atractivo
+        const fallbackText = title.substring(0, 10).toUpperCase() || "OBRA";
+        
+        console.log("🎨 Generando modelo fallback con:", { color: fallbackColor, text: fallbackText });
+        glbBlob = await generateMuralGLBFallback(fallbackColor, fallbackText);
+        generationMethod = "fallback";
+        
+        // Validar el modelo fallback
+        setModelGenerationStep("Validando modelo alternativo...");
+        const validation = await validateGLB(glbBlob);
+        if (!validation.isValid) {
+          throw new Error(`Modelo fallback inválido: ${validation.error}`);
+        }
+        
+        console.log("✅ Modelo fallback generado exitosamente");
+        
+      } catch (fallbackError) {
+        console.error("❌ Error en fallback, intentando modelo simple:", fallbackError.message);
+        
+        // Último recurso: modelo simple
+        setModelGenerationStep("Generando modelo básico...");
+        glbBlob = await generateSimpleGLB(true);
+        generationMethod = "simple";
+        
+        setModelGenerationStep("Validando modelo básico...");
+        const validation = await validateGLB(glbBlob);
+        if (!validation.isValid) {
+          throw new Error(`Modelo simple inválido: ${validation.error}`);
+        }
+        
+        console.log("✅ Modelo simple generado como último recurso");
+      }
+    }
+    
+    // Diagnóstico del modelo final
+    setModelGenerationStep("Analizando calidad del modelo...");
+    const diagnostic = await diagnoseModel(glbBlob);
+    console.log("📊 Diagnóstico del modelo:", diagnostic);
+    
+    setGeneratingModel(false);
+    setModelGenerationStep("");
+    
+    return {
+      blob: glbBlob,
+      method: generationMethod,
+      diagnostic
+    };
+  };
+
   async function sendForm(imgFile) {
     const formData = new FormData();
-    if (imgFile)
+    let url_imagen = null;
+    if (imgFile) {
       formData.append("imagen", imgFile, titulo ? `${titulo}.png` : "obra.png");
-    formData.append("titulo", titulo);
-    formData.append("tecnica", tecnica);
-    formData.append("anio", year ? year.toString() : "");
-    // Al guardar la obra, usar el nombre real del usuario logueado
-    const autorNombre = session?.user?.name;
-    if (session?.user && autorNombre === undefined) {
-      formData.append("autor", "");
-    } else if (!autorNombre) {
-      toast.error(
-        "No se pudo obtener el nombre del usuario. Inicia sesión nuevamente."
-      );
-      setIsSubmitting(false);
-      return;
-    } else {
-      formData.append("autor", autorNombre);
+      // Subir imagen primero para obtener la URL
+      const resImg = await fetch("/api/upload", { method: "POST", body: formData });
+      if (!resImg.ok) {
+        toast.error("Error al subir la imagen");
+        setIsSubmitting(false);
+        return;
+      }
+      const dataImg = await resImg.json();
+      url_imagen = dataImg.url;
     }
-    formData.append("userId", session?.user?.id || "");
-    formData.append("descripcion", descripcion);
-    formData.append("artistId", artistId);
+
+    // Generar y subir modelo 3D con sistema mejorado
+    let modelo3dUrl = null;
+    let modelInfo = null;
+    
+    if (url_imagen) {
+      try {
+        console.log("🏗️ Iniciando proceso de generación de modelo 3D...");
+        
+        // Usar la función mejorada para generar el modelo
+        const modelResult = await generateAndValidateModel(url_imagen, titulo);
+        
+        // Preparar nombre del archivo
+        let safeFileName = `${titulo || "mural"}`;
+        if (!safeFileName.toLowerCase().endsWith('.glb')) {
+          safeFileName += '.glb';
+        }
+        
+        // Subir a Cloudinary
+        setModelGenerationStep("Subiendo modelo a la nube...");
+        console.log("☁️ Subiendo modelo a Cloudinary...");
+        modelo3dUrl = await uploadModelToCloudinary(modelResult.blob, safeFileName);
+        
+        modelInfo = {
+          method: modelResult.method,
+          size: Math.round(modelResult.blob.size / 1024), // KB
+          diagnostic: modelResult.diagnostic
+        };
+        
+        console.log("✅ Modelo 3D procesado exitosamente:", {
+          url: modelo3dUrl,
+          method: modelResult.method,
+          size: `${modelInfo.size} KB`
+        });
+        
+        // Mostrar mensaje específico según el método usado
+        if (modelResult.method === "imagen_real") {
+          toast.success("🎨 Modelo 3D generado con la imagen original");
+        } else if (modelResult.method === "fallback") {
+          toast.info("🎨 Modelo 3D generado con textura alternativa (problema con imagen original)");
+        } else {
+          toast.info("🎨 Modelo 3D básico generado (problemas con imagen)");
+        }
+        
+      } catch (err) {
+        console.error("❌ Error completo en generación de modelo 3D:", err);
+        toast.error(`Error al generar modelo 3D: ${err.message}`);
+        
+        // Continuar sin modelo 3D
+        modelo3dUrl = null;
+      } finally {
+        setGeneratingModel(false);
+        setModelGenerationStep("");
+      }
+    } else {
+      console.log("ℹ️ No hay imagen, saltando generación de modelo 3D");
+    }
+
+    // Enviar datos del mural al backend
+    const muralData = {
+      titulo,
+      tecnica,
+      anio: year ? year.toString() : "",
+      autor: session?.user?.name || "",
+      userId: session?.user?.id || "",
+      descripcion,
+      artistId,
+      url_imagen,
+      modelo3dUrl,
+      // Información adicional del modelo 3D
+      modelo3dInfo: modelInfo ? {
+        generationMethod: modelInfo.method,
+        fileSizeKB: modelInfo.size,
+        diagnostic: modelInfo.diagnostic,
+        generatedAt: new Date().toISOString()
+      } : null,
+    };
 
     try {
       const response = await fetch("/api/murales", {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(muralData),
       });
 
       if (response.ok) {
@@ -2232,6 +2409,19 @@ export default function CrearObraModal({
       .then((data) => setArtistList(data.artists || []))
       .catch(() => setArtistList([]));
   }, []);
+
+  // Botón de prueba para subir un modelo GLB simple
+  const handleTestSimpleGLB = async () => {
+    try {
+      const glbBlob = await generateSimpleGLB();
+      const url = await uploadModelToCloudinary(glbBlob, "test-simple.glb");
+      toast.success("Modelo simple subido: " + url);
+      window.open(url, "_blank");
+    } catch (err) {
+      toast.error("Error al subir modelo simple");
+      console.error(err);
+    }
+  };
 
   if (!isOpen && !asPage) return null;
 
@@ -2802,14 +2992,10 @@ export default function CrearObraModal({
                       <Button
                         type="button"
                         onClick={handleCreate}
-                        disabled={isSubmitting}
-                        className="group p-2 rounded-full bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-800 transition"
-                        title="Guardar obra"
-                        aria-label="Guardar obra"
+                        disabled={isSubmitting || !canCreate}
+                        className="px-4 py-2 rounded-lg bg-green-600 text-white font-bold hover:bg-green-700 transition"
                       >
-                        <Save className="h-6 w-6" />
-                        <span className="sr-only">Guardar</span>
-                        {isSubmitting && <span>Creando...</span>}
+                        {getCreateButtonText()}
                       </Button>
                     </div>
                     {showConfirmClear && (
@@ -3471,10 +3657,10 @@ export default function CrearObraModal({
               <Button
                 type="button"
                 onClick={handleCreate}
-                disabled={isSubmitting}
+                disabled={isSubmitting || !canCreate}
                 className="px-4 py-2 rounded-lg bg-green-600 text-white font-bold hover:bg-green-700 transition"
               >
-                {isSubmitting ? "Creando..." : "Crear obra"}
+                {getCreateButtonText()}
               </Button>
             )}
           </div>
@@ -4055,14 +4241,10 @@ export default function CrearObraModal({
                       <Button
                         type="button"
                         onClick={handleCreate}
-                        disabled={isSubmitting}
-                        className="group p-2 rounded-full bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-800 transition"
-                        title="Guardar obra"
-                        aria-label="Guardar obra"
+                        disabled={isSubmitting || !canCreate}
+                        className="px-4 py-2 rounded-lg bg-green-600 text-white font-bold hover:bg-green-700 transition"
                       >
-                        <Save className="h-6 w-6" />
-                        <span className="sr-only">Guardar</span>
-                        {isSubmitting && <span>Creando...</span>}
+                        {getCreateButtonText()}
                       </Button>
                     </div>
                     {showConfirmClear && (
@@ -4724,10 +4906,10 @@ export default function CrearObraModal({
               <Button
                 type="button"
                 onClick={handleCreate}
-                disabled={isSubmitting}
+                disabled={isSubmitting || !canCreate}
                 className="px-4 py-2 rounded-lg bg-green-600 text-white font-bold hover:bg-green-700 transition"
               >
-                {isSubmitting ? "Creando..." : "Crear obra"}
+                {getCreateButtonText()}
               </Button>
             )}
           </div>
@@ -4764,6 +4946,15 @@ export default function CrearObraModal({
           </div>
         </div>
       </SimpleModal>
+      {/* Botón temporal para pruebas de modelo GLB simple */}
+      <div className="fixed bottom-8 right-8 z-50">
+        <button
+          onClick={handleTestSimpleGLB}
+          className="px-4 py-2 bg-blue-600 text-white rounded shadow-lg hover:bg-blue-700"
+        >
+          Subir modelo GLB simple (prueba)
+        </button>
+      </div>
     </div>
   );
 }

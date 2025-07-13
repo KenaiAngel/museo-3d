@@ -83,6 +83,7 @@ model Mural {
     imagenesSecundarias Json?
     videoUrl            String?
     audioUrl            String?
+    modelo3dUrl         String? // URL al modelo 3D generado en Cloudinary
     latitud             Float?
     longitud            Float?
     ubicacion           String?

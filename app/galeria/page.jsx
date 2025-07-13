@@ -14,6 +14,8 @@ import { toast } from "react-hot-toast";
 import { normalizeTecnica } from "../../components/gallery/utils";
 import GalleryCarousel from "../../components/GalleryCarousel";
 import useSalas from "@/app/hooks/useSalas";
+import dynamic from "next/dynamic";
+const ARExperience = dynamic(() => import("../../components/ar/ARExperience"), { ssr: false });
 
 export default function GaleriaPage() {
   const {
@@ -94,10 +96,12 @@ export default function GaleriaPage() {
     ...new Set(allMurales.map((m) => m.anio).filter(Boolean)),
   ].sort((a, b) => b - a);
 
+  // Estado para mostrar el modal AR
+  const [arMural, setArMural] = useState(null);
+
   // Función para manejar click en AR
   const handleARClick = (mural) => {
-    toast(`AR: ${mural.titulo} (próximamente)`);
-    // Aquí puedes abrir un modal, redirigir, etc.
+    setArMural(mural);
   };
 
   // Cargar todos los murales al montar la galería (para el carrusel)
@@ -211,6 +215,10 @@ export default function GaleriaPage() {
             mural={zoomMural}
             onClose={() => setZoomMural(null)}
           />
+        )}
+        {/* Modal AR */}
+        {arMural && (
+          <ARExperience onClose={() => setArMural(null)} mural={arMural} />
         )}
       </div>
     </div>

@@ -221,10 +221,12 @@ export async function POST(req) {
         tecnica: data.tecnica || "Técnica no especificada",
         ubicacion: data.ubicacion || "",
         url_imagen,
+        modelo3dUrl: data.modelo3dUrl || null,
         latitud: data.latitud ? parseFloat(data.latitud) : null,
         longitud: data.longitud ? parseFloat(data.longitud) : null,
         anio: data.anio ? Number(data.anio) : null,
         artistId: data.artistId || null,
+        userId: data.userId || null,
       },
     });
 
