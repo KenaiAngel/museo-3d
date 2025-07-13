@@ -13,6 +13,7 @@ import { useCollection } from "../../providers/CollectionProvider";
 import { toast } from "react-hot-toast";
 import { normalizeTecnica } from "../../components/gallery/utils";
 import GalleryCarousel from "../../components/GalleryCarousel";
+import useSalas from "@/app/hooks/useSalas";
 
 export default function GaleriaPage() {
   const {
@@ -39,6 +40,9 @@ export default function GaleriaPage() {
   });
   // UI state para vista y filtros avanzados
   const { view, setView, showFilters, setShowFilters } = useUIState();
+
+  // Hook para obtener salas
+  const { salas, loading: loadingSalas } = useSalas();
 
   // Estado para sala seleccionada
   const [selectedSalaId, setSelectedSalaId] = useState(null);
@@ -137,10 +141,7 @@ export default function GaleriaPage() {
         )}
 
         {/* Sección de selección de salas */}
-        {/* salas y murales ahora vienen del provider, no del hook */}
-        {/* Si necesitas acceder a salas, asegúrate de que estén en el provider */}
-        {/* Por ahora, solo mostramos la selección de sala si muralesFiltradosPorSala tiene salas */}
-        {muralesFiltradosPorSala.length > 0 && muralesFiltradosPorSala[0].SalaMural && muralesFiltradosPorSala[0].SalaMural.length > 0 && (
+        {salas && salas.length > 0 && (
           <div className="mb-4 flex flex-wrap gap-2 items-center">
             <span className="font-semibold text-muted-foreground">Filtrar por sala:</span>
             <button
@@ -149,11 +150,11 @@ export default function GaleriaPage() {
             >
               Todas
             </button>
-            {muralesFiltradosPorSala[0].SalaMural.map((sala) => (
+            {salas.map((sala) => (
               <button
-                key={sala.salaId}
-                className={`px-3 py-1 rounded-lg border text-sm font-medium transition ${selectedSalaId === sala.salaId ? "bg-indigo-600 text-white" : "bg-white dark:bg-neutral-800 text-foreground border-border hover:bg-indigo-50 dark:hover:bg-neutral-700"}`}
-                onClick={() => setSelectedSalaId(sala.salaId)}
+                key={sala.id}
+                className={`px-3 py-1 rounded-lg border text-sm font-medium transition ${selectedSalaId === sala.id ? "bg-indigo-600 text-white" : "bg-white dark:bg-neutral-800 text-foreground border-border hover:bg-indigo-50 dark:hover:bg-neutral-700"}`}
+                onClick={() => setSelectedSalaId(sala.id)}
               >
                 {sala.nombre}
               </button>
