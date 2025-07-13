@@ -5,9 +5,16 @@ export default function MuralesList({
   onMuralClick,
   onLike,
   likedMurales,
+  view = "grid",
 }) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+    <div
+      className={
+        view === "list"
+          ? "flex flex-col gap-4"
+          : "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"
+      }
+    >
       {murales.map((mural) => (
         <MuralCard
           key={mural.id}
@@ -15,6 +22,7 @@ export default function MuralesList({
           onClick={() => onMuralClick(mural)}
           onLike={() => onLike(mural)}
           isLiked={likedMurales?.includes(mural.id)}
+          view={view}
         />
       ))}
     </div>

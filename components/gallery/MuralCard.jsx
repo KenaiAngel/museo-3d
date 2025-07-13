@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import AutoresTooltip from "./AutoresTooltip";
 import { parseAutores, parseColaboradores } from "./utils";
 
-export default function MuralCard({ mural, onClick, onLike, isLiked }) {
+export default function MuralCard({ mural, onClick, onLike, isLiked, view = "grid" }) {
   const autores = parseAutores(mural.autor);
   const colaboradores = parseColaboradores(mural.colaboradores);
   const [showAutoresTooltip, setShowAutoresTooltip] = useState(false);
@@ -25,6 +25,70 @@ export default function MuralCard({ mural, onClick, onLike, isLiked }) {
     onLike(mural);
     setTimeout(() => setAnimating(false), 350);
   };
+
+  if (view === "list") {
+    return (
+      <div
+        className="bg-white/80 dark:bg-neutral-800/80 backdrop-blur-sm rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 border border-border flex items-center gap-6 p-4"
+        onClick={onClick}
+      >
+        {/* Imagen mediana a la izquierda */}
+        <div className="w-32 h-32 flex-shrink-0 relative overflow-hidden rounded-lg">
+          <img
+            src={imagenSrc}
+            alt={mural.titulo}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              e.target.src = "/assets/artworks/cuadro1.webp";
+            }}
+          />
+        </div>
+        {/* Info detallada */}
+        <div className="flex-1 min-w-0 flex flex-col gap-1">
+          <h3 className="font-semibold text-xl text-foreground mb-1 truncate">
+            {mural.titulo}
+          </h3>
+          <div className="flex flex-wrap gap-2 items-center text-sm text-muted-foreground mb-1">
+            <span>{mural.tecnica}</span>
+            {mural.anio || mural.year ? <span>• {mural.anio || mural.year}</span> : null}
+            {mural.salaNombre && <span>• Sala: {mural.salaNombre}</span>}
+          </div>
+          {/* Autores y colaboradores */}
+          <div className="flex flex-wrap gap-2 items-center mb-1">
+            {autores.length > 0 && (
+              <span className="text-xs font-semibold text-pink-700 dark:text-pink-200 bg-pink-100 dark:bg-pink-900/40 px-2 py-0.5 rounded-full">
+                Autor: {autores.join(", ")}
+              </span>
+            )}
+            {colaboradores.length > 0 && (
+              <span className="text-xs font-semibold text-blue-700 dark:text-blue-200 bg-blue-100 dark:bg-blue-900/40 px-2 py-0.5 rounded-full">
+                Colaboradores: {colaboradores.join(", ")}
+              </span>
+            )}
+          </div>
+          {/* Descripción completa */}
+          {mural.descripcion && (
+            <p className="text-sm text-muted-foreground line-clamp-3">
+              {mural.descripcion}
+            </p>
+          )}
+        </div>
+        {/* Botón de favorito */}
+        <div className="flex flex-col items-center gap-2 min-w-[60px]">
+          <button
+            onClick={handleLikeClick}
+            aria-label={tooltipText}
+            className={`w-9 h-9 flex items-center justify-center text-pink-500 transition-all duration-200 rounded-full focus:outline-none focus:ring-2 focus:ring-pink-400/60 bg-white dark:bg-neutral-900 border border-transparent hover:bg-pink-100 dark:hover:bg-pink-900/30 ${isLiked ? "font-bold ring-2 ring-pink-400 bg-pink-100 dark:bg-pink-900/40" : ""} ${animating ? "scale-125" : ""}`}
+          >
+            ♥
+          </button>
+          <span className="text-xs font-semibold text-muted-foreground select-none">
+            {localLikes}
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

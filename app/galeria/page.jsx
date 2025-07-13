@@ -1,16 +1,18 @@
 "use client";
 import { useState, useEffect } from "react";
 import { PageLoader } from "../../components/LoadingSpinner";
-import GalleryCarousel from "../../components/GalleryCarousel";
 import AnimatedBackground from "../../components/shared/AnimatedBackground";
 import useGaleriaData from "@/app/hooks/useGaleriaData";
 import useMuralFilters from "@/app/hooks/useMuralFilters";
-import GalleryHeader from "../../components/gallery/GalleryHeader";
+import FilterControls from "../mis-obras/components/FilterControls";
+import { useUIState } from "../mis-obras/hooks/useUIState";
 import MuralesList from "../../components/gallery/MuralesList";
 import SalasList from "../../components/gallery/SalasList";
 import ModalZoomImage from "../../components/gallery/ModalZoomImage";
 import { useCollection } from "../../providers/CollectionProvider";
 import { toast } from "react-hot-toast";
+import { normalizeTecnica } from "../../components/gallery/utils";
+import GalleryCarousel from "../../components/GalleryCarousel";
 
 export default function GaleriaPage() {
   const {
@@ -25,21 +27,40 @@ export default function GaleriaPage() {
     fetchAllMurales,
   } = useGaleriaData();
 
-  // Estado de UI
-  const [viewMode, setViewMode] = useState("salas");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterTecnica, setFilterTecnica] = useState("");
-  const [filterAnio, setFilterAnio] = useState("");
-  const [sortBy, setSortBy] = useState("titulo");
-  const [zoomMural, setZoomMural] = useState(null);
+  // Estado de filtros y UI (adaptado de mis obras)
+  const [filters, setFilters] = useState({
+    search: "",
+    tecnica: "",
+    year: "",
+    sortBy: "newest",
+  });
+  const resetFilters = () => setFilters({ search: "", tecnica: "", year: "", sortBy: "newest" });
+  const getFilterOptions = () => ({
+    tecnicas: [...new Set(allMurales.map((m) => normalizeTecnica(m.tecnica)).filter(Boolean))].sort(),
+    years: [...new Set(allMurales.map((m) => m.anio || m.year).filter(Boolean))].sort((a, b) => b - a),
+  });
+  // UI state para vista y filtros avanzados
+  const { view, setView, showFilters, setShowFilters } = useUIState();
 
-  // Filtros
+  // Estado para sala seleccionada
+  const [selectedSalaId, setSelectedSalaId] = useState(null);
+
+  // Filtrar murales por sala seleccionada (si hay selección)
+  const muralesFiltradosPorSala = selectedSalaId
+    ? allMurales.filter(
+        (m) =>
+          m.SalaMural &&
+          m.SalaMural.some((sm) => sm.salaId === selectedSalaId)
+      )
+    : allMurales;
+
+  // Adaptar lógica de filtrado (usando useMuralFilters o lógica propia)
   const filteredMurales = useMuralFilters({
-    allMurales,
-    searchTerm,
-    filterTecnica,
-    filterAnio,
-    sortBy,
+    allMurales: muralesFiltradosPorSala,
+    searchTerm: filters.search,
+    filterTecnica: filters.tecnica,
+    filterAnio: filters.year ? Number(filters.year) : undefined,
+    sortBy: filters.sortBy === "newest" ? "anio" : filters.sortBy === "oldest" ? "anio" : filters.sortBy === "title" ? "titulo" : filters.sortBy === "year" ? "anio" : filters.sortBy,
   });
 
   const { collection, isInCollection, addToCollection, removeFromCollection } =
@@ -71,12 +92,22 @@ export default function GaleriaPage() {
     ...new Set(allMurales.map((m) => m.anio).filter(Boolean)),
   ].sort((a, b) => b - a);
 
+  // Cargar todos los murales al montar la galería (para el carrusel)
   useEffect(() => {
-    if (viewMode === "archivo") {
+    fetchAllMurales();
+    // eslint-disable-next-line
+  }, []);
+
+  // Cargar todos los murales cuando la vista sea 'list'
+  useEffect(() => {
+    if (view === "list") {
       fetchAllMurales();
     }
     // eslint-disable-next-line
-  }, [viewMode]);
+  }, [view]);
+
+  // Estado para el modal de zoom
+  const [zoomMural, setZoomMural] = useState(null);
 
   if (loading) return <PageLoader text="Cargando galería..." />;
 
@@ -96,7 +127,7 @@ export default function GaleriaPage() {
 
         {/* Carrusel destacado */}
         {allMurales.length > 0 && (
-          <div className="mb-16">
+          <div className="mb-8">
             <h2 className="text-2xl font-bold text-foreground mb-6 text-center">
               Obras Destacadas
             </h2>
@@ -107,51 +138,51 @@ export default function GaleriaPage() {
           </div>
         )}
 
-        {/* Header de filtros y tabs */}
-        <GalleryHeader
-          searchTerm={searchTerm}
-          setSearchTerm={setSearchTerm}
-          filterTecnica={filterTecnica}
-          setFilterTecnica={setFilterTecnica}
-          filterAnio={filterAnio}
-          setFilterAnio={setFilterAnio}
-          sortBy={sortBy}
-          setSortBy={setSortBy}
-          viewMode={viewMode}
-          setViewMode={setViewMode}
-          tecnicasUnicas={tecnicasUnicas}
-          aniosUnicos={aniosUnicos}
-        />
-
-        {/* Vista por salas o archivo */}
-        {viewMode === "salas" ? (
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            <div className="lg:col-span-1">
-              <SalasList
-                salas={salas}
-                selectedSala={selectedSala}
-                onSelectSala={handleSalaSelect}
-              />
-            </div>
-            <div className="lg:col-span-3">
-              {loadingMurales ? (
-                <PageLoader text="Cargando murales..." />
-              ) : (
-                <MuralesList
-                  murales={murales}
-                  onMuralClick={setZoomMural}
-                  onLike={handleLike}
-                  likedMurales={likedMurales}
-                />
-              )}
-            </div>
+        {/* Sección de selección de salas */}
+        {salas && salas.length > 0 && (
+          <div className="mb-4 flex flex-wrap gap-2 items-center">
+            <span className="font-semibold text-muted-foreground">Filtrar por sala:</span>
+            <button
+              className={`px-3 py-1 rounded-lg border text-sm font-medium transition ${!selectedSalaId ? "bg-indigo-600 text-white" : "bg-white dark:bg-neutral-800 text-foreground border-border hover:bg-indigo-50 dark:hover:bg-neutral-700"}`}
+              onClick={() => setSelectedSalaId(null)}
+            >
+              Todas
+            </button>
+            {salas.map((sala) => (
+              <button
+                key={sala.id}
+                className={`px-3 py-1 rounded-lg border text-sm font-medium transition ${selectedSalaId === sala.id ? "bg-indigo-600 text-white" : "bg-white dark:bg-neutral-800 text-foreground border-border hover:bg-indigo-50 dark:hover:bg-neutral-700"}`}
+                onClick={() => setSelectedSalaId(sala.id)}
+              >
+                {sala.nombre}
+              </button>
+            ))}
           </div>
-        ) : filteredMurales.length > 0 ? (
+        )}
+
+        {/* Header de filtros y tabs */}
+        <div className="mb-4">
+          <FilterControls
+            filters={filters}
+            setFilters={setFilters}
+            resetFilters={resetFilters}
+            getFilterOptions={getFilterOptions}
+            showFilters={showFilters}
+            setShowFilters={setShowFilters}
+            view={view}
+            setView={setView}
+            resultsCount={filteredMurales.length}
+          />
+        </div>
+
+        {/* Vista principal: siempre mostrar murales filtrados */}
+        {filteredMurales.length > 0 ? (
           <MuralesList
             murales={filteredMurales}
             onMuralClick={setZoomMural}
             onLike={handleLike}
             likedMurales={likedMurales}
+            view={view}
           />
         ) : (
           <div className="bg-card rounded-2xl shadow-lg p-12 text-center border border-border mt-8">
