@@ -1219,7 +1219,7 @@ html.dark .graffiti-gradient-bg {
 
 /* Forzar posición y visibilidad del toaster de react-hot-toast */
 #_rht_toaster {
-  top: 32px !important;
+  top: 25% !important;
   left: 50% !important;
   right: auto !important;
   bottom: auto !important;
@@ -1233,828 +1233,86 @@ html.dark .graffiti-gradient-bg {
 
 /* Toast estilo badge global, inspirado en los badges de estadísticas */
 .toast-badge {
-  @apply inline-flex items-center justify-center rounded-full border px-5 py-2 text-base font-semibold shadow-lg gap-2 transition-all overflow-hidden;
-  background: rgba(219,234,254,0.95) !important;
-  border: 2.5px solid #bfdbfe !important;
+  @apply inline-flex items-center justify-center rounded-full border px-6 py-3 text-lg font-semibold shadow-2xl gap-3 transition-all overflow-hidden;
+  background: rgba(219,234,254,0.98) !important;
+  border: 3px solid #3b82f6 !important;
   color: #1e40af !important;
-  backdrop-filter: blur(16px) !important;
-  -webkit-backdrop-filter: blur(16px) !important;
-  min-width: 340px !important;
-  max-width: 520px !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  min-width: 360px !important;
+  max-width: 540px !important;
   text-align: center !important;
+  box-shadow: 0 20px 40px -10px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.1) !important;
+  animation: toastSlideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 .toast-badge-success {
-  background: rgba(220,252,231,0.95) !important;
-  border-color: #bbf7d0 !important;
+  background: rgba(220,252,231,0.98) !important;
+  border-color: #22c55e !important;
   color: #166534 !important;
+  box-shadow: 0 20px 40px -10px rgba(34,197,94,0.3), 0 0 0 1px rgba(255,255,255,0.1) !important;
 }
 .toast-badge-error {
-  background: rgba(254,202,202,0.95) !important;
-  border-color: #fecaca !important;
+  background: rgba(254,202,202,0.98) !important;
+  border-color: #ef4444 !important;
   color: #991b1b !important;
+  box-shadow: 0 20px 40px -10px rgba(239,68,68,0.3), 0 0 0 1px rgba(255,255,255,0.1) !important;
 }
 .toast-badge-info {
-  background: rgba(191,219,254,0.95) !important;
-  border-color: #bfdbfe !important;
+  background: rgba(191,219,254,0.98) !important;
+  border-color: #3b82f6 !important;
   color: #1e40af !important;
-}
-@keyframes toast-pop {
-  0% { transform: scale(0.7) rotate(-10deg);}
-  60% { transform: scale(1.2) rotate(10deg);}
-  100% { transform: scale(1) rotate(0);}
-}
-.toast-badge .toast-animated-icon {
-  display: inline-block;
-  animation: toast-pop 0.7s cubic-bezier(.68,-0.55,.27,1.55);
-  font-size: 2em;
-  line-height: 1;
+  box-shadow: 0 20px 40px -10px rgba(59,130,246,0.3), 0 0 0 1px rgba(255,255,255,0.1) !important;
 }
 
-/* Dark mode para toast-badge */
-html.dark .toast-badge {
-  background: rgba(30,58,138,0.85) !important;
-  border: 2.5px solid #1e40af !important;
-  color: #bfdbfe !important;
-}
-html.dark .toast-badge-success {
-  background: rgba(22,163,74,0.85) !important;
-  border-color: #166534 !important;
-  color: #bbf7d0 !important;
-}
-html.dark .toast-badge-error {
-  background: rgba(185,28,28,0.85) !important;
-  border-color: #991b1b !important;
-  color: #fecaca !important;
-}
-html.dark .toast-badge-info {
-  background: rgba(30,64,175,0.85) !important;
-  border-color: #1e40af !important;
-  color: #bfdbfe !important;
-}
-
-/* Card mouse glow effect - Solo desktop */
-@media (min-width: 768px) {
-  .card-mouse-glow {
-    position: relative;
-    overflow: hidden;
-    border-radius: 18px;
-    background: rgba(255,255,255,0.85);
-    box-shadow: 0 8px 32px rgba(30,41,59,0.10);
-    transition: box-shadow 0.3s;
-  }
-  .card-mouse-glow:hover {
-    box-shadow: 0 12px 40px rgba(59,130,246,0.18);
-  }
-  .card-blob {
-    position: absolute;
-    top: 0; left: 0;
-    width: 260px; height: 260px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(99,102,241,0.25) 0%, rgba(99,102,241,0.0) 80%);
-    filter: blur(40px);
+/* Animación para los toasts */
+@keyframes toastSlideIn {
+  0% {
     opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.3s ease;
-    z-index: 1;
+    transform: translateY(-20px) scale(0.9);
   }
-  html.dark .card-mouse-glow {
-    background: rgba(30,41,59,0.85);
-  }
-  html.dark .card-blob {
-    background: radial-gradient(circle, rgba(99,102,241,0.35) 0%, rgba(99,102,241,0.0) 80%);
-  }
-}
-
-/* En móviles, mantener el estilo normal sin efecto glow */
-@media (max-width: 767px) {
-  .card-mouse-glow {
-    position: relative;
-    overflow: hidden;
-    border-radius: 18px;
-    background: rgba(255,255,255,0.85);
-    box-shadow: 0 8px 32px rgba(30,41,59,0.10);
-  }
-  .card-blob {
-    display: none;
-  }
-  html.dark .card-mouse-glow {
-    background: rgba(30,41,59,0.85);
-  }
-}
-
-@keyframes breathe {
-  0%, 100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(2);
-  }
-}
-
-.animate-breathe {
-  animation: breathe 8s ease-in-out infinite;
-}
-
-.animate-breathe-delayed {
-  animation: breathe 8s ease-in-out infinite;
-  animation-delay: 4s;
-}
-
-.glass-card-strong {
-  background: linear-gradient(135deg, rgba(255,255,255,0.13) 0%, rgba(255,255,255,0.08) 100%);
-  backdrop-filter: blur(16px) saturate(1.2);
-  -webkit-backdrop-filter: blur(16px) saturate(1.2);
-  border: 1.5px solid rgba(255,255,255,0.3);
-  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.10);
-  border-radius: 1.25rem;
-  transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
-}
-.dark .glass-card-strong {
-  background: linear-gradient(135deg, rgba(30,30,40,0.60) 0%, rgba(30,30,40,0.45) 100%);
-  border: 1.5px solid rgba(255,255,255,0.20);
-  box-shadow: 0 8px 32px 0 rgba(0,0,0,0.18);
-}
-
-/* Animaciones diagonales para el collage */
-@keyframes diagonal-top-left {
-  0%, 100% { transform: translate(0, 0) rotate(0deg); }
-  50% { transform: translate(-8px, -8px) rotate(-2deg); }
-}
-
-@keyframes diagonal-top-right {
-  0%, 100% { transform: translate(0, 0) rotate(0deg); }
-  50% { transform: translate(8px, -8px) rotate(2deg); }
-}
-
-@keyframes diagonal-bottom-left {
-  0%, 100% { transform: translate(0, 0) rotate(0deg); }
-  50% { transform: translate(-8px, 8px) rotate(-2deg); }
-}
-
-@keyframes diagonal-bottom-right {
-  0%, 100% { transform: translate(0, 0) rotate(0deg); }
-  50% { transform: translate(8px, 8px) rotate(2deg); }
-}
-
-.animate-diagonal-tl {
-  animation: diagonal-top-left 8s ease-in-out infinite;
-}
-
-.animate-diagonal-tr {
-  animation: diagonal-top-right 8s ease-in-out infinite 2s;
-}
-
-.animate-diagonal-bl {
-  animation: diagonal-bottom-left 8s ease-in-out infinite 4s;
-}
-
-.animate-diagonal-br {
-  animation: diagonal-bottom-right 8s ease-in-out infinite 6s;
-}
-
-/* Navbar mejorado con animaciones */
-.navbar-link {
-  position: relative;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  overflow: hidden;
-}
-
-.navbar-link::before {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  width: 0;
-  height: 2px;
-  background: linear-gradient(90deg, var(--primary), var(--primary-foreground));
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  transform: translateX(-50%);
-  border-radius: 1px;
-}
-
-.navbar-link:hover::before {
-  width: 100%;
-}
-
-.navbar-link:hover {
-  color: var(--primary);
-  transform: translateY(-1px);
-}
-
-/* Estado activo elegante */
-.elegant-active-menu {
-  position: relative;
-  color: var(--primary) !important;
-  font-weight: 600;
-  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1), rgba(var(--primary-rgb), 0.05));
-  border-radius: 8px;
-  box-shadow: 0 0 20px rgba(var(--primary-rgb), 0.15);
-  animation: activePulse 2s ease-in-out infinite;
-}
-
-.elegant-active-menu::before {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  width: 100%;
-  height: 2px;
-  background: linear-gradient(90deg, var(--primary), var(--primary-foreground));
-  transform: translateX(-50%);
-  border-radius: 1px;
-  animation: activeGlow 2s ease-in-out infinite;
-}
-
-.elegant-active-menu::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 100%;
-  height: 100%;
-  background: radial-gradient(circle, rgba(var(--primary-rgb), 0.1) 0%, transparent 70%);
-  transform: translate(-50%, -50%);
-  border-radius: 8px;
-  opacity: 0;
-  animation: activeRipple 2s ease-in-out infinite;
-}
-
-/* Animaciones para el estado activo */
-@keyframes activePulse {
-  0%, 100% { 
-    box-shadow: 0 0 20px rgba(var(--primary-rgb), 0.15);
-  }
-  50% { 
-    box-shadow: 0 0 30px rgba(var(--primary-rgb), 0.25);
-  }
-}
-
-@keyframes activeGlow {
-  0%, 100% { 
-    box-shadow: 0 0 5px rgba(var(--primary-rgb), 0.5);
-  }
-  50% { 
-    box-shadow: 0 0 15px rgba(var(--primary-rgb), 0.8);
-  }
-}
-
-@keyframes activeRipple {
-  0% { 
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(0.8);
-  }
-  50% { 
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
-  }
-  100% { 
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(1.2);
-  }
-}
-
-/* Mejoras para el navbar principal */
-.navbar-main {
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.navbar-main.scrolled {
-  background: rgba(255, 255, 255, 0.95);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-}
-
-.dark .navbar-main.scrolled {
-  background: rgba(0, 0, 0, 0.95);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-}
-
-/* Animación de entrada para el navbar */
-.navbar-enter {
-  animation: navbarSlideDown 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-@keyframes navbarSlideDown {
-  from {
-    transform: translateY(-100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-/* Mejoras para los dropdowns del navbar */
-.navbar-dropdown {
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  animation: dropdownFadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-@keyframes dropdownFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px) scale(0.95);
-  }
-  to {
+  100% {
     opacity: 1;
     transform: translateY(0) scale(1);
   }
 }
 
-/* Hover mejorado para elementos del dropdown */
-.navbar-dropdown-item {
-  position: relative;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  border-radius: 6px;
+/* Hacer los iconos de toast más grandes y animados */
+.toast-animated-icon {
+  font-size: 1.2em;
+  animation: bounceIn 0.6s ease-out;
 }
 
-.navbar-dropdown-item:hover {
-  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1), rgba(var(--primary-rgb), 0.05));
-  transform: translateX(4px);
-}
-
-.navbar-dropdown-item::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 50%;
-  width: 0;
-  height: 2px;
-  background: var(--primary);
-  transform: translateY(-50%);
-  transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.navbar-dropdown-item:hover::before {
-  width: 4px;
-}
-
-/* Loading Spinner mejorado */
-.loading-spinner-gradient {
-  background: conic-gradient(
-    from 0deg,
-    transparent 0deg,
-    var(--primary) 90deg,
-    var(--primary-foreground) 180deg,
-    transparent 270deg,
-    transparent 360deg
-  );
-}
-
-.dark .loading-spinner-gradient {
-  background: conic-gradient(
-    from 0deg,
-    transparent 0deg,
-    var(--primary) 90deg,
-    rgba(255, 255, 255, 0.8) 180deg,
-    transparent 270deg,
-    transparent 360deg
-  );
-}
-
-/* Animación de pulse para el fondo del loading */
-@keyframes loadingPulse {
-  0%, 100% {
-    opacity: 0.8;
-    transform: scale(1);
+@keyframes bounceIn {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
   }
   50% {
-    opacity: 1;
     transform: scale(1.05);
   }
-}
-
-.loading-background {
-  animation: loadingPulse 2s ease-in-out infinite;
-}
-
-/* Efecto de shimmer para el loading */
-@keyframes shimmer {
-  0% {
-    background-position: -200px 0;
+  70% {
+    transform: scale(0.9);
   }
   100% {
-    background-position: calc(200px + 100%) 0;
-  }
-}
-
-.loading-shimmer {
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.1),
-    transparent
-  );
-  background-size: 200px 100%;
-  animation: shimmer 1.5s infinite;
-}
-
-.dark .loading-shimmer {
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.05),
-    transparent
-  );
-  background-size: 200px 100%;
-  animation: shimmer 1.5s infinite;
-}
-
-/* Loading skeleton mejorado */
-.loading-skeleton {
-  background: linear-gradient(
-    90deg,
-    var(--muted) 25%,
-    var(--muted-foreground) 50%,
-    var(--muted) 75%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-}
-
-.dark .loading-skeleton {
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0.1) 25%,
-    rgba(255, 255, 255, 0.2) 50%,
-    rgba(255, 255, 255, 0.1) 75%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-}
-
-/* Loading overlay con blur */
-.loading-overlay {
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  background: rgba(255, 255, 255, 0.8);
-}
-
-.dark .loading-overlay {
-  background: rgba(0, 0, 0, 0.8);
-}
-
-/* Animación de entrada para el loading */
-@keyframes loadingFadeIn {
-  from {
-    opacity: 0;
-    transform: scale(0.9) translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
-.loading-fade-in {
-  animation: loadingFadeIn 0.3s ease-out;
-}
-
-/* Loading dots animados */
-@keyframes loadingDots {
-  0%, 20% {
-    transform: translateY(0);
-    opacity: 1;
-  }
-  40% {
-    transform: translateY(-10px);
-    opacity: 0.5;
-  }
-  60%, 100% {
-    transform: translateY(0);
+    transform: scale(1);
     opacity: 1;
   }
 }
 
-.loading-dots > div {
-  animation: loadingDots 1.4s ease-in-out infinite both;
-}
-
-.loading-dots > div:nth-child(1) { animation-delay: -0.32s; }
-.loading-dots > div:nth-child(2) { animation-delay: -0.16s; }
-.loading-dots > div:nth-child(3) { animation-delay: 0s; }
-
-/* ========================================
-   CAROUSEL TEXT LEGIBILITY IMPROVEMENTS
-   ======================================== */
-
-/* Fondo mejorado para texto del carrusel */
-.carousel-text-overlay {
-  background: linear-gradient(to top, 
-    rgba(0, 0, 0, 0.85) 0%, 
-    rgba(0, 0, 0, 0.65) 35%, 
-    rgba(0, 0, 0, 0.4) 65%, 
-    rgba(0, 0, 0, 0.1) 85%,
-    transparent 100%
-  );
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-}
-
-/* Contenedor de texto con fondo blur */
-.carousel-text-container {
-  background: rgba(0, 0, 0, 0.5) !important;
-  backdrop-filter: blur(15px) !important;
-  -webkit-backdrop-filter: blur(15px) !important;
-  border-radius: 16px 16px 0 0;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 
-    0 8px 25px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15);
-}
-
-/* Estilos de texto con sombra fuerte */
-.carousel-title {
-  text-shadow: 
-    2px 2px 4px rgba(0, 0, 0, 0.9),
-    1px 1px 2px rgba(0, 0, 0, 1),
-    0 0 10px rgba(0, 0, 0, 0.7),
-    0 0 20px rgba(0, 0, 0, 0.5) !important;
-  font-weight: 800 !important;
-  letter-spacing: -0.025em;
-  color: white !important;
-}
-
-.carousel-subtitle {
-  text-shadow: 
-    2px 2px 4px rgba(0, 0, 0, 0.9),
-    1px 1px 2px rgba(0, 0, 0, 1),
-    0 0 8px rgba(0, 0, 0, 0.6) !important;
-  font-weight: 600 !important;
-  color: white !important;
-}
-
-.carousel-info {
-  text-shadow: 
-    1px 1px 3px rgba(0, 0, 0, 0.9),
-    1px 1px 2px rgba(0, 0, 0, 1),
-    0 0 6px rgba(0, 0, 0, 0.6) !important;
-  font-weight: 500 !important;
-  color: rgba(255, 255, 255, 0.95) !important;
-}
-
-/* Asegurar que el texto sea siempre blanco y legible */
-.carousel-text-container * {
-  color: white !important;
-}
-
-/* Mejoras adicionales para dispositivos con blur limitado */
-@supports not (backdrop-filter: blur(15px)) {
-  .carousel-text-container {
-    background: rgba(0, 0, 0, 0.8) !important;
+/* Mejorar visibilidad en dispositivos móviles */
+@media (max-width: 640px) {
+  #_rht_toaster {
+    top: 20% !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: 90% !important;
+    max-width: 90% !important;
   }
-}
-
-/* Efecto de luz visible solo en los espacios entre tarjetas */
-@media (min-width: 768px) {
-  /* Contenedor de galería con contexto de apilamiento */
-  .gallery-grid {
-    position: relative;
-    z-index: 1;
-    isolation: isolate; /* Crea un nuevo stacking context */
+  
+  .toast-badge {
+    min-width: 280px !important;
+    max-width: 90vw !important;
+    font-size: 1rem !important;
+    padding: 12px 20px !important;
   }
-
-  /* Tarjetas con efecto de glow */
-  .gallery-card-glow,
-  .archive-card-glow {
-    position: relative;
-    z-index: 100; /* Z-index muy alto */
-    --mouse-x: 50%;
-    --mouse-y: 50%;
-    /* Crear una superficie completamente opaca */
-    isolation: isolate; /* Crea un nuevo stacking context */
-    background-color: var(--card, #ffffff);
-  }
-
-  /* Tema oscuro para las tarjetas */
-  .dark .gallery-card-glow,
-  .dark .archive-card-glow {
-    background-color: var(--card, #1f2937);
-  }
-
-  /* Pseudo-elemento para crear una capa opaca que bloquee la luz */
-  .gallery-card-glow::before,
-  .archive-card-glow::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: var(--card, #ffffff);
-    z-index: -1; /* Detrás del contenido de la tarjeta pero sobre la luz */
-  }
-
-  /* Asegurar fondos opacos en tema oscuro */
-  .dark .gallery-card-glow::before {
-    background-color: var(--card, #1f2937);
-  }
-
-  .dark .archive-card-glow::before {
-    background-color: #1f2937;
-  }
-
-  .gallery-card-glow:hover,
-  .archive-card-glow:hover {
-    transform: translateY(-4px);
-    z-index: 200; /* Aún más alto al hacer hover */
-  }
-
-  /* Luz que está en una capa completamente separada DETRÁS del grid */
-  .gallery-grid::before {
-    content: '';
-    position: absolute;
-    width: 400px;
-    height: 400px;
-    background: radial-gradient(
-      circle,
-      var(--active-glow-color-1, rgba(255, 0, 255, 0.6)) 0%,
-      var(--active-glow-color-2, rgba(0, 255, 255, 0.4)) 40%,
-      var(--active-glow-color-1, rgba(255, 0, 255, 0.2)) 70%,
-      transparent 100%
-    );
-    border-radius: 50%;
-    z-index: -10; /* Muy por detrás del grid completo */
-    opacity: 0;
-    filter: blur(80px);
-    transition: opacity 0.3s ease, left 0.1s ease, top 0.1s ease;
-    pointer-events: none;
-    top: var(--global-mouse-y, 50%);
-    left: var(--global-mouse-x, 50%);
-    transform: translate(-50%, -50%);
-  }
-
-  /* Mostrar la luz cuando hay hover activo */
-  .gallery-grid.has-active-glow::before {
-    opacity: 1;
-  }
-
-  /* Variaciones de color por tarjeta para crear diversidad */
-  .gallery-card-glow:nth-child(6n+1),
-  .archive-card-glow:nth-child(6n+1) {
-    --glow-color-1: rgba(232, 106, 240, 0.8);
-    --glow-color-2: rgba(155, 109, 223, 0.6);
-  }
-
-  .gallery-card-glow:nth-child(6n+2),
-  .archive-card-glow:nth-child(6n+2) {
-    --glow-color-1: rgba(90, 224, 223, 0.8);
-    --glow-color-2: rgba(43, 134, 217, 0.6);
-  }
-
-  .gallery-card-glow:nth-child(6n+3),
-  .archive-card-glow:nth-child(6n+3) {
-    --glow-color-1: rgba(255, 204, 102, 0.8);
-    --glow-color-2: rgba(255, 136, 102, 0.6);
-  }
-
-  .gallery-card-glow:nth-child(6n+4),
-  .archive-card-glow:nth-child(6n+4) {
-    --glow-color-1: rgba(162, 222, 150, 0.8);
-    --glow-color-2: rgba(87, 196, 120, 0.6);
-  }
-
-  .gallery-card-glow:nth-child(6n+5),
-  .archive-card-glow:nth-child(6n+5) {
-    --glow-color-1: rgba(240, 98, 146, 0.8);
-    --glow-color-2: rgba(236, 64, 122, 0.6);
-  }
-
-  .gallery-card-glow:nth-child(6n+6),
-  .archive-card-glow:nth-child(6n+6) {
-    --glow-color-1: rgba(149, 117, 205, 0.8);
-    --glow-color-2: rgba(126, 87, 194, 0.6);
-  }
-}
-
-/* En móviles, solo efecto hover sutil sin glow */
-@media (max-width: 767px) {
-  .gallery-card-glow:hover,
-  .archive-card-glow:hover {
-    transform: translateY(-2px);
-  }
-}
-
-@keyframes bounce {
-  0%, 100% { transform: translateY(0); }
-  30% { transform: translateY(-10px) scale(1.08); }
-  50% { transform: translateY(-6px) scale(1.12); }
-  70% { transform: translateY(-2px) scale(1.08); }
-}
-.animate-bounce {
-  animation: bounce 0.7s cubic-bezier(.36,.07,.19,.97) both;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 0.7; }
-  50% { opacity: 1; }
-}
-.animate-pulse {
-  animation: pulse 2s cubic-bezier(.4,0,.6,1) infinite;
-}
-
-@keyframes shake {
-  10%, 90% { transform: translateX(-2px); }
-  20%, 80% { transform: translateX(4px); }
-  30%, 50%, 70% { transform: translateX(-8px); }
-  40%, 60% { transform: translateX(8px); }
-}
-.animate-shake {
-  animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
-}
-
-.card-blob {
-  pointer-events: none;
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  border-radius: 2rem;
-  background: radial-gradient(ellipse 60% 60% at var(--global-mouse-x,50%) var(--global-mouse-y,50%), rgba(99,102,241,0.18) 0%, rgba(232,121,249,0.10) 60%, transparent 100%);
-  transition: background 0.3s;
-}
-
-.card-mouse-glow {
-  position: relative;
-  z-index: 1;
-  overflow: hidden;
-}
-
-/* Oculta el footer global cuando el modal de crear obra está abierto en MisObras */
-body.hide-footer footer {
-  display: none !important;
-}
-
-/* Estilos para autofill en campos de formulario */
-input:-webkit-autofill,
-input:-webkit-autofill:hover,
-input:-webkit-autofill:focus,
-input:-webkit-autofill:active {
-  -webkit-box-shadow: 0 0 0 30px white inset !important;
-  -webkit-text-fill-color: black !important;
-  transition: background-color 5000s ease-in-out 0s;
-}
-
-/* Estilos para autofill en modo oscuro */
-.dark input:-webkit-autofill,
-.dark input:-webkit-autofill:hover,
-.dark input:-webkit-autofill:focus,
-.dark input:-webkit-autofill:active {
-  -webkit-box-shadow: 0 0 0 30px #1f2937 inset !important;
-  -webkit-text-fill-color: white !important;
-  transition: background-color 5000s ease-in-out 0s;
-}
-
-/* Estilos adicionales para inputs con clases específicas */
-input.border:-webkit-autofill,
-input.border:-webkit-autofill:hover,
-input.border:-webkit-autofill:focus,
-input.border:-webkit-autofill:active {
-  -webkit-box-shadow: 0 0 0 30px white inset, 0 0 0 1px #d1d5db inset !important;
-  border: 1px solid #d1d5db !important;
-}
-
-.dark input.border:-webkit-autofill,
-.dark input.border:-webkit-autofill:hover,
-.dark input.border:-webkit-autofill:focus,
-.dark input.border:-webkit-autofill:active {
-  -webkit-box-shadow: 0 0 0 30px #1f2937 inset, 0 0 0 1px #374151 inset !important;
-  border: 1px solid #374151 !important;
-}
-
-/* Estilos para inputs con border-radius redondeado */
-input.rounded-lg:-webkit-autofill,
-input.rounded-lg:-webkit-autofill:hover,
-input.rounded-lg:-webkit-autofill:focus,
-input.rounded-lg:-webkit-autofill:active {
-  border-radius: 0.5rem !important;
-}
-
-/* Estilos específicos para inputs con bg-transparent (usados en AuthModal) */
-input.bg-transparent:-webkit-autofill,
-input.bg-transparent:-webkit-autofill:hover,
-input.bg-transparent:-webkit-autofill:focus,
-input.bg-transparent:-webkit-autofill:active {
-  -webkit-box-shadow: 0 0 0 30px transparent inset !important;
-  -webkit-text-fill-color: inherit !important;
-  background-color: transparent !important;
-  transition: background-color 5000s ease-in-out 0s;
-}
-
-/* Para modo oscuro - inputs con bg-transparent */
-.dark input.bg-transparent:-webkit-autofill,
-.dark input.bg-transparent:-webkit-autofill:hover,
-.dark input.bg-transparent:-webkit-autofill:focus,
-.dark input.bg-transparent:-webkit-autofill:active {
-  -webkit-box-shadow: 0 0 0 30px transparent inset !important;
-  -webkit-text-fill-color: white !important;
-  background-color: transparent !important;
-  transition: background-color 5000s ease-in-out 0s;
 }

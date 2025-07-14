@@ -1,12 +1,24 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import AutoresTooltip from "./AutoresTooltip";
 import { parseAutores, parseColaboradores } from "./utils";
 import { MdViewInAr } from "react-icons/md";
 import { toast } from "react-hot-toast";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { PlusCircle, UploadCloud } from "lucide-react";
+import ReactDOM from "react-dom";
 
-export default function MuralCard({ mural, onClick, onLike, isLiked, view = "grid", onARClick }) {
+export default function MuralCard({
+  mural,
+  onClick,
+  onLike,
+  isLiked,
+  view = "grid",
+  onARClick,
+}) {
   const router = useRouter();
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === "ADMIN";
   const autores = parseAutores(mural.autor);
   const colaboradores = parseColaboradores(mural.colaboradores);
   const [showAutoresTooltip, setShowAutoresTooltip] = useState(false);
@@ -16,6 +28,102 @@ export default function MuralCard({ mural, onClick, onLike, isLiked, view = "gri
   const colabsAnchorRef = useRef(null);
   const imagenSrc =
     mural.imagenUrl || mural.url_imagen || "/assets/artworks/cuadro1.webp";
+  const [showPopover, setShowPopover] = useState(false);
+  const popoverRef = useRef();
+  const buttonRef = useRef();
+  const fileInputRef = useRef();
+  const [popoverPos, setPopoverPos] = useState({ top: 0, left: 0 });
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  // Cerrar popover al hacer click fuera
+  useEffect(() => {
+    if (!showPopover) return;
+    function handleClick(e) {
+      if (popoverRef.current && !popoverRef.current.contains(e.target)) {
+        setShowPopover(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [showPopover]);
+
+  const handlePopoverClick = (e) => {
+    e.stopPropagation();
+    if (!showPopover && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setPopoverPos({
+        top: rect.bottom + window.scrollY + 6,
+        left: rect.left + rect.width / 2 + window.scrollX,
+      });
+    }
+    setShowPopover((v) => !v);
+  };
+  const handleClosePopover = (e) => {
+    e.stopPropagation();
+    setShowPopover(false);
+  };
+  const handleFileOption = (e) => {
+    e.stopPropagation();
+    setShowPopover(false);
+    if (fileInputRef.current) fileInputRef.current.value = null;
+    fileInputRef.current?.click();
+  };
+  const handleCreateOption = (e) => {
+    e.stopPropagation();
+    setShowPopover(false);
+    router.push(`/mis-obras/crear-modelo3d/${mural.id}`);
+  };
+  const handleFileChange = async (e) => {
+    setError("");
+    setSuccess("");
+    const file = e.target.files[0];
+    if (!file) return;
+    if (!file.name.endsWith(".glb")) {
+      const errorMsg = "Solo se permiten archivos .glb";
+      setError(errorMsg);
+      toast.error(errorMsg);
+      return;
+    }
+    setUploading(true);
+    toast.loading("Subiendo modelo 3D...", { id: "upload-modelo3d" });
+
+    try {
+      const formData = new FormData();
+      formData.append("modelo3d", file);
+      const res = await fetch(`/api/murales/${mural.id}/modelo3d`, {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        const successMsg = data.message || "Modelo 3D subido correctamente";
+        setSuccess(successMsg);
+        toast.success(successMsg, {
+          id: "upload-modelo3d",
+          icon: "🎯",
+          duration: 4000,
+        });
+        setTimeout(() => {
+          setSuccess("");
+          router.refresh();
+        }, 1200);
+      } else {
+        const errorMsg = data.error || "Error al subir modelo 3D";
+        setError(errorMsg);
+        toast.error(errorMsg, { id: "upload-modelo3d" });
+      }
+    } catch (err) {
+      const errorMsg = "Error de red al subir modelo 3D";
+      setError(errorMsg);
+      toast.error(errorMsg, { id: "upload-modelo3d" });
+    } finally {
+      setUploading(false);
+    }
+  };
 
   // Contador local de favoritos (solo visual)
   const localLikes = (mural.likes || 0) + (isLiked ? 1 : 0);
@@ -72,7 +180,9 @@ export default function MuralCard({ mural, onClick, onLike, isLiked, view = "gri
           </h3>
           <div className="flex flex-wrap gap-2 items-center text-sm text-muted-foreground mb-1">
             <span>{mural.tecnica}</span>
-            {mural.anio || mural.year ? <span>• {mural.anio || mural.year}</span> : null}
+            {mural.anio || mural.year ? (
+              <span>• {mural.anio || mural.year}</span>
+            ) : null}
             {mural.salaNombre && <span>• Sala: {mural.salaNombre}</span>}
           </div>
           {/* Autores y colaboradores */}
@@ -118,23 +228,23 @@ export default function MuralCard({ mural, onClick, onLike, isLiked, view = "gri
       onClick={onClick}
     >
       <div className="relative">
-      <img
-        src={imagenSrc}
-        alt={mural.titulo}
-        className="w-full h-48 object-cover rounded mb-2"
-        onError={(e) => {
-          e.target.src = "/assets/artworks/cuadro1.webp";
-        }}
-      />
-      {/* Icono de AR en la esquina superior derecha */}
-      <button
-        type="button"
-        onClick={handleARClick}
-        className="absolute top-2 right-2 bg-white/80 dark:bg-neutral-900/80 rounded-full p-1 shadow-md z-10 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 focus:outline-none"
-        title="Ver en Realidad Aumentada"
-      >
-        <MdViewInAr size={24} color="#6366f1" />
-      </button>
+        <img
+          src={imagenSrc}
+          alt={mural.titulo}
+          className="w-full h-48 object-cover rounded mb-2"
+          onError={(e) => {
+            e.target.src = "/assets/artworks/cuadro1.webp";
+          }}
+        />
+        {/* Icono de AR en la esquina superior derecha */}
+        <button
+          type="button"
+          onClick={handleARClick}
+          className="absolute top-2 right-2 bg-white/80 dark:bg-neutral-900/80 rounded-full p-1 shadow-md z-10 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 focus:outline-none"
+          title="Ver en Realidad Aumentada"
+        >
+          <MdViewInAr size={24} color="#6366f1" />
+        </button>
       </div>
       <div className="font-bold text-lg mb-1">{mural.titulo}</div>
       <div className="flex flex-wrap gap-1 mb-1">
@@ -209,6 +319,93 @@ export default function MuralCard({ mural, onClick, onLike, isLiked, view = "gri
         <span className="text-xs font-semibold text-muted-foreground select-none">
           {localLikes}
         </span>
+        {isAdmin && (
+          <div className="relative inline-block ml-auto">
+            <button
+              ref={buttonRef}
+              onClick={handlePopoverClick}
+              className="flex items-center gap-1 px-2 py-1 rounded bg-indigo-50 dark:bg-neutral-800 text-indigo-700 dark:text-indigo-200 text-xs font-semibold hover:bg-indigo-100 dark:hover:bg-neutral-700 border border-indigo-100 dark:border-neutral-700 transition"
+              title="Opciones modelo 3D"
+              disabled={uploading}
+            >
+              <PlusCircle className="h-4 w-4" /> Modelo 3D
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".glb"
+              style={{ display: "none" }}
+              onClick={(e) => e.stopPropagation()}
+              onChange={(e) => {
+                e.stopPropagation();
+                handleFileChange(e);
+              }}
+            />
+            {showPopover &&
+              typeof window !== "undefined" &&
+              ReactDOM.createPortal(
+                <div
+                  ref={popoverRef}
+                  className="fixed z-[9999] min-w-[180px] bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 rounded-xl shadow-2xl py-2 flex flex-col items-stretch animate-fade-in"
+                  style={{
+                    top: popoverPos.top,
+                    left: popoverPos.left,
+                    transform: "translateX(-50%)",
+                    boxShadow: "0 8px 32px 0 rgba(0,0,0,0.18)",
+                  }}
+                >
+                  <button
+                    onClick={handleFileOption}
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-neutral-800 hover:text-indigo-900 dark:hover:text-indigo-100 transition-all rounded-t-xl focus:outline-none"
+                  >
+                    <UploadCloud className="h-5 w-5 opacity-80" /> Subir modelo
+                    3D
+                  </button>
+                  <button
+                    onClick={handleCreateOption}
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-neutral-800 hover:text-indigo-900 dark:hover:text-indigo-100 transition-all rounded-b-xl focus:outline-none border-t border-gray-100 dark:border-neutral-700"
+                  >
+                    <PlusCircle className="h-5 w-5 opacity-80" /> Crear modelo
+                    3D
+                  </button>
+                  <button
+                    onClick={handleClosePopover}
+                    className="absolute top-1 right-1 p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-neutral-800 rounded transition-colors"
+                    aria-label="Cerrar"
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
+                  {(success || error) && (
+                    <div className="px-4 pt-2 text-xs">
+                      {success && (
+                        <span className="text-green-600 dark:text-green-400">
+                          {success}
+                        </span>
+                      )}
+                      {error && (
+                        <span className="text-red-600 dark:text-red-400">
+                          {error}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>,
+                document.body
+              )}
+          </div>
+        )}
       </div>
     </div>
   );

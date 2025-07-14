@@ -177,9 +177,9 @@ export default function MainMenu({ onSubirArchivo }) {
           mobileMenuOpen ? "" : "border-b border-gray-200 dark:border-gray-700"
         } ${
           isScrolled
-            ? "scrolled"
+            ? "bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-700/50 shadow-lg"
             : "bg-transparent md:bg-white/95 md:dark:bg-gray-900/95 md:backdrop-blur-md"
-        } text-gray-900 dark:text-white shadow-sm transition-colors duration-300`}
+        } text-gray-900 dark:text-white transition-all duration-300`}
       >
         <div className="max-w-screen-xl mx-auto flex items-center justify-between px-4 py-2 md:py-4">
           {" "}

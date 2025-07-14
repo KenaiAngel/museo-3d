@@ -46,10 +46,17 @@ export default function RootLayout({ children }) {
         <Toaster
           position="top-center"
           reverseOrder={true}
-          limit={1}
+          limit={2}
+          containerStyle={{
+            top: "25%",
+            left: "50%",
+            right: "auto",
+            bottom: "auto",
+            transform: "translateX(-50%)",
+          }}
           toastOptions={{
             className: "toast-badge",
-            duration: 3500,
+            duration: 4000,
             success: {
               className: "toast-badge toast-badge-success",
               icon: <span className="toast-animated-icon">✅</span>,
