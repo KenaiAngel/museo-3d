@@ -14,6 +14,9 @@ import {
   User2 as User2Icon,
   Settings as SettingsIcon,
   HelpCircle,
+  Trash2,
+  MailX,
+  Camera,
 } from "lucide-react";
 import UserAvatarCell from "../../../components/admin/usuarios/UserAvatarCell";
 import MobileUserCard from "../../../components/admin/usuarios/MobileUserCard";
@@ -83,7 +86,7 @@ export default function AdminUsuariosPage() {
           <AnimatedBlobsBackground />
           <DotsPattern />
         </div>
-        <div className="relative z-10 w-full max-w-4xl mx-auto flex flex-col gap-8 px-2 sm:px-8 py-8 md:py-14">
+        <div className="relative z-10 w-full max-w-4xl mx-auto flex flex-col gap-8 px-4 sm:px-8 py-8 md:py-14">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold text-foreground">
               Administrar usuarios
@@ -166,7 +169,7 @@ export default function AdminUsuariosPage() {
                 <tr className="bg-muted/60">
                   <th className="px-4 py-4 text-center font-semibold w-20 align-middle">
                     <div className="flex flex-col items-center justify-center gap-1">
-                      <UserIcon className="w-5 h-5 text-primary/80 mb-1" />
+                      <Camera className="w-5 h-5 text-primary/80 mb-1" />
                       <span className="text-xs">Foto</span>
                     </div>
                   </th>
@@ -270,6 +273,7 @@ export default function AdminUsuariosPage() {
                           className="rounded-full mr-2"
                           title="Eliminar usuario"
                         >
+                          <Trash2 className="w-4 h-4 mr-1" />
                           Eliminar
                         </Button>
                         <Button
@@ -277,10 +281,11 @@ export default function AdminUsuariosPage() {
                           size="sm"
                           onClick={() => handleInvalidateEmail(user.id)}
                           className="rounded-full mt-2"
-                          title="Invalidar email"
+                          title="Invalidar verificación de email"
                           disabled={!user.emailVerified}
                         >
-                          Invalidar
+                          <MailX className="w-4 h-4 mr-1" />
+                          Invalidar Email
                         </Button>
                       </td>
                     </tr>

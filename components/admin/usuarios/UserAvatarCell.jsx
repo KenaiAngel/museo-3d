@@ -1,6 +1,7 @@
 import React, { useRef, useState } from "react";
 import { Avatar, AvatarImage, AvatarFallback } from "../../ui/avatar";
 import AvatarTooltip from "../../ui/AvatarTooltip";
+import { User2 } from "lucide-react";
 import PropTypes from "prop-types";
 
 /**
@@ -26,7 +27,9 @@ export default function UserAvatarCell({ user, defaultAvatar }) {
             e.target.src = defaultAvatar.src;
           }}
         />
-        <AvatarFallback>{user.name?.[0] || "U"}</AvatarFallback>
+        <AvatarFallback>
+          <User2 className="w-6 h-6 text-muted-foreground" />
+        </AvatarFallback>
       </Avatar>
       <AvatarTooltip
         src={user.image || defaultAvatar.src}
