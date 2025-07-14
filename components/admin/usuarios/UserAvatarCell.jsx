@@ -22,7 +22,9 @@ export default function UserAvatarCell({ user, defaultAvatar }) {
         <AvatarImage
           src={user.image || defaultAvatar.src}
           alt={user.name || user.email}
-          onError={e => { e.target.src = defaultAvatar.src; }}
+          onError={(e) => {
+            e.target.src = defaultAvatar.src;
+          }}
         />
         <AvatarFallback>{user.name?.[0] || "U"}</AvatarFallback>
       </Avatar>
@@ -39,4 +41,4 @@ export default function UserAvatarCell({ user, defaultAvatar }) {
 UserAvatarCell.propTypes = {
   user: PropTypes.object.isRequired,
   defaultAvatar: PropTypes.object.isRequired,
-}; 
+};

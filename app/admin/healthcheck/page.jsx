@@ -7,13 +7,8 @@ import {
   MetricSection,
   MemoryUsageCard,
 } from "../../../components/HealthcheckWidgets";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "../../components/ui/card";
-import { Badge } from "../../components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import Unauthorized from "../../../components/Unauthorized";
 
 export default function HealthcheckPage() {

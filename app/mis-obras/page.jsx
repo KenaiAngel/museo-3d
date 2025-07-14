@@ -17,7 +17,7 @@ import UploadModal from "./components/UploadModal";
 import PageHeader from "./components/PageHeader";
 import EmptyState from "./components/EmptyState";
 import MuralGrid from "./components/MuralGrid";
-import { Badge } from "../components/ui/badge";
+import { Badge } from "@/components/ui/badge";
 import { useCollection } from "../../providers/CollectionProvider";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";

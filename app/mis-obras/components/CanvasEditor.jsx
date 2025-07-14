@@ -23,7 +23,7 @@ import {
   Target,
 } from "lucide-react";
 import toast from "react-hot-toast";
-import { DatePicker } from "../../components/ui/date-picker-new";
+import { DatePicker } from "@/components/ui/date-picker-new";
 import { useDropzone } from "react-dropzone";
 import Palette from "./tools/Palette";
 import BrushSelector from "./tools/BrushSelector";

@@ -13,16 +13,16 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../components/ui/select";
-import { Badge } from "../components/ui/badge";
-import { DatePicker } from "../components/ui/date-picker";
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { DatePicker } from "@/components/ui/date-picker";
 import { X } from "lucide-react";
 import RainbowBackground from "../perfil/RainbowBackground";
 import { useCardMouseGlow } from "../hooks/useCardMouseGlow";
 import { useTheme } from "../../providers/ThemeProvider";
 import { useSessionData } from "../../providers/SessionProvider";
 import { useCrearSalaStore } from "./crearSalaStore";
-import Stepper from "../../components/ui/Stepper";
+import Stepper from "@/components/ui/Stepper";
 
 // Componentes de fondo animado (copiados de acerca-de)
 function AnimatedBlobsBackground() {

@@ -2,20 +2,15 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-} from "../components/ui/card";
-import { Badge } from "../components/ui/badge";
-import { Button } from "../components/ui/button";
-import SalaIcon from "../components/ui/icons/SalaIcon";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import SalaIcon from "@/components/ui/icons/SalaIcon";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import Unauthorized from "../../components/Unauthorized";
 import AnimatedBackground from "../../components/shared/AnimatedBackground";
-import AvatarTooltip from "../components/ui/AvatarTooltip";
+import AvatarTooltip from "@/components/ui/AvatarTooltip";
 import React, { useRef } from "react";
 import { Trash2 } from "lucide-react";
 

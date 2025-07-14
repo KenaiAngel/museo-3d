@@ -1,12 +1,7 @@
 import { useState, useEffect, useRef } from "react";
-import { Button } from "../../../app/components/ui/button";
-import { Badge } from "../../../app/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "../../../app/components/ui/card";
+import { Button } from "../../ui/button";
+import { Badge } from "../../ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card";
 import {
   AlertTriangle,
   Shield,

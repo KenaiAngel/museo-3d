@@ -5,26 +5,21 @@ import { useSession } from "next-auth/react";
 import { useEffect, useState, useRef } from "react";
 import { useCollection } from "../../providers/CollectionProvider";
 import ProtectedRoute from "../../components/ProtectedRoute";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-} from "../components/ui/card";
-import { Avatar, AvatarImage, AvatarFallback } from "../components/ui/avatar";
-import { Button } from "../components/ui/button";
-import { Badge } from "../components/ui/badge";
-import { Label } from "../components/ui/label";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import RainbowBackground from "./RainbowBackground";
-import MuralIcon from "../components/ui/icons/MuralIcon";
-import SalaIcon from "../components/ui/icons/SalaIcon";
-import ArtistaIcon from "../components/ui/icons/ArtistaIcon";
-import TecnicaIcon from "../components/ui/icons/TecnicaIcon";
+import MuralIcon from "@/components/ui/icons/MuralIcon";
+import SalaIcon from "@/components/ui/icons/SalaIcon";
+import ArtistaIcon from "@/components/ui/icons/ArtistaIcon";
+import TecnicaIcon from "@/components/ui/icons/TecnicaIcon";
 import ReactDOM from "react-dom";
 import React from "react";
 import { useUpdateProfile } from "../hooks/useUpdateProfile";
-import { Switch } from "../components/ui/switch";
-import { Input } from "../components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
 import useSWR from "swr";
 import { useUser } from "../../providers/UserProvider";
 import toast from "react-hot-toast";

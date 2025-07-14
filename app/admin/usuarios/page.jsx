@@ -3,9 +3,9 @@
 import ProtectedRoute from "../../../components/ProtectedRoute";
 import Unauthorized from "../../../components/Unauthorized";
 import { useSession } from "next-auth/react";
-import { Input } from "../../components/ui/input";
-import { Select, SelectItem } from "../../components/ui/select";
-import { Button } from "../../components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectItem } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import defaultAvatar from "public/assets/default-avatar.svg";
 import {
   User as UserIcon,
@@ -15,8 +15,8 @@ import {
   Settings as SettingsIcon,
   HelpCircle,
 } from "lucide-react";
-import UserAvatarCell from "../../components/admin/usuarios/UserAvatarCell";
-import MobileUserCard from "../../components/admin/usuarios/MobileUserCard";
+import UserAvatarCell from "../../../components/admin/usuarios/UserAvatarCell";
+import MobileUserCard from "../../../components/admin/usuarios/MobileUserCard";
 import SafeDeleteUserModal from "../../../components/admin/usuarios/SafeDeleteUserModal";
 import UserDeletionPolicies from "../../../components/admin/usuarios/UserDeletionPolicies";
 import {

@@ -6,7 +6,7 @@ import AnimatedBackground from "../../../../components/shared/AnimatedBackground
 import { motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
 import ProtectedRoute from "../../../../components/ProtectedRoute";
-import { Button } from "../../../../app/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { useUser } from "../../../../providers/UserProvider";
 
 export default function EditarObraPage() {

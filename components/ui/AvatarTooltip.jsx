@@ -2,7 +2,12 @@ import React, { useEffect, useState } from "react";
 import ReactDOM from "react-dom";
 
 // Lógica robusta de posicionamiento
-function calculateTooltipPosition(anchorRect, tooltipWidth, tooltipHeight, preferredPosition = "bottom") {
+function calculateTooltipPosition(
+  anchorRect,
+  tooltipWidth,
+  tooltipHeight,
+  preferredPosition = "bottom"
+) {
   const padding = 8;
   const viewportWidth = window.innerWidth;
   const viewportHeight = window.innerHeight;
@@ -40,7 +45,13 @@ function calculateTooltipPosition(anchorRect, tooltipWidth, tooltipHeight, prefe
   };
 }
 
-export default function AvatarTooltip({ src, alt, anchorRef, show, preferredPosition = "bottom" }) {
+export default function AvatarTooltip({
+  src,
+  alt,
+  anchorRef,
+  show,
+  preferredPosition = "bottom",
+}) {
   const [pos, setPos] = useState({ top: 0, left: 0 });
   const tooltipWidth = 260;
   const tooltipHeight = 260;
@@ -51,7 +62,12 @@ export default function AvatarTooltip({ src, alt, anchorRef, show, preferredPosi
       const timeout = setTimeout(() => {
         if (anchorRef.current) {
           const rect = anchorRef.current.getBoundingClientRect();
-          const newPos = calculateTooltipPosition(rect, tooltipWidth, tooltipHeight, preferredPosition);
+          const newPos = calculateTooltipPosition(
+            rect,
+            tooltipWidth,
+            tooltipHeight,
+            preferredPosition
+          );
           setPos(newPos);
         }
       }, 0);
@@ -85,4 +101,4 @@ export default function AvatarTooltip({ src, alt, anchorRef, show, preferredPosi
     </div>,
     typeof window !== "undefined" ? document.body : null
   );
-} 
+}

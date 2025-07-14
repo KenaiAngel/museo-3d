@@ -1,11 +1,6 @@
 import React from "react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "../app/components/ui/card";
-import { Badge } from "../app/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Badge } from "./ui/badge";
 import { Progress } from "./ui/progress";
 
 export function StatusBar({ status }) {
