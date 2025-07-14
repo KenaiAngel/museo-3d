@@ -1316,3 +1316,24 @@ html.dark .graffiti-gradient-bg {
     padding: 12px 20px !important;
   }
 }
+
+/* Animación sutil para botones AR */
+@keyframes pulse-subtle {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s ease-in-out infinite;
+}
+
+.animate-pulse-subtle:hover {
+  animation: none;
+  transform: scale(1.1);
+}

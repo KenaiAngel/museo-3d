@@ -36,6 +36,15 @@ export default function MuralCard({
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [localMuralData, setLocalMuralData] = useState(mural);
+
+  // Estado para detectar si el mural tiene modelo 3D
+  const hasModel3D = Boolean(localMuralData.modelo3dUrl);
+
+  // Actualizar datos locales cuando cambie el prop mural
+  useEffect(() => {
+    setLocalMuralData(mural);
+  }, [mural]);
 
   // Cerrar popover al hacer click fuera
   useEffect(() => {
@@ -102,11 +111,31 @@ export default function MuralCard({
       if (res.ok) {
         const successMsg = data.message || "Modelo 3D subido correctamente";
         setSuccess(successMsg);
-        toast.success(successMsg, {
-          id: "upload-modelo3d",
-          icon: "🎯",
-          duration: 4000,
-        });
+
+        // Actualizar el estado local del mural con la nueva URL del modelo
+        setLocalMuralData((prev) => ({
+          ...prev,
+          modelo3dUrl: data.modelo3dUrl,
+        }));
+
+        // Toast de éxito más prominente
+        toast.success(
+          <div className="flex items-center gap-2">
+            <span className="text-lg">🎯</span>
+            <div>
+              <div className="font-semibold">{successMsg}</div>
+              <div className="text-sm opacity-75">¡AR disponible ahora!</div>
+            </div>
+          </div>,
+          {
+            id: "upload-modelo3d",
+            duration: 5000,
+            style: {
+              minWidth: "300px",
+            },
+          }
+        );
+
         setTimeout(() => {
           setSuccess("");
           router.refresh();
@@ -140,8 +169,8 @@ export default function MuralCard({
 
   const handleARClick = (e) => {
     e.stopPropagation();
-    if (mural.modelo3dUrl) {
-      router.push(`/galeria/${mural.id}/ar`);
+    if (localMuralData.modelo3dUrl) {
+      router.push(`/galeria/${localMuralData.id}/ar`);
     } else {
       toast("Este mural no tiene modelo 3D para AR");
     }
@@ -163,15 +192,17 @@ export default function MuralCard({
               e.target.src = "/assets/artworks/cuadro1.webp";
             }}
           />
-          {/* Icono de AR en la esquina superior derecha */}
-          <button
-            type="button"
-            onClick={handleARClick}
-            className="absolute top-2 right-2 bg-white/80 dark:bg-neutral-900/80 rounded-full p-1 shadow-md z-10 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 focus:outline-none"
-            title="Ver en Realidad Aumentada"
-          >
-            <MdViewInAr size={24} color="#6366f1" />
-          </button>
+          {/* Icono de AR en la esquina superior derecha - Solo si tiene modelo 3D */}
+          {hasModel3D && (
+            <button
+              type="button"
+              onClick={handleARClick}
+              className="absolute top-2 right-2 bg-white/80 dark:bg-neutral-900/80 rounded-full p-1 shadow-md z-10 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 focus:outline-none transition-all duration-200 animate-pulse-subtle"
+              title="Ver en Realidad Aumentada"
+            >
+              <MdViewInAr size={24} color="#6366f1" />
+            </button>
+          )}
         </div>
         {/* Info detallada */}
         <div className="flex-1 min-w-0 flex flex-col gap-1">
@@ -236,15 +267,17 @@ export default function MuralCard({
             e.target.src = "/assets/artworks/cuadro1.webp";
           }}
         />
-        {/* Icono de AR en la esquina superior derecha */}
-        <button
-          type="button"
-          onClick={handleARClick}
-          className="absolute top-2 right-2 bg-white/80 dark:bg-neutral-900/80 rounded-full p-1 shadow-md z-10 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 focus:outline-none"
-          title="Ver en Realidad Aumentada"
-        >
-          <MdViewInAr size={24} color="#6366f1" />
-        </button>
+        {/* Icono de AR en la esquina superior derecha - Solo si tiene modelo 3D */}
+        {hasModel3D && (
+          <button
+            type="button"
+            onClick={handleARClick}
+            className="absolute top-2 right-2 bg-white/80 dark:bg-neutral-900/80 rounded-full p-1 shadow-md z-10 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 focus:outline-none transition-all duration-200 animate-pulse-subtle"
+            title="Ver en Realidad Aumentada"
+          >
+            <MdViewInAr size={24} color="#6366f1" />
+          </button>
+        )}
       </div>
       <div className="font-bold text-lg mb-1">{mural.titulo}</div>
       <div className="flex flex-wrap gap-1 mb-1">
