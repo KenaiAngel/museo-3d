@@ -5,13 +5,14 @@ import { useRouter } from "next/navigation";
 
 const ARExperience = dynamic(() => import("../../../../components/ar/ARExperience"), { ssr: false });
 
-export default function ARClient({ modelUrl }) {
+export default function ARClient({ modelUrl, muralData }) {
   const router = useRouter();
 
   const handleClose = () => {
     router.back();
   };
 
+  // Verificar si hay contenido para mostrar
   if (!modelUrl) {
     return (
       <div style={{ 
@@ -26,9 +27,9 @@ export default function ARClient({ modelUrl }) {
         color: "#fff"
       }}>
         <div style={{ fontSize: "48px", marginBottom: 20 }}>🎨</div>
-        <h2 style={{ marginBottom: 16, fontSize: "24px" }}>Modelo 3D no disponible</h2>
+        <h2 style={{ marginBottom: 16, fontSize: "24px" }}>Contenido no disponible</h2>
         <p style={{ marginBottom: 24, fontSize: "16px", opacity: 0.8 }}>
-          Este mural no tiene modelo 3D disponible para AR.
+          Este mural no tiene modelo 3D disponible para visualizar en AR.
         </p>
         <button 
           onClick={handleClose}
@@ -50,9 +51,11 @@ export default function ARClient({ modelUrl }) {
     );
   }
 
+  // Cargar directamente ARExperience sin página de entrada
   return (
-    <div style={{ width: "100vw", height: "100vh" }}>
-      <ARExperience modelUrl={modelUrl} onClose={handleClose} />
-    </div>
+    <ARExperience 
+      modelUrl={modelUrl} 
+      onClose={handleClose} 
+    />
   );
 }

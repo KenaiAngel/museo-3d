@@ -30,11 +30,16 @@ export default async function ARPage({ params }) {
     const mural = data.mural || data;
     const modelo3dUrl = mural?.modelo3dUrl;
 
-    console.log(`Mural data fetched successfully, modelo3dUrl: ${modelo3dUrl}`);
+    console.log(`Mural data fetched successfully:`, {
+      modelo3dUrl
+    });
 
-    return <ARClient modelUrl={modelo3dUrl} />;
+    return <ARClient 
+      modelUrl={modelo3dUrl}
+      muralData={mural}
+    />;
   } catch (error) {
     console.error("Error fetching mural data:", error);
-    return <ARClient modelUrl={null} />;
+    return <ARClient modelUrl={null} muralData={null} />;
   }
 } 
