@@ -66,25 +66,86 @@ export function useAdminUsers() {
     [fetchUsers]
   );
 
-  // Eliminar usuario
-  const handleDeleteUser = useCallback((user) => setUserToDelete(user), []);
+  // Estado para análisis de eliminación
+  const [deleteAnalysis, setDeleteAnalysis] = useState(null);
+  const [deleteOptions, setDeleteOptions] = useState({
+    preserveContent: true,
+    reassignToAdmin: false,
+    forceDelete: false,
+  });
+
+  // Análisis previo de eliminación
+  const analyzeDeleteUser = useCallback(async (user) => {
+    try {
+      const res = await fetch(`/api/usuarios/${user.id}/delete`);
+      if (res.ok) {
+        const analysis = await res.json();
+        setDeleteAnalysis(analysis);
+        setUserToDelete(user);
+      } else {
+        toast.error("Error al analizar eliminación");
+      }
+    } catch (e) {
+      toast.error("Error al analizar usuario");
+    }
+  }, []);
+
+  // Eliminar usuario con opciones de seguridad
+  const handleDeleteUser = useCallback(
+    (user) => analyzeDeleteUser(user),
+    [analyzeDeleteUser]
+  );
+
   const confirmDeleteUser = useCallback(async () => {
     if (!userToDelete) return;
+
     try {
-      const res = await fetch(`/api/usuarios/${userToDelete.id}`, {
+      // Mapear opciones del frontend al formato del backend
+      const apiOptions = {
+        forceDelete: deleteOptions.forceDelete || false,
+        preserveContent:
+          deleteOptions.preserveContent && !deleteOptions.deleteContent,
+        reassignToAdmin: deleteOptions.reassignToAdmin || false,
+        adminUserId: deleteOptions.adminUserId || undefined,
+      };
+
+      const res = await fetch(`/api/usuarios/${userToDelete.id}/delete`, {
         method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(apiOptions),
       });
+
+      const data = await res.json();
+
       if (res.ok) {
-        toast.success("Usuario eliminado");
+        toast.success(data.message || "Usuario eliminado exitosamente");
         setUserToDelete(null);
+        setDeleteAnalysis(null);
         fetchUsers();
       } else {
-        toast.error("No se pudo eliminar el usuario");
+        if (res.status === 409) {
+          // Conflicto - mostrar advertencias
+          toast.error("Eliminación bloqueada por seguridad");
+          // El análisis ya está disponible en deleteAnalysis
+        } else {
+          toast.error(data.error || "No se pudo eliminar el usuario");
+        }
       }
     } catch (e) {
       toast.error("Error al eliminar usuario");
     }
-  }, [userToDelete, fetchUsers]);
+  }, [userToDelete, deleteOptions, fetchUsers]);
+
+  // Cancelar eliminación
+  const cancelDeleteUser = useCallback(() => {
+    setUserToDelete(null);
+    setDeleteAnalysis(null);
+    setDeleteOptions({
+      preserveContent: true,
+      reassignToAdmin: false,
+      forceDelete: false,
+    });
+  }, []);
 
   // Invalidar email de usuario
   const handleInvalidateEmail = useCallback(
@@ -118,6 +179,10 @@ export function useAdminUsers() {
     userToDelete,
     setUserToDelete,
     confirmDeleteUser,
+    cancelDeleteUser,
+    deleteAnalysis,
+    deleteOptions,
+    setDeleteOptions,
     handleInvalidateEmail, // <-- exporta la función
   };
 }

@@ -13,14 +13,18 @@ import {
   UserCog as RoleIcon,
   User2 as User2Icon,
   Settings as SettingsIcon,
+  HelpCircle,
 } from "lucide-react";
 import UserAvatarCell from "../../components/admin/usuarios/UserAvatarCell";
 import MobileUserCard from "../../components/admin/usuarios/MobileUserCard";
+import SafeDeleteUserModal from "../../../components/admin/usuarios/SafeDeleteUserModal";
+import UserDeletionPolicies from "../../../components/admin/usuarios/UserDeletionPolicies";
 import {
   AnimatedBlobsBackground,
   DotsPattern,
 } from "../../../components/shared";
 import { useAdminUsers } from "../../hooks/useAdminUsers";
+import { useState } from "react";
 
 const ROLES = [
   { value: "USER", label: "Usuario" },
@@ -35,6 +39,8 @@ const ROLES = [
  */
 export default function AdminUsuariosPage() {
   const { data: session, status } = useSession();
+  const [showPolicies, setShowPolicies] = useState(false);
+
   // Hook custom para la lógica de usuarios
   const {
     users,
@@ -48,6 +54,10 @@ export default function AdminUsuariosPage() {
     userToDelete,
     setUserToDelete,
     confirmDeleteUser,
+    cancelDeleteUser,
+    deleteAnalysis,
+    deleteOptions,
+    setDeleteOptions,
     handleInvalidateEmail, // <-- nuevo
   } = useAdminUsers();
 
@@ -74,9 +84,20 @@ export default function AdminUsuariosPage() {
           <DotsPattern />
         </div>
         <div className="relative z-10 w-full max-w-4xl mx-auto flex flex-col gap-8 px-2 sm:px-8 py-8 md:py-14">
-          <h1 className="text-2xl font-bold mb-6 text-foreground">
-            Administrar usuarios
-          </h1>
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold text-foreground">
+              Administrar usuarios
+            </h1>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowPolicies(true)}
+              className="flex items-center gap-2"
+            >
+              <HelpCircle className="h-4 w-4" />
+              Políticas de Eliminación
+            </Button>
+          </div>
           {/* Filtros de búsqueda y rol */}
           <div className="flex flex-col sm:flex-row gap-3 mb-6 items-center w-full">
             <div className="relative w-full sm:w-auto flex-1 flex items-center">
@@ -269,28 +290,21 @@ export default function AdminUsuariosPage() {
             </table>
           </div>
         </div>
-        {/* Modal de confirmación de eliminación */}
-        {userToDelete && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-            <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg p-8 max-w-sm w-full">
-              <h2 className="text-lg font-bold mb-4">¿Eliminar usuario?</h2>
-              <p className="mb-6">
-                ¿Estás seguro de que deseas eliminar a{" "}
-                <span className="font-semibold">
-                  {userToDelete.name || userToDelete.email}
-                </span>
-                ? Esta acción no se puede deshacer.
-              </p>
-              <div className="flex gap-2 justify-end">
-                <Button variant="outline" onClick={() => setUserToDelete(null)}>
-                  Cancelar
-                </Button>
-                <Button variant="destructive" onClick={confirmDeleteUser}>
-                  Eliminar
-                </Button>
-              </div>
-            </div>
-          </div>
+        {/* Modal de confirmación de eliminación segura */}
+        {userToDelete && deleteAnalysis && (
+          <SafeDeleteUserModal
+            user={userToDelete}
+            analysis={deleteAnalysis}
+            options={deleteOptions}
+            onOptionsChange={setDeleteOptions}
+            onConfirm={confirmDeleteUser}
+            onCancel={cancelDeleteUser}
+          />
+        )}
+
+        {/* Modal de políticas de eliminación */}
+        {showPolicies && (
+          <UserDeletionPolicies onClose={() => setShowPolicies(false)} />
         )}
       </div>
     </ProtectedRoute>
