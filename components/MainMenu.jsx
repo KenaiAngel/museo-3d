@@ -166,6 +166,12 @@ export default function MainMenu({ onSubirArchivo }) {
     openModal(mode === "register" ? "auth-register" : "auth-login");
   };
 
+  const menuLinks = [
+    { href: "/galeria", label: "Galería" },
+    { href: "/acerca-de", label: "Acerca de" },
+    { href: "/museo", label: "Museo Virtual" },
+  ];
+
   return (
     <>
       {/* Navigation Menu with auto-hide on scroll */}
@@ -210,49 +216,54 @@ export default function MainMenu({ onSubirArchivo }) {
             </div>
           </Link>
           {/* Título a la izquierda en mobile, junto al logo */}
-          <NavigationMenu className="hidden md:block">
+          <NavigationMenu className="hidden md:block align-middle">
             {/* DESKTOP: solo enlaces directos */}
-            <NavigationMenuList className="text-sm font-medium">
-              <NavigationMenuItem>
-                <NavigationMenuLink asChild>
-                  <Link
-                    href="/galeria"
-                    className={`navbar-link hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-all ${
-                      pathname.startsWith("/galeria")
-                        ? "elegant-active-menu"
-                        : ""
-                    }`}
-                  >
-                    Galería
-                  </Link>
-                </NavigationMenuLink>
-              </NavigationMenuItem>
-              <NavigationMenuItem>
-                <NavigationMenuLink asChild>
-                  <Link
-                    href="/acerca-de"
-                    className={`navbar-link hover:text-primary transition-all px-3 py-2 rounded-lg ${
-                      pathname.startsWith("/acerca-de")
-                        ? "elegant-active-menu"
-                        : ""
-                    }`}
-                  >
-                    Acerca de
-                  </Link>
-                </NavigationMenuLink>
-              </NavigationMenuItem>
-              <NavigationMenuItem>
-                <NavigationMenuLink asChild>
-                  <Link
-                    href="/museo"
-                    className={`navbar-link hover:text-primary transition-all px-3 py-2 rounded-lg ${
-                      pathname.startsWith("/museo") ? "elegant-active-menu" : ""
-                    }`}
-                  >
-                    Museo Virtual
-                  </Link>
-                </NavigationMenuLink>
-              </NavigationMenuItem>
+            <NavigationMenuList className="text-sm font-medium relative items-center flex h-full">
+              {menuLinks.map((link) => {
+                const isActive = pathname.startsWith(link.href);
+                return (
+                  <NavigationMenuItem key={link.href} className="relative">
+                    <NavigationMenuLink asChild>
+                      <Link
+                        href={link.href}
+                        className={`navbar-link hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-all px-3 py-2 rounded-lg flex flex-col items-center ${isActive ? "text-primary font-bold" : ""}`}
+                        style={{ position: "relative", zIndex: 1 }}
+                        aria-current={isActive ? "page" : undefined}
+                        onClick={
+                          isActive ? (e) => e.preventDefault() : undefined
+                        }
+                      >
+                        {/* Punto animado arriba del texto, espacio siempre reservado */}
+                        <span className="block h-3 mb-1 w-full flex items-center justify-center">
+                          <motion.span
+                            layoutId="menu-dot-global"
+                            className={
+                              isActive
+                                ? "inline-block w-2 h-2 rounded-full bg-primary"
+                                : "inline-block w-2 h-2 rounded-full bg-gray-400/70"
+                            }
+                            initial={false}
+                            animate={
+                              isActive
+                                ? { scale: 1, opacity: 1 }
+                                : { scale: 0.7, opacity: 0.5 }
+                            }
+                            transition={{
+                              type: "spring",
+                              stiffness: 120,
+                              damping: 18,
+                              mass: 0.7,
+                              duration: 0.45,
+                            }}
+                            style={{ display: "inline-block" }}
+                          />
+                        </span>
+                        {link.label}
+                      </Link>
+                    </NavigationMenuLink>
+                  </NavigationMenuItem>
+                );
+              })}
             </NavigationMenuList>
           </NavigationMenu>
           {/* Usuario autenticado o botón de login */}
@@ -341,70 +352,135 @@ export default function MainMenu({ onSubirArchivo }) {
                             </div>
                           )}
                         </div>
-                        <NavigationMenuLink asChild>
-                          <Link
-                            href="/perfil"
-                            className="block px-3 py-2 rounded-md hover:bg-muted hover:text-primary transition-all text-sm"
-                          >
-                            Mi perfil
-                          </Link>
-                        </NavigationMenuLink>
-                        <NavigationMenuLink asChild>
-                          <Link
-                            href="/mis-obras"
-                            className="block px-3 py-2 rounded-md hover:bg-muted hover:text-primary transition-all text-sm"
-                          >
-                            Mis Obras
-                          </Link>
-                        </NavigationMenuLink>
-                        <NavigationMenuLink asChild>
-                          <Link
-                            href="/mis-salas"
-                            className="block px-3 py-2 rounded-md hover:bg-muted hover:text-primary transition-all text-sm"
-                          >
-                            Mis Salas
-                          </Link>
-                        </NavigationMenuLink>
-
-                        {/* DESKTOP: Fusionar paneles de moderación y administración */}
-                        {(isModerator || isAdmin) && (
-                          <>
+                        {/* En el dropdown del usuario: */}
+                        <div className="flex flex-col gap-2">
+                          <div className="px-3 py-2 border-b border-border">
+                            <p className="text-sm font-medium text-foreground">
+                              {userProfile?.name || user?.name || "Usuario"}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {user?.email}
+                            </p>
+                            {userProfile?.roles && (
+                              <div className="flex gap-1 mt-1">
+                                {userProfile.roles.map((role, index) => (
+                                  <span
+                                    key={index}
+                                    className={`text-xs px-2 py-1 rounded-full ${
+                                      role === "admin"
+                                        ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
+                                        : role === "moderator"
+                                          ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
+                                          : "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+                                    }`}
+                                  >
+                                    {role}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                            {/* Información de la sesión */}
+                            {session && (
+                              <div className="mt-2 pt-2 border-t border-border">
+                                <div className="flex items-center justify-between text-xs">
+                                  <span className="text-muted-foreground">
+                                    Sesión:
+                                  </span>
+                                  <span
+                                    className={`font-medium ${
+                                      isSessionExpiringSoon
+                                        ? "text-yellow-600 dark:text-yellow-400"
+                                        : isSessionExpired
+                                          ? "text-red-600 dark:text-red-400"
+                                          : "text-green-600 dark:text-green-400"
+                                    }`}
+                                  >
+                                    {sessionDuration}
+                                  </span>
+                                </div>
+                                {isSessionExpiringSoon && (
+                                  <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
+                                    ⚠️ Sesión por expirar
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                          {/* Links principales del usuario */}
+                          {[
+                            { href: "/perfil", label: "Mi perfil" },
+                            { href: "/mis-obras", label: "Mis Obras" },
+                            { href: "/mis-salas", label: "Mis Salas" },
+                            {
+                              href: "/admin/usuarios",
+                              label: "Gestionar Usuarios",
+                              admin: true,
+                            },
+                            {
+                              href: "/admin/logs",
+                              label: "Ver Logs",
+                              admin: true,
+                            },
+                            {
+                              href: "/admin/healthcheck",
+                              label: "Estado del sistema",
+                              admin: true,
+                            },
+                          ]
+                            .filter(
+                              (link) => !link.admin || isModerator || isAdmin
+                            )
+                            .map((link) => {
+                              const isActive = pathname.startsWith(link.href);
+                              return (
+                                <Link
+                                  key={link.href}
+                                  href={link.href}
+                                  className="block px-3 py-2 rounded-md hover:bg-muted hover:text-primary transition-all text-sm relative pl-6"
+                                  aria-current={isActive ? "page" : undefined}
+                                  onClick={
+                                    isActive
+                                      ? (e) => e.preventDefault()
+                                      : undefined
+                                  }
+                                >
+                                  <span className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center">
+                                    <motion.span
+                                      layoutId="menu-dot-global"
+                                      className={
+                                        isActive
+                                          ? "inline-block w-2 h-2 rounded-full bg-primary"
+                                          : "inline-block w-2 h-2 rounded-full bg-gray-400/70"
+                                      }
+                                      initial={false}
+                                      animate={
+                                        isActive
+                                          ? { scale: 1, opacity: 1 }
+                                          : { scale: 0.7, opacity: 0.5 }
+                                      }
+                                      transition={{
+                                        type: "spring",
+                                        stiffness: 120,
+                                        damping: 18,
+                                        mass: 0.7,
+                                        duration: 0.45,
+                                      }}
+                                      style={{ display: "inline-block" }}
+                                    />
+                                  </span>
+                                  {link.label}
+                                </Link>
+                              );
+                            })}
+                          {/* Panel de Gestión solo como título, sin punto ni indicador */}
+                          {(isModerator || isAdmin) && (
                             <div className="px-3 py-1 border-t border-border">
                               <p className="text-xs text-muted-foreground font-medium">
                                 Panel de Gestión
                               </p>
                             </div>
-                            <NavigationMenuLink asChild>
-                              <Link
-                                href="/admin/usuarios"
-                                className="block px-3 py-2 rounded-md hover:bg-muted hover:text-primary transition-all text-sm"
-                              >
-                                Gestionar Usuarios
-                              </Link>
-                            </NavigationMenuLink>
-                            {isAdmin && (
-                              <>
-                                <NavigationMenuLink asChild>
-                                  <Link
-                                    href="/admin/logs"
-                                    className="block px-3 py-2 rounded-md hover:bg-muted hover:text-primary transition-all text-sm"
-                                  >
-                                    Ver Logs
-                                  </Link>
-                                </NavigationMenuLink>
-                                <NavigationMenuLink asChild>
-                                  <Link
-                                    href="/admin/healthcheck"
-                                    className="block px-3 py-2 rounded-md hover:bg-muted hover:text-primary transition-all text-sm"
-                                  >
-                                    Estado del sistema
-                                  </Link>
-                                </NavigationMenuLink>
-                              </>
-                            )}
-                          </>
-                        )}
-
+                          )}
+                        </div>
                         <button
                           onClick={() => signOut()}
                           className="block w-full text-left px-3 py-2 rounded-md transition-all text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-950/30 focus:outline-none focus:ring-2 focus:ring-red-500/20"
@@ -522,206 +598,110 @@ export default function MainMenu({ onSubirArchivo }) {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="px-1 py-1 space-y-1 overflow-y-auto max-h-[80vh]">
-                {/* Enlaces principales (solo una vez cada uno, sin dropdowns) */}
                 <Link
                   href="/"
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`navbar-link block py-1 text-sm font-medium hover:text-primary transition-colors ${
-                    pathname === "/" ? "elegant-active-menu" : ""
-                  }`}
+                  className="navbar-link block py-1 text-sm font-medium hover:text-primary transition-colors"
                 >
                   Inicio
                 </Link>
                 <Link
-                  href="/museo"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`navbar-link block py-1 text-sm font-medium hover:text-primary transition-colors ${
-                    pathname.startsWith("/museo") ? "elegant-active-menu" : ""
-                  }`}
-                >
-                  Museo Virtual
-                </Link>
-                <Link
                   href="/galeria"
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`navbar-link block py-1 text-sm font-medium hover:text-primary transition-colors ${
-                    pathname.startsWith("/galeria") ? "elegant-active-menu" : ""
-                  }`}
+                  className="navbar-link block py-1 text-sm font-medium hover:text-primary transition-colors"
                 >
                   Galería
                 </Link>
                 <Link
                   href="/acerca-de"
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`navbar-link block py-1 text-sm font-medium hover:text-primary transition-colors ${
-                    pathname.startsWith("/acerca-de")
-                      ? "elegant-active-menu"
-                      : ""
-                  }`}
+                  className="navbar-link block py-1 text-sm font-medium hover:text-primary transition-colors"
                 >
                   Acerca de
                 </Link>
+                <Link
+                  href="/museo"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="navbar-link block py-1 text-sm font-medium hover:text-primary transition-colors"
+                >
+                  Museo Virtual
+                </Link>
 
-                {/* Separador */}
-                <div className="border-t border-gray-200 dark:border-gray-700 my-2"></div>
-
-                {/* Área de usuario */}
-                {isAuthenticated ? (
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 py-1">
-                      <img
-                        src={
-                          userProfile?.image ||
-                          user?.image ||
-                          "/assets/default-avatar.svg"
-                        }
-                        alt={userProfile?.name || user?.name || "Usuario"}
-                        className="w-8 h-8 rounded-full object-cover border-2 border-primary/20"
-                        onError={(e) => {
-                          e.target.src = "/assets/default-avatar.svg";
-                        }}
-                      />
-                      <div>
-                        <p className="text-xs font-medium">
-                          {userProfile?.name || user?.name || "Usuario"}
-                        </p>
-                        <p className="text-[10px] text-muted-foreground">
-                          {user?.email}
-                        </p>
-                        {userProfile?.roles && (
-                          <div className="flex gap-1 mt-0.5">
-                            {userProfile.roles.map((role, index) => (
-                              <span
-                                key={index}
-                                className={`text-[10px] px-1 py-0.5 rounded-full ${
-                                  role === "admin"
-                                    ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
-                                    : role === "moderator"
-                                      ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
-                                      : "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
-                                }`}
-                              >
-                                {role}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                        {/* Información de la sesión */}
-                        {session && (
-                          <div className="mt-1 pt-1 border-t border-border">
-                            <div className="flex items-center justify-between text-[10px]">
-                              <span className="text-muted-foreground">
-                                Sesión:
-                              </span>
-                              <span
-                                className={`font-medium ${
-                                  isSessionExpiringSoon
-                                    ? "text-yellow-600 dark:text-yellow-400"
-                                    : isSessionExpired
-                                      ? "text-red-600 dark:text-red-400"
-                                      : "text-green-600 dark:text-green-400"
-                                }`}
-                              >
-                                {sessionDuration}
-                              </span>
-                            </div>
-                            {isSessionExpiringSoon && (
-                              <p className="text-[10px] text-yellow-600 dark:text-yellow-400 mt-0.5">
-                                ⚠️ Sesión por expirar
-                              </p>
-                            )}
-                          </div>
-                        )}
-                      </div>
+                {/* Si el usuario está autenticado, mostrar opciones de perfil */}
+                {isAuthenticated && (
+                  <>
+                    <div className="px-3 py-1 border-t border-border">
+                      <p className="text-xs text-muted-foreground font-medium">
+                        Mi Cuenta
+                      </p>
                     </div>
                     <Link
                       href="/perfil"
                       onClick={() => setMobileMenuOpen(false)}
-                      className="block py-1 text-sm hover:text-primary transition-colors"
+                      className="block px-3 py-2 rounded-md hover:bg-muted hover:text-primary transition-all text-sm"
                     >
                       Mi perfil
                     </Link>
                     <Link
                       href="/mis-obras"
                       onClick={() => setMobileMenuOpen(false)}
-                      className="block py-1 text-sm hover:text-primary transition-colors"
+                      className="block px-3 py-2 rounded-md hover:bg-muted hover:text-primary transition-all text-sm"
                     >
                       Mis Obras
                     </Link>
                     <Link
                       href="/mis-salas"
                       onClick={() => setMobileMenuOpen(false)}
-                      className="block py-1 text-sm hover:text-primary transition-colors"
+                      className="block px-3 py-2 rounded-md hover:bg-muted hover:text-primary transition-all text-sm"
                     >
                       Mis Salas
                     </Link>
-                    {/* Opciones para moderadores y administradores */}
-                    {(isModerator || isAdmin) && (
+                  </>
+                )}
+
+                {/* Si el usuario es moderador o administrador, mostrar opciones de gestión */}
+                {(isModerator || isAdmin) && (
+                  <>
+                    <div className="px-3 py-1 border-t border-border">
+                      <p className="text-xs text-muted-foreground font-medium">
+                        Panel de Gestión
+                      </p>
+                    </div>
+                    <Link
+                      href="/admin/usuarios"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block px-3 py-2 rounded-md hover:bg-muted hover:text-primary transition-all text-sm"
+                    >
+                      Gestionar Usuarios
+                    </Link>
+                    {isAdmin && (
                       <>
-                        <div className="px-2 py-0.5 border-t border-border">
-                          <p className="text-xs text-muted-foreground font-medium">
-                            Panel de Gestión
-                          </p>
-                        </div>
                         <Link
-                          href="/admin/usuarios"
+                          href="/admin/logs"
                           onClick={() => setMobileMenuOpen(false)}
-                          className="block py-1 text-sm hover:text-primary transition-colors"
+                          className="block px-3 py-2 rounded-md hover:bg-muted hover:text-primary transition-all text-sm"
                         >
-                          Gestionar Usuarios
+                          Ver Logs
                         </Link>
-                        {isAdmin && (
-                          <>
-                            <Link
-                              href="/admin/logs"
-                              onClick={() => setMobileMenuOpen(false)}
-                              className="block py-1 text-sm hover:text-primary transition-colors"
-                            >
-                              Ver Logs
-                            </Link>
-                            <Link
-                              href="/admin/healthcheck"
-                              onClick={() => setMobileMenuOpen(false)}
-                              className="block py-1 text-sm hover:text-primary transition-colors"
-                            >
-                              Estado del sistema
-                            </Link>
-                          </>
-                        )}
+                        <Link
+                          href="/admin/healthcheck"
+                          onClick={() => setMobileMenuOpen(false)}
+                          className="block px-3 py-2 rounded-md hover:bg-muted hover:text-primary transition-all text-sm"
+                        >
+                          Estado del sistema
+                        </Link>
                       </>
                     )}
-                    <button
-                      onClick={() => {
-                        signOut();
-                        setMobileMenuOpen(false);
-                      }}
-                      className="block w-full text-left py-1 text-sm font-medium text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors"
-                    >
-                      Cerrar sesión
-                    </button>
-                  </div>
-                ) : (
-                  <div className="space-y-1">
-                    <button
-                      onClick={() => {
-                        handleAuthClick("login");
-                        setMobileMenuOpen(false);
-                      }}
-                      className="block w-full text-left py-1 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
-                    >
-                      Iniciar sesión
-                    </button>
-                    <button
-                      onClick={() => {
-                        handleAuthClick("register");
-                        setMobileMenuOpen(false);
-                      }}
-                      className="block w-full text-left py-1 text-sm font-medium hover:text-primary transition-colors"
-                    >
-                      Registrarse
-                    </button>
-                  </div>
+                  </>
                 )}
+
+                {/* Botón de cierre de sesión */}
+                <button
+                  onClick={() => signOut()}
+                  className="block w-full text-left px-3 py-2 rounded-md transition-all text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-950/30 focus:outline-none focus:ring-2 focus:ring-red-500/20"
+                >
+                  Cerrar sesión
+                </button>
               </div>
             </motion.div>
           </motion.div>
