@@ -228,9 +228,6 @@ export async function PUT(req, context) {
   }
 }
 
-// PATCH /api/usuarios/[id] - Alias de PUT para compatibilidad
-export const PATCH = PUT;
-
 // POST /api/usuarios/[id]/collection - Agregar mural a la colección personal
 export async function POST(req, context) {
   try {

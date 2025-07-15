@@ -22,6 +22,23 @@ import {
   MoreHorizontal,
   Target,
 } from "lucide-react";
+
+// Mapeo de iconos para evitar uso de eval()
+const ICON_MAP = {
+  Brush: Brush,
+  Eraser: Eraser,
+  Droplets: Droplets,
+  Sparkles: Sparkles,
+  Square: Square,
+  Flame: Flame,
+  Circle: Circle,
+  Grid3X3: Grid3X3,
+  Minus: Minus,
+  Waves: Waves,
+  Zap: Zap,
+  MoreHorizontal: MoreHorizontal,
+  Target: Target,
+};
 import toast from "react-hot-toast";
 import { DatePicker } from "@/components/ui/date-picker-new";
 import { useDropzone } from "react-dropzone";
@@ -29,6 +46,20 @@ import Palette from "./tools/Palette";
 import BrushSelector from "./tools/BrushSelector";
 import BackgroundSelector from "./tools/BackgroundSelector";
 import ToolActions from "./tools/ToolActions";
+// Importar las funciones de dibujo
+import {
+  drawAt as drawAtUtil,
+  hexToRgb as hexToRgbUtil,
+  BRUSH_TYPES,
+  BRUSH_CONFIGS,
+  DEFAULT_COLORS,
+  saveCanvasToHistory,
+  restoreCanvasFromHistory,
+  clearCanvas as clearCanvasUtil,
+  initializeCanvas,
+  loadImageToCanvas,
+  getCanvasCoordinates,
+} from "@/utils/drawingFunctions";
 
 // Estilos CSS para animaciones del cursor
 const cursorAnimationStyles = `
@@ -98,55 +129,22 @@ export default function CanvasEditor({
   }, []);
 
   // Funciones de utilidad para manejo de colores
-  const hexToRgb = (hex) => {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result
-      ? {
-          r: parseInt(result[1], 16),
-          g: parseInt(result[2], 16),
-          b: parseInt(result[3], 16),
-        }
-      : null;
-  };
+  const hexToRgb = hexToRgbUtil;
 
   const rgbToHex = (r, g, b) => {
     return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
   };
 
-  const colors = [
-    "#000000",
-    "#FFFFFF",
-    "#FF0000",
-    "#00FF00",
-    "#0000FF",
-    "#FFFF00",
-    "#FF00FF",
-    "#00FFFF",
-    "#FFA500",
-    "#800080",
-    "#FFC0CB",
-    "#A52A2A",
-    "#808080",
-    "#000080",
-    "#008000",
-  ];
+  const colors = DEFAULT_COLORS;
 
-  const tools = [
-    { id: "brush", name: "Lápiz simple", icon: Brush },
-    { id: "brush-soft", name: "Lápiz suave", icon: Sparkles },
-    { id: "glow", name: "Glow", icon: Zap },
-    { id: "eraser", name: "Borrador", icon: Eraser },
-    { id: "carboncillo", name: "Carboncillo", icon: Scissors },
-    { id: "acuarela", name: "Acuarela", icon: Droplets },
-    { id: "tiza", name: "Tiza", icon: Square },
-    { id: "marcador", name: "Marcador", icon: PaintBucket },
-    { id: "oleo", name: "Óleo", icon: PaletteIcon },
-    { id: "pixel", name: "Pixel", icon: Grid3X3 },
-    { id: "neon", name: "Neón", icon: Zap },
-    { id: "puntos", name: "Puntos", icon: Target },
-    { id: "lineas", name: "Líneas", icon: MoreHorizontal },
-    { id: "fuego", name: "Fuego", icon: Flame },
-  ];
+  const tools = BRUSH_CONFIGS.filter(
+    (config) => config.category === "basic" || config.category === "artistic"
+  ).map((config) => ({
+    id: config.type,
+    name: config.name,
+    icon:
+      config.icon === "Palette" ? PaletteIcon : ICON_MAP[config.icon] || Brush,
+  }));
 
   useEffect(() => {
     if (isOpen && canvasRef.current) {
@@ -184,52 +182,43 @@ export default function CanvasEditor({
   const saveToHistory = () => {
     if (!canvasRef.current) return;
     const canvas = canvasRef.current;
-    try {
-      const newHistory = canvasHistory.slice(0, historyIndex + 1);
-      newHistory.push(canvas.toDataURL());
-      setCanvasHistory(newHistory);
-      setHistoryIndex(newHistory.length - 1);
-    } catch (e) {
-      alert(
-        "No se puede exportar el canvas porque contiene imágenes externas sin CORS. Guarda tu trabajo como imagen o usa solo imágenes propias."
-      );
-    }
+    const { newHistory, newIndex } = saveCanvasToHistory(
+      canvas,
+      canvasHistory,
+      historyIndex
+    );
+    setCanvasHistory(newHistory);
+    setHistoryIndex(newIndex);
   };
 
   const undo = () => {
-    if (historyIndex > 0) {
-      setHistoryIndex(historyIndex - 1);
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext("2d");
-      const img = new Image();
-      img.onload = () => {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0);
-      };
-      img.src = canvasHistory[historyIndex - 1];
-    }
+    if (!canvasRef.current) return;
+    const canvas = canvasRef.current;
+    const { newHistory, newIndex } = undoCanvas(
+      canvas,
+      canvasHistory,
+      historyIndex
+    );
+    setCanvasHistory(newHistory);
+    setHistoryIndex(newIndex);
   };
 
   const redo = () => {
-    if (historyIndex < canvasHistory.length - 1) {
-      setHistoryIndex(historyIndex + 1);
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext("2d");
-      const img = new Image();
-      img.onload = () => {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0);
-      };
-      img.src = canvasHistory[historyIndex + 1];
-    }
+    if (!canvasRef.current) return;
+    const canvas = canvasRef.current;
+    const { newHistory, newIndex } = redoCanvas(
+      canvas,
+      canvasHistory,
+      historyIndex
+    );
+    setCanvasHistory(newHistory);
+    setHistoryIndex(newIndex);
   };
 
   const clearCanvas = () => {
     if (!canvasRef.current) return;
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-    ctx.fillStyle = "#FFFFFF";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    clearCanvasUtil(canvas);
     saveToHistory();
   };
 
@@ -312,362 +301,8 @@ export default function CanvasEditor({
     const ctx = canvas.getContext("2d");
     const type = brushTypeRef.current;
     const brushColor = brushColorRef.current;
-    const rgb = hexToRgb(brushColor);
 
-    // Log de depuración para saber qué pincel se está usando
-
-    // Cada pincel tiene su propio efecto visual
-    switch (type) {
-      // Lápiz simple: línea continua, sin efectos especiales
-      case "brush": {
-        ctx.globalCompositeOperation = "source-over";
-        ctx.strokeStyle = brushColor;
-        ctx.lineWidth = brushSize;
-        ctx.lineCap = "round";
-        ctx.lineJoin = "round";
-        ctx.shadowBlur = 0;
-        ctx.globalAlpha = 1;
-        if (lastPoint) {
-          ctx.beginPath();
-          ctx.moveTo(lastPoint.x, lastPoint.y);
-          ctx.lineTo(x, y);
-          ctx.stroke();
-        } else {
-          ctx.beginPath();
-          ctx.arc(x, y, brushSize / 2, 0, Math.PI * 2);
-          ctx.fillStyle = brushColor;
-          ctx.fill();
-        }
-        break;
-      }
-      // Lápiz suave: igual que el simple pero con sombra difusa (glow)
-      case "brush-soft": {
-        ctx.globalCompositeOperation = "source-over";
-        ctx.strokeStyle = brushColor;
-        ctx.lineWidth = brushSize;
-        ctx.lineCap = "round";
-        ctx.lineJoin = "round";
-        ctx.shadowColor = brushColor;
-        ctx.shadowBlur = brushSize * 1.2;
-        ctx.globalAlpha = 1;
-        if (lastPoint) {
-          ctx.beginPath();
-          ctx.moveTo(lastPoint.x, lastPoint.y);
-          ctx.lineTo(x, y);
-          ctx.stroke();
-        } else {
-          ctx.beginPath();
-          ctx.arc(x, y, brushSize / 2, 0, Math.PI * 2);
-          ctx.fillStyle = brushColor;
-          ctx.shadowColor = brushColor;
-          ctx.shadowBlur = brushSize * 1.2;
-          ctx.fill();
-        }
-        ctx.shadowBlur = 0;
-        break;
-      }
-      // Glow: resplandor intenso, modo lighter, halo extenso
-      case "glow": {
-        ctx.globalCompositeOperation = "lighter";
-        ctx.strokeStyle = brushColor;
-        ctx.lineWidth = brushSize;
-        ctx.lineCap = "round";
-        ctx.lineJoin = "round";
-        ctx.shadowColor = brushColor;
-        ctx.shadowBlur = brushSize * 2.5;
-        ctx.globalAlpha = 0.85;
-        if (lastPoint) {
-          ctx.beginPath();
-          ctx.moveTo(lastPoint.x, lastPoint.y);
-          ctx.lineTo(x, y);
-          ctx.stroke();
-        } else {
-          ctx.beginPath();
-          ctx.arc(x, y, brushSize / 2, 0, Math.PI * 2);
-          ctx.fillStyle = brushColor;
-          ctx.shadowColor = brushColor;
-          ctx.shadowBlur = brushSize * 2.5;
-          ctx.fill();
-        }
-        ctx.shadowBlur = 0;
-        ctx.globalAlpha = 1;
-        ctx.globalCompositeOperation = "source-over";
-        break;
-      }
-      // Borrador
-      case "eraser": {
-        ctx.globalCompositeOperation = "destination-out";
-        ctx.globalAlpha = 0.8;
-        ctx.lineWidth = brushSize;
-        ctx.lineCap = "round";
-        if (lastPoint) {
-          ctx.beginPath();
-          ctx.moveTo(lastPoint.x, lastPoint.y);
-          ctx.lineTo(x, y);
-          ctx.stroke();
-        }
-        ctx.globalAlpha = 1;
-        ctx.globalCompositeOperation = "source-over";
-        break;
-      }
-      // Carboncillo
-      case "carboncillo": {
-        ctx.globalCompositeOperation = "multiply";
-        for (let offset = 0; offset < 5; offset++) {
-          const offsetDist = offset * 0.5;
-          const alpha = 0.22 - offset * 0.04;
-          ctx.strokeStyle = `rgba(${rgb.r},${rgb.g},${rgb.b},${alpha})`;
-          ctx.lineWidth = Math.max(1, brushSize - offset);
-          ctx.lineCap = "round";
-          if (lastPoint) {
-            const angle =
-              Math.atan2(y - lastPoint.y, x - lastPoint.x) + Math.PI / 2;
-            const offsetX = Math.cos(angle) * offsetDist;
-            const offsetY = Math.sin(angle) * offsetDist;
-            ctx.beginPath();
-            ctx.moveTo(lastPoint.x + offsetX, lastPoint.y + offsetY);
-            ctx.lineTo(x + offsetX, y + offsetY);
-            ctx.stroke();
-          }
-        }
-        // Textura granular
-        for (let i = 0; i < Math.floor(brushSize * 1.2); i++) {
-          const grainX = x + (Math.random() - 0.5) * brushSize * 1.2;
-          const grainY = y + (Math.random() - 0.5) * brushSize * 1.2;
-          ctx.globalAlpha = 0.1 + Math.random() * 0.15;
-          ctx.fillStyle = brushColor;
-          ctx.beginPath();
-          ctx.arc(grainX, grainY, Math.random() * 1.2, 0, Math.PI * 2);
-          ctx.fill();
-        }
-        ctx.globalAlpha = 1;
-        ctx.globalCompositeOperation = "source-over";
-        break;
-      }
-      // Acuarela
-      case "acuarela": {
-        ctx.globalCompositeOperation = "multiply";
-        for (let ring = 0; ring < 4; ring++) {
-          const ringRadius = brushSize * (0.7 + ring * 0.5);
-          const baseAlpha = 0.18 - ring * 0.03;
-          const gradient = ctx.createRadialGradient(x, y, 0, x, y, ringRadius);
-          gradient.addColorStop(
-            0,
-            `rgba(${rgb.r},${rgb.g},${rgb.b},${baseAlpha})`
-          );
-          gradient.addColorStop(1, `rgba(${rgb.r},${rgb.g},${rgb.b},0)`);
-          ctx.fillStyle = gradient;
-          ctx.beginPath();
-          ctx.arc(x, y, ringRadius, 0, Math.PI * 2);
-          ctx.fill();
-        }
-        ctx.globalCompositeOperation = "source-over";
-        break;
-      }
-      // Tiza
-      case "tiza": {
-        ctx.globalCompositeOperation = "screen";
-        ctx.strokeStyle = brushColor;
-        ctx.lineWidth = brushSize;
-        ctx.lineCap = "round";
-        ctx.globalAlpha = 0.45;
-        if (lastPoint) {
-          ctx.beginPath();
-          ctx.moveTo(lastPoint.x, lastPoint.y);
-          ctx.lineTo(x, y);
-          ctx.stroke();
-        }
-        // Polvillo
-        for (let i = 0; i < Math.floor(brushSize * 5); i++) {
-          const dustX = x + (Math.random() - 0.5) * brushSize * 2;
-          const dustY = y + (Math.random() - 0.5) * brushSize * 2;
-          ctx.globalAlpha = 0.1 + Math.random() * 0.15;
-          ctx.fillStyle = brushColor;
-          ctx.beginPath();
-          ctx.arc(dustX, dustY, Math.random() * 1.2, 0, Math.PI * 2);
-          ctx.fill();
-        }
-        ctx.globalAlpha = 1;
-        ctx.globalCompositeOperation = "source-over";
-        break;
-      }
-      // Marcador
-      case "marcador": {
-        ctx.globalCompositeOperation = "multiply";
-        ctx.strokeStyle = brushColor;
-        ctx.lineWidth = brushSize * 1.3;
-        ctx.lineCap = "square";
-        ctx.globalAlpha = 0.65;
-        if (lastPoint) {
-          ctx.beginPath();
-          ctx.moveTo(lastPoint.x, lastPoint.y);
-          ctx.lineTo(x, y);
-          ctx.stroke();
-        } else {
-          ctx.fillRect(
-            x - brushSize / 2,
-            y - brushSize / 2,
-            brushSize,
-            brushSize * 1.1
-          );
-        }
-        ctx.globalAlpha = 1;
-        ctx.globalCompositeOperation = "source-over";
-        break;
-      }
-      // Oleo
-      case "oleo": {
-        ctx.globalCompositeOperation = "source-over";
-        if (lastPoint) {
-          const distance = Math.sqrt(
-            (x - lastPoint.x) ** 2 + (y - lastPoint.y) ** 2
-          );
-          const steps = Math.max(1, Math.ceil(distance / 3));
-          for (let i = 0; i <= steps; i++) {
-            const t = i / steps;
-            const interpX = lastPoint.x + (x - lastPoint.x) * t;
-            const interpY = lastPoint.y + (y - lastPoint.y) * t;
-            ctx.globalAlpha = 0.7;
-            ctx.fillStyle = brushColor;
-            ctx.beginPath();
-            ctx.arc(interpX, interpY, brushSize * 0.45, 0, Math.PI * 2);
-            ctx.fill();
-            // Textura
-            ctx.globalAlpha = 0.22;
-            ctx.strokeStyle = "#fff";
-            ctx.lineWidth = 1 + Math.random() * 1.2;
-            ctx.beginPath();
-            ctx.moveTo(interpX, interpY);
-            ctx.lineTo(
-              interpX + Math.random() * 5 - 2.5,
-              interpY + Math.random() * 5 - 2.5
-            );
-            ctx.stroke();
-          }
-        }
-        ctx.globalAlpha = 1;
-        break;
-      }
-      // Pixel
-      case "pixel": {
-        ctx.globalCompositeOperation = "source-over";
-        const pixelSize = Math.max(2, Math.round(brushSize / 2));
-        const gridX = Math.floor(x / pixelSize) * pixelSize;
-        const gridY = Math.floor(y / pixelSize) * pixelSize;
-        ctx.fillStyle = brushColor;
-        ctx.fillRect(gridX, gridY, pixelSize, pixelSize);
-        break;
-      }
-      // Neon
-      case "neon": {
-        ctx.globalCompositeOperation = "lighter";
-        ctx.strokeStyle = brushColor;
-        ctx.lineWidth = brushSize * 2.1;
-        ctx.shadowColor = brushColor;
-        ctx.shadowBlur = brushSize * 1.4;
-        ctx.globalAlpha = 0.7;
-        ctx.beginPath();
-        ctx.arc(x, y, brushSize * 0.9, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.shadowBlur = 0;
-        ctx.globalAlpha = 1;
-        ctx.globalCompositeOperation = "source-over";
-        break;
-      }
-      // Puntillismo
-      case "puntos": {
-        ctx.globalCompositeOperation = "source-over";
-        for (let i = 0; i < Math.floor(brushSize * 2); i++) {
-          const angle = Math.random() * Math.PI * 2;
-          const radius = Math.random() * brushSize * 0.7;
-          const dotX = x + Math.cos(angle) * radius;
-          const dotY = y + Math.sin(angle) * radius;
-          ctx.globalAlpha = 0.5 + Math.random() * 0.5;
-          ctx.fillStyle = brushColor;
-          ctx.beginPath();
-          ctx.arc(dotX, dotY, Math.max(1, brushSize * 0.18), 0, Math.PI * 2);
-          ctx.fill();
-        }
-        ctx.globalAlpha = 1;
-        break;
-      }
-      // Lineas (grabado)
-      case "lineas": {
-        ctx.globalCompositeOperation = "source-over";
-        ctx.strokeStyle = brushColor;
-        ctx.lineCap = "round";
-        for (let dir = 0; dir < 4; dir++) {
-          const angle = (dir * Math.PI) / 4;
-          const lineCount = Math.floor(brushSize / 4);
-          ctx.globalAlpha = 0.5 - dir * 0.1;
-          ctx.lineWidth = 1.2;
-          for (let i = 0; i < lineCount; i++) {
-            const offset = (i - lineCount / 2) * 2;
-            const length = brushSize * (0.8 + Math.random() * 0.4);
-            const perpAngle = angle + Math.PI / 2;
-            const startX =
-              x + Math.cos(perpAngle) * offset - (Math.cos(angle) * length) / 2;
-            const startY =
-              y + Math.sin(perpAngle) * offset - (Math.sin(angle) * length) / 2;
-            const endX = startX + Math.cos(angle) * length;
-            const endY = startY + Math.sin(angle) * length;
-            ctx.beginPath();
-            ctx.moveTo(startX, startY);
-            ctx.lineTo(endX, endY);
-            ctx.stroke();
-          }
-        }
-        ctx.globalAlpha = 1;
-        break;
-      }
-      // Fuego
-      case "fuego": {
-        ctx.globalCompositeOperation = "lighter";
-        for (let layer = 0; layer < 3; layer++) {
-          const flameColor = `rgba(255,${140 + layer * 40},0,${
-            0.3 - layer * 0.08
-          })`;
-          const flameSize = brushSize * (1.2 + layer * 0.3);
-          ctx.beginPath();
-          ctx.ellipse(x, y, flameSize, flameSize * 1.5, 0, 0, Math.PI * 2);
-          ctx.fillStyle = flameColor;
-          ctx.fill();
-        }
-        // Chispas
-        for (let i = 0; i < Math.floor(brushSize / 2); i++) {
-          ctx.globalAlpha = 0.7;
-          ctx.fillStyle = "yellow";
-          ctx.beginPath();
-          ctx.arc(
-            x + (Math.random() - 0.5) * brushSize * 2,
-            y - Math.random() * brushSize * 2,
-            Math.random() * 2 + 1,
-            0,
-            Math.PI * 2
-          );
-          ctx.fill();
-        }
-        ctx.globalAlpha = 1;
-        ctx.globalCompositeOperation = "source-over";
-        break;
-      }
-      // Default: pincel simple
-      default: {
-        ctx.globalCompositeOperation = "source-over";
-        ctx.strokeStyle = brushColor;
-        ctx.lineWidth = brushSize;
-        ctx.lineCap = "round";
-        ctx.lineJoin = "round";
-        ctx.globalAlpha = 1;
-        if (lastPoint) {
-          ctx.beginPath();
-          ctx.moveTo(lastPoint.x, lastPoint.y);
-          ctx.lineTo(x, y);
-          ctx.stroke();
-        }
-        break;
-      }
-    }
+    drawAtUtil(x, y, canvas, ctx, type, brushColor, brushSize, lastPoint);
     setLastPoint({ x, y });
   };
 

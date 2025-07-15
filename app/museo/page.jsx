@@ -2,6 +2,11 @@
 import { useState, useEffect } from "react";
 import GalleryRoom from "../../components/GalleryRoom.jsx";
 import { PageLoader, SectionLoader } from "../../components/LoadingSpinner";
+import AnimatedBackground from "../../components/shared/AnimatedBackground";
+import { Plus } from "lucide-react";
+import { useSession } from "next-auth/react";
+import SalaCard from "../../components/ui/SalaCard";
+import { useRouter } from "next/navigation";
 
 /**
  * La prueba más simple posible. Si esto no se ve, el problema está
@@ -12,6 +17,10 @@ export default function MuseoPage() {
   const [salas, setSalas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [search, setSearch] = useState("");
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === "ADMIN";
+  const router = useRouter();
 
   useEffect(() => {
     const cargarSalas = async () => {
@@ -25,6 +34,7 @@ export default function MuseoPage() {
           nombre: sala.nombre,
           descripcion: `Sala con ${sala._count.murales} murales`,
           imagen:
+            sala.imagenPortada ||
             sala.murales[0]?.mural?.url_imagen ||
             "/assets/artworks/cuadro1.webp",
           color: getColorBySalaId(sala.id),
@@ -48,10 +58,10 @@ export default function MuseoPage() {
   }, []);
 
   const getColorBySalaId = (id) =>
-    ({ 1: "#e3f2fd", 2: "#f3e5f5", 3: "#e8f5e8", 4: "#fff3e0" }[id] ||
-    "#f5f5f5");
+    ({ 1: "#e3f2fd", 2: "#f3e5f5", 3: "#e8f5e8", 4: "#fff3e0" })[id] ||
+    "#f5f5f5";
   const getIconBySalaId = (id) =>
-    ({ 1: "🎨", 2: "🖼️", 3: "💻", 4: "🎭" }[id] || "🏛️");
+    ({ 1: "🎨", 2: "🖼️", 3: "💻", 4: "🎭" })[id] || "🏛️";
 
   const getSalasFallback = () => [
     {
@@ -75,6 +85,10 @@ export default function MuseoPage() {
       murales: [],
     },
   ];
+
+  const salasFiltradas = salas.filter((sala) =>
+    sala.nombre.toLowerCase().includes(search.toLowerCase())
+  );
 
   if (salaSeleccionada) {
     return (
@@ -118,60 +132,63 @@ export default function MuseoPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-blue-900/20 dark:to-purple-900/20 p-4">
-      <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-4">
-            Museo Virtual 3D
-          </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Explora las salas y descubre obras en un entorno inmersivo
-          </p>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {salas.map((sala) => (
-            <div
-              key={sala.id}
-              onClick={() => setSalaSeleccionada(sala.id)}
-              className="bg-card rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer transform hover:scale-105 border border-border"
-              style={{ backgroundColor: sala.color }}
+    <div className="relative min-h-screen overflow-hidden">
+      <AnimatedBackground />
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-8 pt-24 md:pt-28 pb-2 md:pb-4">
+        {/* Header */}
+        <div className="mb-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-2">
+              Museo Virtual 3D
+            </h1>
+            <p className="text-lg text-muted-foreground">
+              Explora las salas y descubre obras en un entorno inmersivo
+            </p>
+          </div>
+          {isAdmin && (
+            <button
+              className="flex items-center gap-2 px-5 py-3 rounded-xl bg-indigo-600 text-white font-bold shadow hover:bg-indigo-700 transition"
+              onClick={() => router.push("/mis-salas")}
             >
-              <div className="relative h-48 rounded-t-2xl overflow-hidden">
-                <img
-                  src={sala.imagen}
-                  alt={sala.nombre}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-black bg-opacity-20"></div>
-                <div className="absolute top-4 right-4 bg-background/90 rounded-full px-3 py-1 text-sm font-bold text-foreground">
-                  {sala.cantidadMurales} obras
-                </div>
-              </div>
-              <div className="p-6">
-                <div className="flex items-center mb-3">
-                  <span className="text-3xl mr-3">
-                    {getIconBySalaId(sala.id)}
-                  </span>
-                  <h3 className="text-2xl font-bold text-foreground">
-                    {sala.nombre}
-                  </h3>
-                </div>
-                <p className="text-muted-foreground mb-4">{sala.descripcion}</p>
-                <div className="flex justify-between items-center text-sm text-muted-foreground">
-                  <span>Propietario: {sala.propietario}</span>
-                  <button className="bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors">
-                    Entrar →
-                  </button>
-                </div>
-              </div>
-            </div>
+              <Plus className="h-5 w-5" /> Crear sala
+            </button>
+          )}
+        </div>
+        {/* Filtros */}
+        <div className="mb-8 flex flex-col sm:flex-row gap-4">
+          <input
+            type="text"
+            placeholder="Buscar salas..."
+            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-neutral-700 text-foreground w-full sm:w-72"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        {/* Grid de salas */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {salasFiltradas.map((sala) => (
+            <SalaCard
+              key={sala.id}
+              sala={sala}
+              isAdmin={isAdmin}
+              onEnter={() => setSalaSeleccionada(sala.id)}
+            />
           ))}
         </div>
-        {salas.length === 0 && !loading && (
+        {/* Estado vacío */}
+        {salasFiltradas.length === 0 && !loading && (
           <div className="text-center py-12">
             <p className="text-muted-foreground text-lg">
               No hay salas disponibles.
             </p>
+            {isAdmin && (
+              <button
+                className="mt-4 px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors"
+                onClick={() => router.push("/mis-salas")}
+              >
+                <Plus className="h-5 w-5" /> Crear sala
+              </button>
+            )}
           </div>
         )}
       </div>

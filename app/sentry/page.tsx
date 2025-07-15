@@ -106,10 +106,10 @@ export default function Page() {
                 op: "test",
               },
               async () => {
-                const res = await fetch("/api/sentry-example-api");
-                if (!res.ok) {
-                  setHasSentError(true);
-                }
+                // Simular error para testing de Sentry (endpoint eliminado)
+                throw new Error(
+                  "Error de ejemplo desde el cliente para testing de Sentry"
+                );
               }
             );
             throw new SentryExampleFrontendError(
