@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useRandomMurals } from "../hooks/useRandomMurals";
 import { SectionLoader } from "../../components/LoadingSpinner";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 // import { PageSection, HeroSection } from "../../components/shared/PageSection";
 // PageSection component
@@ -162,6 +162,62 @@ export default function AcercaDe() {
           titulo: `Mural ${i + 1}`,
         }));
 
+  // --- INICIO: Animación diagonal en cascada infinita ---
+  const diagonalClasses = [
+    "animate-diagonal-tl",
+    "animate-diagonal-tr",
+    "animate-diagonal-bl",
+    "animate-diagonal-br",
+  ];
+  const [activeIndexes, setActiveIndexes] = useState([
+    false,
+    false,
+    false,
+    false,
+  ]);
+  useEffect(() => {
+    let timeouts = [];
+    const dur = 8000; // duración de la animación
+    const delay = 3000; // desfase entre imágenes
+    const total = delay * 3 + dur; // tiempo total del ciclo
+    function startCascade() {
+      setActiveIndexes([false, false, false, false]);
+      for (let i = 0; i < 4; i++) {
+        timeouts.push(
+          setTimeout(() => {
+            setActiveIndexes((prev) => {
+              const next = [...prev];
+              next[i] = true;
+              return next;
+            });
+          }, i * delay)
+        );
+        // Apaga después de dur ms desde su encendido
+        timeouts.push(
+          setTimeout(
+            () => {
+              setActiveIndexes((prev) => {
+                const next = [...prev];
+                next[i] = false;
+                return next;
+              });
+            },
+            i * delay + dur
+          )
+        );
+      }
+      // Reinicia el ciclo después de que la última imagen termine
+      timeouts.push(
+        setTimeout(() => {
+          startCascade();
+        }, total)
+      );
+    }
+    startCascade();
+    return () => timeouts.forEach(clearTimeout);
+  }, []);
+  // --- FIN: Animación diagonal en cascada infinita ---
+
   return (
     <div className="relative w-full flex flex-col items-center justify-start bg-transparent">
       {/* Fondo animado blobs y puntos arriba */}
@@ -222,13 +278,7 @@ export default function AcercaDe() {
                     src={img}
                     alt={`Mural ${i + 1}`}
                     className={`w-full h-48 object-cover rounded-2xl shadow-2xl ${
-                      i === 0
-                        ? "animate-diagonal-tl"
-                        : i === 1
-                          ? "animate-diagonal-tr"
-                          : i === 2
-                            ? "animate-diagonal-bl"
-                            : "animate-diagonal-br"
+                      activeIndexes[i] ? diagonalClasses[i] : ""
                     }`}
                     fallbackSrc="/assets/artworks/cuadro1.webp"
                     customDelay={i * 0.18}
@@ -244,13 +294,7 @@ export default function AcercaDe() {
                     src={mural.url_imagen}
                     alt={mural.titulo || `Mural ${i + 1}`}
                     className={`w-full h-48 object-cover rounded-2xl shadow-2xl ${
-                      i === 0
-                        ? "animate-diagonal-tl"
-                        : i === 1
-                          ? "animate-diagonal-tr"
-                          : i === 2
-                            ? "animate-diagonal-bl"
-                            : "animate-diagonal-br"
+                      activeIndexes[i] ? diagonalClasses[i] : ""
                     }`}
                     style={{
                       animationDelay: `${i * 2}s`,
