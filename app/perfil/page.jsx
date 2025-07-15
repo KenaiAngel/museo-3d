@@ -1096,7 +1096,7 @@ function PerfilContent() {
               onMouseLeave={profileGlow.handleMouseLeave}
             >
               <div ref={profileGlow.blobRef} className="card-blob" />
-              <Card className="w-full p-4 md:p-6 text-center min-h-[400px] flex flex-col justify-start bg-transparent border-0">
+              <Card className="w-full p-4 md:p-6 text-center min-h-[400px] flex flex-col justify-start">
                 <CardHeader className="flex flex-col items-center gap-2 border-b pb-4">
                   {editMode ? (
                     <PerfilAvatarEdit
@@ -1246,7 +1246,7 @@ function PerfilContent() {
               onMouseLeave={statsGlow.handleMouseLeave}
             >
               <div ref={statsGlow.blobRef} className="card-blob" />
-              <Card className="w-full p-8 bg-transparent shadow-none border-0">
+              <Card className="w-full p-8">
                 <CardHeader className="mb-4">
                   <CardTitle className="text-lg font-semibold">
                     Estadísticas del museo
@@ -1395,7 +1395,7 @@ function PerfilContent() {
               onMouseLeave={collectionGlow.handleMouseLeave}
             >
               <div ref={collectionGlow.blobRef} className="card-blob" />
-              <Card className="w-full p-8 bg-transparent shadow-none border-0">
+              <Card className="w-full p-8">
                 <CardHeader className="mb-4">
                   <CardTitle className="text-lg font-semibold">
                     Mi colección personal
@@ -1454,7 +1454,7 @@ function PerfilContent() {
               onMouseLeave={sessionGlow.handleMouseLeave}
             >
               <div ref={sessionGlow.blobRef} className="card-blob" />
-              <Card className="w-full p-8 bg-transparent shadow-none border-0">
+              <Card className="w-full p-8">
                 <CardHeader className="mb-4">
                   <CardTitle className="text-lg font-semibold">
                     Estadísticas de Sesión
