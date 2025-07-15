@@ -101,6 +101,7 @@ function AnimatedMuralImage({
   fallbackSrc,
   customDelay = 0,
   index = 0,
+  style,
 }) {
   const [imgSrc, setImgSrc] = useState(src);
   const [hasError, setHasError] = useState(false);
@@ -110,17 +111,6 @@ function AnimatedMuralImage({
       setHasError(true);
     }
   };
-  // Traslados y rotaciones sutiles pero más largos para cada imagen
-  const transforms = [
-    { x: 18, y: -14, r: 3 }, // arriba derecha
-    { x: -18, y: -14, r: -3 }, // arriba izquierda
-    { x: 20, y: 14, r: 2.5 }, // abajo derecha
-    { x: -20, y: 14, r: -2.5 }, // abajo izquierda
-    { x: 12, y: -10, r: 2 }, // arriba derecha leve
-    { x: -12, y: 10, r: -2 }, // abajo izquierda leve
-  ];
-  const t = transforms[index % transforms.length];
-  const moveDelay = index * 2.2;
   return (
     <motion.img
       src={imgSrc}
@@ -128,21 +118,12 @@ function AnimatedMuralImage({
       className={className}
       onError={handleError}
       initial={{
-        scale: 0.7,
-        rotate: -12,
         borderRadius: "50%",
         filter: "blur(8px)",
       }}
       whileInView={{
-        scale: 1,
-        rotate: 0,
         borderRadius: "1.5rem",
         filter: "blur(0px)",
-      }}
-      animate={{
-        x: [0, t.x, 0],
-        y: [0, t.y, 0],
-        rotate: [0, t.r, 0],
       }}
       transition={{
         duration: 2.2,
@@ -150,32 +131,12 @@ function AnimatedMuralImage({
         delay: customDelay,
         borderRadius: { duration: 1.2, delay: 0.4 + customDelay },
         filter: { duration: 1.1, delay: 0.7 + customDelay },
-        x: {
-          repeat: Infinity,
-          repeatType: "loop",
-          duration: 13,
-          delay: moveDelay,
-          ease: "easeInOut",
-        },
-        y: {
-          repeat: Infinity,
-          repeatType: "loop",
-          duration: 13,
-          delay: moveDelay,
-          ease: "easeInOut",
-        },
-        rotate: {
-          repeat: Infinity,
-          repeatType: "loop",
-          duration: 13,
-          delay: moveDelay,
-          ease: "easeInOut",
-        },
       }}
       viewport={{ once: true, amount: 0.6 }}
       style={{
         boxShadow:
           "0 8px 32px rgba(99,102,241,0.10), 0 1.5px 8px rgba(0,0,0,0.08)",
+        ...style,
       }}
     />
   );
@@ -262,12 +223,12 @@ export default function AcercaDe() {
                     alt={`Mural ${i + 1}`}
                     className={`w-full h-48 object-cover rounded-2xl shadow-2xl ${
                       i === 0
-                        ? "animate-diagonal-tl animate-float animate-soft-pulse"
+                        ? "animate-diagonal-tl"
                         : i === 1
-                          ? "animate-diagonal-tr animate-float animate-soft-pulse"
+                          ? "animate-diagonal-tr"
                           : i === 2
-                            ? "animate-diagonal-bl animate-float animate-soft-pulse"
-                            : "animate-diagonal-br animate-float animate-soft-pulse"
+                            ? "animate-diagonal-bl"
+                            : "animate-diagonal-br"
                     }`}
                     fallbackSrc="/assets/artworks/cuadro1.webp"
                     customDelay={i * 0.18}
@@ -284,13 +245,17 @@ export default function AcercaDe() {
                     alt={mural.titulo || `Mural ${i + 1}`}
                     className={`w-full h-48 object-cover rounded-2xl shadow-2xl ${
                       i === 0
-                        ? "animate-diagonal-tl animate-float animate-soft-pulse"
+                        ? "animate-diagonal-tl"
                         : i === 1
-                          ? "animate-diagonal-tr animate-float animate-soft-pulse"
+                          ? "animate-diagonal-tr"
                           : i === 2
-                            ? "animate-diagonal-bl animate-float animate-soft-pulse"
-                            : "animate-diagonal-br animate-float animate-soft-pulse"
+                            ? "animate-diagonal-bl"
+                            : "animate-diagonal-br"
                     }`}
+                    style={{
+                      animationDelay: `${i * 2}s`,
+                      animationIterationCount: 1,
+                    }}
                     fallbackSrc={
                       fallbackImages[i] || "/assets/artworks/cuadro1.webp"
                     }
