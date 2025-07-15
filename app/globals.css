@@ -877,7 +877,7 @@ body.home-active [class*="Modal"] {
     transform: translateY(0px);
   }
   50% {
-    transform: translateY(-20px);
+    transform: translateY(-12px);
   }
 }
 
@@ -901,7 +901,7 @@ body.home-active [class*="Modal"] {
 }
 
 .animate-soft-pulse {
-  animation: soft-pulse 2s ease-in-out infinite;
+  animation: soft-pulse 3.5s ease-in-out infinite;
 }
 
 /* ===========================================
@@ -1372,3 +1372,45 @@ html.dark .graffiti-gradient-bg {
   border: 1px solid rgba(99,102,241,0.15);
   box-shadow: 0 8px 32px rgba(99,102,241,0.18), 0 1.5px 8px rgba(0,0,0,0.18);
 }
+
+@keyframes diagonal-tl {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  20% { transform: translate(-6px, -8px) scale(1.03); }
+  50% { transform: translate(-12px, -16px) scale(1.04); }
+  80% { transform: translate(-6px, -8px) scale(1.03); }
+}
+@keyframes diagonal-tr {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  20% { transform: translate(6px, -8px) scale(1.03); }
+  50% { transform: translate(12px, -16px) scale(1.04); }
+  80% { transform: translate(6px, -8px) scale(1.03); }
+}
+@keyframes diagonal-bl {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  20% { transform: translate(-6px, 8px) scale(1.03); }
+  50% { transform: translate(-12px, 16px) scale(1.04); }
+  80% { transform: translate(-6px, 8px) scale(1.03); }
+}
+@keyframes diagonal-br {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  20% { transform: translate(6px, 8px) scale(1.03); }
+  50% { transform: translate(12px, 16px) scale(1.04); }
+  80% { transform: translate(6px, 8px) scale(1.03); }
+}
+.animate-diagonal-tl { animation: diagonal-tl 7s ease-in-out infinite alternate; }
+.animate-diagonal-tr { animation: diagonal-tr 7s ease-in-out infinite alternate; }
+.animate-diagonal-bl { animation: diagonal-bl 7s ease-in-out infinite alternate; }
+.animate-diagonal-br { animation: diagonal-br 7s ease-in-out infinite alternate; }
+
+/* Asegurar animaciones suaves para float y soft-pulse */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-12px); }
+}
+.animate-float { animation: float 6s ease-in-out infinite; }
+
+@keyframes soft-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.025); opacity: 0.96; }
+}
+.animate-soft-pulse { animation: soft-pulse 3.5s ease-in-out infinite; }
