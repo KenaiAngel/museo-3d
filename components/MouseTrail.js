@@ -23,13 +23,15 @@ export default function MouseTrail() {
     const handleMove = (e) => {
       const dot = document.createElement("div");
       dot.className = "mouse-trail-dot";
+      dot.style.position = "fixed";
       // Tamaño aleatorio de elipse
       const w = randomBetween(16, 32);
       const h = randomBetween(8, 12);
       dot.style.width = `${w}px`;
       dot.style.height = `${h}px`;
-      dot.style.left = `${e.clientX - w / 2}px`;
-      dot.style.top = `${e.clientY - h / 2}px`;
+      // Usar pageX/pageY para que el dot siga el mouse incluso al hacer scroll
+      dot.style.left = `${e.pageX - w / 2}px`;
+      dot.style.top = `${e.pageY - h / 2}px`;
       // Color aleatorio
       const color =
         vibrantColors[Math.floor(Math.random() * vibrantColors.length)];

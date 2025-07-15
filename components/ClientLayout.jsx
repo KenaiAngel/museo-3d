@@ -8,6 +8,7 @@ import Footer from "./Footer";
 import useIsMobile from "../app/hooks/useIsMobile";
 import { PageLoader } from "./LoadingSpinner";
 import { FRASES_MURALISTAS, BANKSY_IMAGES } from "../lib/layoutConstants";
+import MouseTrail from "./MouseTrail";
 
 // Para usar el nuevo menú elegante, descomenta la siguiente línea e importa ElegantMenu
 // import ElegantMenu from "./ElegantMenu";
@@ -55,6 +56,7 @@ const LayoutContainer = ({ children }) => {
 
   return (
     <div className="bg-white dark:bg-black text-black dark:text-white flex flex-col min-h-screen transition-colors duration-300">
+      <MouseTrail />
       <header className="sticky top-0 z-[60]">
         <MainMenu />
       </header>
