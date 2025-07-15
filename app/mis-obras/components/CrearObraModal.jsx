@@ -46,6 +46,12 @@ import {
 import { uploadModelToCloudinary } from "../../../utils/uploadToCloudinary";
 import { generateSimpleGLB } from "../../../utils/generateSimpleGLB";
 import { validateGLB, diagnoseModel } from "../../../utils/validateGLB";
+import {
+  BrushEngine,
+  ColorUtils,
+  CanvasUtils,
+  BRUSH_TYPES,
+} from "../../../utils/drawingFunctions";
 
 // Tamaño máximo permitido para imagen de fondo (5MB)
 const MAX_BG_IMAGE_SIZE = 5 * 1024 * 1024;
@@ -242,66 +248,150 @@ const BRUSH_SECTIONS = [
   },
 ];
 
-// Definir paleta de colores rápida
-const DEFAULT_COLORS = [
-  "#000000",
-  "#FFFFFF",
-  "#FF0000",
-  "#00FF00",
-  "#0000FF",
-  "#FFFF00",
-  "#FF00FF",
-  "#00FFFF",
-];
+// Función auxiliar para generar variaciones de color
+const generateColorVariations = (baseColor, count = 3) => {
+  try {
+    if (!ColorUtils?.hexToRgb) return [baseColor];
+
+    const rgb = ColorUtils.hexToRgb(baseColor);
+    if (!rgb) return [baseColor];
+
+    const variations = [baseColor];
+
+    // Generar variaciones más claras y más oscuras
+    for (let i = 1; i < count; i++) {
+      const factor = i / count;
+
+      // Variación más clara
+      const lighter = {
+        r: Math.min(255, Math.round(rgb.r + (255 - rgb.r) * factor)),
+        g: Math.min(255, Math.round(rgb.g + (255 - rgb.g) * factor)),
+        b: Math.min(255, Math.round(rgb.b + (255 - rgb.b) * factor)),
+      };
+
+      // Variación más oscura
+      const darker = {
+        r: Math.max(0, Math.round(rgb.r * (1 - factor))),
+        g: Math.max(0, Math.round(rgb.g * (1 - factor))),
+        b: Math.max(0, Math.round(rgb.b * (1 - factor))),
+      };
+
+      if (ColorUtils.rgbToHex) {
+        variations.push(ColorUtils.rgbToHex(lighter.r, lighter.g, lighter.b));
+        variations.push(ColorUtils.rgbToHex(darker.r, darker.g, darker.b));
+      }
+    }
+
+    return variations.slice(0, count);
+  } catch (error) {
+    console.warn("Error generating color variations:", error);
+    return [baseColor];
+  }
+};
+
+// Definir paleta de colores rápida usando ColorUtils para mejores combinaciones
+const DEFAULT_COLORS = (() => {
+  try {
+    const baseColors = ["#FF0000", "#00FF00", "#0000FF", "#FF8C00", "#00CED1"];
+    const generated = [];
+
+    // Colores básicos
+    generated.push("#000000", "#FFFFFF", "#808080");
+
+    // Generar variaciones para cada color base
+    baseColors.forEach((color) => {
+      generated.push(...generateColorVariations(color, 2));
+    });
+
+    return generated.slice(0, 20);
+  } catch (error) {
+    console.warn("Error generating color palette, using fallback:", error);
+    // Fallback si hay cualquier error
+    return [
+      "#000000",
+      "#FFFFFF",
+      "#FF0000",
+      "#00FF00",
+      "#0000FF",
+      "#FFFF00",
+      "#FF00FF",
+      "#00FFFF",
+      "#FFA500",
+      "#800080",
+    ];
+  }
+})();
 
 // Diccionario de nombres amigables en español para los pinceles
-const BRUSH_LABELS = {
-  pencil: "Lápiz",
-  smooth: "Lápiz suave",
-  shadow: "Sombra",
-  eraser: "Borrador",
-  carboncillo: "Carboncillo",
-  acuarela: "Acuarela",
-  tiza: "Tiza",
-  marcador: "Marcador",
-  oleo: "Óleo",
-  pixel: "Pixel",
-  neon: "Neón",
-  puntos: "Puntillismo",
-  lineas: "Líneas",
-  fuego: "Fuego",
-  thick: "Pincel grueso",
-  sliced: "Pincel cortado",
-  pen: "Pluma",
-  pen2: "Pluma doble",
-  multi: "Multi-línea",
-  multi_opacity: "Multi-opacidad",
-  beads: "Cuentas",
-  wiggle: "Ondulado",
-  stamp_circle: "Estampado círculo",
-  stamp_star: "Estampado estrella",
-  pattern_dots: "Patrón puntos",
-  pattern_lines: "Patrón líneas",
-  pattern_rainbow: "Patrón arcoíris",
-  pattern_image: "Patrón imagen",
-  aerosol: "Aerosol",
-  spray: "Spray",
-  spray_time: "Spray tiempo",
-  spray_speed: "Spray velocidad",
-  sketchy: "Boceto",
-  neighbor: "Vecino",
-  fur_neighbor: "Vecino peludo",
-  rainbow_dynamic: "Arcoíris dinámico",
-  confetti: "Confeti",
-  shooting_star: "Estrella fugaz",
-  glitch: "Glitch",
-  heart_spray: "Spray corazones",
-  lightning: "Rayo",
-  bubble: "Burbuja",
-  ribbon: "Cinta",
-  fire_realistic: "Fuego realista",
-  particles: "Partículas",
-};
+// Integrado con el motor de dibujo profesional
+const BRUSH_LABELS = (() => {
+  try {
+    if (typeof BRUSH_TYPES !== "undefined" && BRUSH_TYPES) {
+      // Crear labels desde BRUSH_TYPES importado
+      const labels = {};
+      Object.values(BRUSH_TYPES).forEach((type) => {
+        // Convertir el tipo a un nombre amigable
+        const friendlyName = type
+          .split(/[-_]/)
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(" ");
+        labels[type] = friendlyName;
+      });
+      return labels;
+    }
+  } catch (error) {
+    console.warn("Error loading BRUSH_TYPES, using fallback labels:", error);
+  }
+
+  // Fallback labels si BRUSH_TYPES no está disponible
+  return {
+    pencil: "Lápiz",
+    smooth: "Lápiz suave",
+    shadow: "Sombra",
+    eraser: "Borrador",
+    carboncillo: "Carboncillo",
+    acuarela: "Acuarela",
+    tiza: "Tiza",
+    marcador: "Marcador",
+    oleo: "Óleo",
+    pixel: "Pixel",
+    neon: "Neón",
+    puntos: "Puntillismo",
+    lineas: "Líneas",
+    fuego: "Fuego",
+    thick: "Pincel grueso",
+    sliced: "Pincel cortado",
+    pen: "Pluma",
+    pen2: "Pluma doble",
+    multi: "Multi-línea",
+    multi_opacity: "Multi-opacidad",
+    beads: "Cuentas",
+    wiggle: "Ondulado",
+    stamp_circle: "Estampado círculo",
+    stamp_star: "Estampado estrella",
+    pattern_dots: "Patrón puntos",
+    pattern_lines: "Patrón líneas",
+    pattern_rainbow: "Patrón arcoíris",
+    pattern_image: "Patrón imagen",
+    aerosol: "Aerosol",
+    spray: "Spray",
+    spray_time: "Spray tiempo",
+    spray_speed: "Spray velocidad",
+    sketchy: "Boceto",
+    neighbor: "Vecino",
+    fur_neighbor: "Vecino peludo",
+    rainbow_dynamic: "Arcoíris dinámico",
+    confetti: "Confeti",
+    shooting_star: "Estrella fugaz",
+    glitch: "Glitch",
+    heart_spray: "Spray corazones",
+    lightning: "Rayo",
+    bubble: "Burbuja",
+    ribbon: "Cinta",
+    fire_realistic: "Fuego realista",
+    particles: "Partículas",
+  };
+})();
 
 // Agregar función para determinar si un color es claro u oscuro
 function isColorLight(hex) {
@@ -376,6 +466,10 @@ export default function CrearObraModal({
   const canvasRef = useRef();
   const pointsRef = useRef([]);
   const sprayTimerRef = useRef(null);
+
+  // Instancia del motor de dibujo profesional
+  const brushEngineRef = useRef(null);
+
   const [canvasZoom, setCanvasZoom] = useState(1);
   const [furReady, setFurReady] = useState(false);
   const furBrushImgRef = useRef(null);
@@ -616,22 +710,298 @@ export default function CrearObraModal({
     pointsRef.current.push(coords);
   };
 
-  // Función para dibujar en el canvas según el brushType
+  // Función para dibujar en el canvas usando el motor profesional
   const draw = (e) => {
     const canvas = canvasRef.current;
+    if (!canvas) return;
+
     const ctx = canvas.getContext("2d");
     const points = pointsRef.current;
 
     if (points.length < 2) return;
 
+    const currentPoint = points[points.length - 1];
+    const prevPoint = points[points.length - 2];
+
+    // Lista de pinceles que funcionan mejor con el método básico
+    const basicOnlyBrushes = [
+      "sketchy",
+      "neighbor",
+      "fur_neighbor",
+      "pen",
+      "pen2",
+      "thick",
+      "sliced",
+      "multi",
+      "multi_opacity",
+      "beads",
+      "wiggle",
+      "glitch",
+      "ribbon",
+      "stamp_circle",
+      "stamp_star",
+      "pattern_image",
+      "aerosol",
+      "spray_time",
+    ];
+
+    // Si es un pincel que funciona mejor con método básico, usarlo directamente
+    if (basicOnlyBrushes.includes(brushType)) {
+      drawBasic(ctx, points, brushType, brushColor, brushSize);
+      return;
+    }
+
+    // Intentar usar el motor de dibujo profesional para otros pinceles
+    try {
+      drawStroke({
+        canvas: canvas,
+        type: brushType,
+        color: brushColor,
+        size: brushSize,
+        startPoint: prevPoint,
+        endPoint: currentPoint,
+        pressure: 1.0,
+        velocity: Math.sqrt(
+          Math.pow(currentPoint.x - prevPoint.x, 2) +
+            Math.pow(currentPoint.y - prevPoint.y, 2)
+        ),
+      });
+    } catch (error) {
+      console.warn(
+        "Error usando motor de dibujo profesional, usando método básico:",
+        error
+      );
+      // Fallback al método básico si hay error
+      drawBasic(ctx, points, brushType, brushColor, brushSize);
+    }
+  };
+
+  // Función para mapear tipos de pinceles al motor profesional
+  const mapBrushType = (brushType) => {
+    // Mapeo de tipos de pinceles del modal a tipos del motor profesional
+    const brushTypeMapping = {
+      // Pinceles básicos
+      brush: "brush",
+      eraser: "eraser",
+      pencil: "brush-soft",
+      smooth: "brush-soft",
+      shadow: "glow",
+
+      // Pinceles artísticos
+      pen: "brush",
+      pen2: "brush",
+      thick: "brush",
+      sliced: "brush",
+      multi: "brush",
+      multi_opacity: "brush-soft",
+      carboncillo: "carboncillo",
+      acuarela: "acuarela",
+      tiza: "tiza",
+      marcador: "marcador",
+      oleo: "oleo",
+      beads: "puntos",
+      wiggle: "brush-soft",
+
+      // Efectos
+      glow: "glow",
+      neon: "neon",
+      fuego: "fuego",
+      fire_realistic: "fuego",
+
+      // Patrones
+      pixel: "pixel",
+      puntos: "puntos",
+      lineas: "lineas",
+      pattern_lines: "lineas",
+      pattern_dots: "puntos",
+      pattern_rainbow: "rainbow",
+      pattern_image: "textured",
+
+      // Estampado
+      stamp_circle: "puntos",
+      stamp_star: "stars",
+
+      // Spray y aerosol
+      spray: "spray",
+      aerosol: "spray",
+      spray_time: "spray",
+      spray_speed: "spray", // ← ESTE ERA EL QUE FALTABA
+
+      // Sketch/Harmony
+      sketchy: "sketch",
+      neighbor: "sketch",
+      fur_neighbor: "fur",
+
+      // Spray y partículas
+      particles: "splatter",
+      confetti: "splatter",
+      shooting_star: "splatter",
+
+      // Efectos especiales
+      lightning: "lightning",
+      bubble: "bubbles",
+      heart_spray: "hearts",
+      rainbow_dynamic: "rainbow",
+      glitch: "digital",
+      ribbon: "gradient",
+
+      // Texturas
+      fur: "fur",
+      fabric: "fabric",
+      wood: "wood",
+      metal: "metal",
+      glass: "glass",
+      water: "water",
+      sand: "sand",
+      stone: "stone",
+
+      // Naturales
+      leaves: "leaves",
+      rain: "rain",
+      snow: "snow",
+      stars: "stars",
+      flowers: "flowers",
+      grass: "grass",
+      cloud: "cloud",
+
+      // Artísticos avanzados
+      impressionist: "impressionist",
+      pointillist: "pointillist",
+      abstract: "abstract",
+      surreal: "surreal",
+      minimalist: "minimalist",
+      vintage: "vintage",
+      grunge: "grunge",
+      digital: "digital",
+
+      // Geométricos
+      geometric: "geometric",
+      organic: "organic",
+      fractal: "fractal",
+      mandala: "mandala",
+      celtic: "celtic",
+      tribal: "tribal",
+      kaleidoscope: "kaleidoscope",
+      mosaic: "mosaic",
+
+      // Especiales
+      galaxy: "galaxy",
+      plasma: "plasma",
+      electric: "electric",
+      crystal: "crystal",
+      magic: "magic",
+      gradient: "gradient",
+      textured: "textured",
+      sketch: "sketch",
+      splatter: "splatter",
+    };
+
+    // Retornar el tipo mapeado o el tipo original si no existe mapeo
+    const mapped = brushTypeMapping[brushType];
+    if (!mapped) {
+      console.warn(
+        `Brush type "${brushType}" not mapped, using fallback "brush"`
+      );
+      return "brush"; // Fallback seguro en lugar del tipo original
+    }
+    return mapped;
+  };
+
+  // Función drawStroke personalizada que usa el motor profesional
+  const drawStroke = ({
+    canvas,
+    type,
+    color,
+    size,
+    startPoint,
+    endPoint,
+    pressure,
+    velocity,
+  }) => {
+    // Inicializar el motor de dibujo si no existe
+    if (!brushEngineRef.current) {
+      brushEngineRef.current = new BrushEngine(canvas);
+    }
+
+    // Mapear el tipo de pincel al motor profesional
+    const mappedType = mapBrushType(type);
+
+    // Configurar el motor de dibujo
+    brushEngineRef.current.configure({
+      type: mappedType,
+      color: color,
+      size: size,
+      opacity: pressure || 1.0,
+    });
+
+    // Calcular la distancia para interpolar puntos
+    const distance = Math.sqrt(
+      Math.pow(endPoint.x - startPoint.x, 2) +
+        Math.pow(endPoint.y - startPoint.y, 2)
+    );
+
+    // Si la distancia es muy pequeña, dibujar solo el punto final
+    if (distance < 1) {
+      const success = brushEngineRef.current.draw(endPoint, startPoint);
+      if (!success) {
+        // Si falla, usar método básico
+        const ctx = canvas.getContext("2d");
+        const points = [startPoint, endPoint];
+        drawBasic(ctx, points, type, color, size);
+      }
+      return success;
+    }
+
+    // Interpolar puntos para un trazo suave
+    const steps = Math.max(1, Math.floor(distance / 2));
+    let success = true;
+
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      const interpolatedPoint = {
+        x: startPoint.x + (endPoint.x - startPoint.x) * t,
+        y: startPoint.y + (endPoint.y - startPoint.y) * t,
+      };
+
+      const prevInterpolatedPoint =
+        i === 0
+          ? startPoint
+          : {
+              x: startPoint.x + (endPoint.x - startPoint.x) * ((i - 1) / steps),
+              y: startPoint.y + (endPoint.y - startPoint.y) * ((i - 1) / steps),
+            };
+
+      if (
+        !brushEngineRef.current.draw(interpolatedPoint, prevInterpolatedPoint)
+      ) {
+        success = false;
+        break;
+      }
+    }
+
+    // Si el motor profesional falló, usar método básico como fallback
+    if (!success) {
+      console.warn(
+        `Motor profesional falló para ${type}, usando método básico`
+      );
+      const ctx = canvas.getContext("2d");
+      const points = [startPoint, endPoint];
+      drawBasic(ctx, points, type, color, size);
+    }
+
+    return success;
+  };
+
+  // Función de dibujo básico como fallback
+  const drawBasic = (ctx, points, type, color, size) => {
     ctx.save();
 
-    switch (brushType) {
+    switch (type) {
       // Lápiz simple: línea continua, sin efectos especiales
       case "pencil": {
         ctx.globalCompositeOperation = "source-over";
-        ctx.strokeStyle = brushColor;
-        ctx.lineWidth = brushSize;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = size;
         ctx.lineCap = "round";
         ctx.lineJoin = "round";
         ctx.shadowBlur = 0;
