@@ -338,7 +338,9 @@ export async function POST(req) {
             <p>Se ha creado una nueva sala: <b>${sala.nombre}</b>.</p>
             <p>Descripción: ${sala.descripcion || "Sin descripción"}</p>
             <p>Puedes verla en el <a href="https://museo-3d.vercel.app/mis-salas">Museo Virtual</a>.</p>
-            <p>Si no deseas recibir más notificaciones, puedes desuscribirte desde tu perfil.</p>`,
+            <p style="margin-top:18px;font-size:14px;">
+              <a href="https://museo-3d.vercel.app/perfil" style="color:#dc2626;font-weight:bold;">Cancelar suscripción a notificaciones</a>
+            </p>`,
         });
       }
     } catch (notifyErr) {

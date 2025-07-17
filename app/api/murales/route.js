@@ -245,7 +245,9 @@ export async function POST(req) {
             <p>Se ha creado una nueva obra: <b>${mural.titulo}</b>.</p>
             <p>Autor: ${mural.autor || "Desconocido"}</p>
             <p>Puedes verla en la <a href="https://museo-3d.vercel.app/galeria">Galería del Museo Virtual</a>.</p>
-            <p>Si no deseas recibir más notificaciones, puedes desuscribirte desde tu perfil.</p>`,
+            <p style="margin-top:18px;font-size:14px;">
+              <a href="https://museo-3d.vercel.app/perfil" style="color:#dc2626;font-weight:bold;">Cancelar suscripción a notificaciones</a>
+            </p>`,
         });
       }
     } catch (notifyErr) {

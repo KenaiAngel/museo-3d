@@ -673,6 +673,20 @@ function PerfilContent() {
   const { openModal } = useModal() || {};
   const nameInputRef = useRef(null);
 
+  // --- NUEVO: Estado real de suscripción ---
+  const {
+    subscribed: realSubscribed,
+    loading: subLoading,
+    error: subError,
+    refetch: refetchSub,
+  } = useSubscriptionStatus("all");
+
+  // Sincronizar el toggle con el estado real de la suscripción
+  useEffect(() => {
+    if (subLoading) return;
+    setSubsEnabled(!!realSubscribed);
+  }, [realSubscribed, subLoading]);
+
   const userId = session?.user?.id || null;
 
   useEffect(() => {
@@ -924,6 +938,7 @@ function PerfilContent() {
 
   const onSubsChange = async (checked, e) => {
     if (e && typeof e.preventDefault === "function") e.preventDefault();
+    if (subLoading) return;
 
     // Verificar que el email esté verificado antes de permitir suscripción
     if (checked && !session?.user?.emailVerified) {
@@ -955,10 +970,12 @@ function PerfilContent() {
         notificaciones: notifEnabled ? "true" : "false",
         subscripcion: checked ? "true" : "false",
       });
+      await refetchSub(); // Refrescar estado real
       toast.success(`Suscripción ${checked ? "activada" : "desactivada"}`);
     } catch (error) {
       toast.error("Error al cambiar suscripción global");
       setSubsEnabled(!checked); // revertir visual si falla
+      await refetchSub();
     }
   };
 
@@ -1081,6 +1098,8 @@ function PerfilContent() {
     );
   }
 
+  const emailVerified = userProfile?.emailVerified ?? session?.user?.emailVerified;
+
   return (
     <>
       <div className="relative min-h-screen">
@@ -1130,7 +1149,7 @@ function PerfilContent() {
                       <Label>Email</Label>
                       <div className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
                         {session?.user?.email || "No disponible"}
-                        {!session?.user?.emailVerified && (
+                        {!emailVerified && (
                           <button
                             onClick={handleVerifyEmail}
                             disabled={verifLoading}
@@ -1139,7 +1158,7 @@ function PerfilContent() {
                             {verifLoading ? "Enviando..." : "(Verificar)"}
                           </button>
                         )}
-                        {session?.user?.emailVerified && (
+                        {emailVerified && (
                           <span className="text-green-600 text-xs font-semibold ml-2">
                             (Verificado)
                           </span>
@@ -1183,15 +1202,13 @@ function PerfilContent() {
                       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mt-1">
                         <Switch
                           checked={subsEnabled}
-                          disabled={!session?.user?.emailVerified}
-                          onCheckedChange={(checked, e) =>
-                            onSubsChange(checked, e)
-                          }
+                          disabled={!session?.user?.emailVerified || subLoading}
+                          onCheckedChange={(checked, e) => onSubsChange(checked, e)}
                         />
                         <span className="text-xs text-muted-foreground">
-                          {subsEnabled ? "Activa" : "Inactiva"}
-                          {!session?.user?.emailVerified &&
-                            " (Requiere email verificado)"}
+                          {subLoading ? "Cargando..." : subsEnabled ? "Activa" : "Inactiva"}
+                          {!session?.user?.emailVerified && " (Requiere email verificado)"}
+                          {subError && <span className="text-red-500 ml-2">{subError}</span>}
                         </span>
                       </div>
                       {!session?.user?.emailVerified && (
@@ -1205,13 +1222,9 @@ function PerfilContent() {
                       <Label>Email verificado</Label>
                       <div className="flex items-center gap-2 mt-1">
                         <Badge
-                          variant={
-                            session?.user?.emailVerified
-                              ? "success"
-                              : "destructive"
-                          }
+                          variant={emailVerified ? "success" : "destructive"}
                         >
-                          {session?.user?.emailVerified ? "Sí" : "No"}
+                          {emailVerified ? "Sí" : "No"}
                         </Badge>
                       </div>
                     </div>
@@ -1564,6 +1577,36 @@ function parseColaboradores(colabString) {
         .map((c) => c.trim())
         .filter(Boolean)
     : [];
+}
+
+// --- NUEVO: Hook para consultar el estado real de la suscripción desde el backend ---
+function useSubscriptionStatus(type = "all") {
+  const [subscribed, setSubscribed] = useState(null); // null = loading, true/false
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchStatus = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/subscription?type=${type}`);
+      if (!res.ok) throw new Error("No se pudo consultar la suscripción");
+      const data = await res.json();
+      setSubscribed(!!data.subscribed);
+    } catch (err) {
+      setError(err.message);
+      setSubscribed(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStatus();
+    // eslint-disable-next-line
+  }, [type]);
+
+  return { subscribed, loading, error, refetch: fetchStatus };
 }
 
 export default function PerfilPage() {
