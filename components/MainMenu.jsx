@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
 import { signOut } from "next-auth/react";
+import { User } from "lucide-react";
 import ThemeSwitch from "./ThemeSwitch";
 import { useModal } from "../providers/ModalProvider";
 import { useUser } from "../providers/UserProvider";
@@ -27,6 +28,8 @@ function TypewriterText({
   delay = 0,
   repeat = false,
   repeatDelay = 3000,
+  className = "",
+  style = {},
 }) {
   const [displayedText, setDisplayedText] = useState("");
   const [isComplete, setIsComplete] = useState(false);
@@ -62,13 +65,20 @@ function TypewriterText({
   }, [text, speed, delay, repeat, repeatDelay, cycle]);
 
   return (
-    <span className="text-xl font-semibold tracking-wide text-primary inline-block min-w-[120px]">
+    <span
+      className={`text-3xl font-normal tracking-tight text-primary drop-shadow-sm ${className}`}
+      style={{
+        fontFamily: "var(--font-monoton), cursive",
+        letterSpacing: "0.04em",
+        ...style,
+      }}
+    >
       {displayedText}
       {!isComplete && (
         <motion.span
           animate={{ opacity: [0, 1, 0] }}
           transition={{ duration: 0.8, repeat: Infinity }}
-          className="inline-block w-0.5 h-5 bg-primary ml-1"
+          className="inline-block w-0.5 h-7 bg-primary ml-1 align-middle"
         />
       )}
     </span>
@@ -167,6 +177,7 @@ export default function MainMenu({ onSubirArchivo }) {
   };
 
   const menuLinks = [
+    { href: "/", label: "Inicio" },
     { href: "/galeria", label: "Galería" },
     { href: "/acerca-de", label: "Acerca de" },
     { href: "/museo", label: "Museo Virtual" },
@@ -187,87 +198,122 @@ export default function MainMenu({ onSubirArchivo }) {
             : "bg-transparent md:bg-white/95 md:dark:bg-gray-900/95 md:backdrop-blur-md"
         } text-gray-900 dark:text-white transition-all duration-300`}
       >
-        <div className="max-w-screen-xl mx-auto flex items-center justify-between px-4 py-2 md:py-4">
-          {" "}
-          {/* Logo */}
-          <Link
-            href="/"
-            className="flex items-center gap-3 min-w-fit navbar-link"
-          >
-            <img
-              src="/assets/nav/logo.svg"
-              alt="Logo"
-              className="h-8 w-auto flex-shrink-0 dark:hidden"
-            />
-            <img
-              src="/assets/nav/logo-white.svg"
-              alt="Logo"
-              className="h-8 w-auto flex-shrink-0 hidden dark:block"
-            />
-            {/* Hide title on mobile */}
-            <div className="hidden md:block">
-              <TypewriterText
-                text="Mural ARPA"
-                speed={120}
-                delay={300}
-                repeat={true}
-                repeatDelay={5000}
-              />
+        <div className="max-w-screen-xl mx-auto flex items-center px-4 py-2 md:py-4 min-h-[64px]">
+          {/* Logo y título (lg: a la izquierda, md: centrado, sm: centrado) */}
+          <div className="flex-1 flex items-center">
+            <div className="flex flex-col items-center lg:items-start justify-center w-full lg:w-auto lg:pl-8">
+              <Link
+                href="/"
+                className="flex flex-col items-center lg:items-start justify-center navbar-link"
+                style={{
+                  width: 80,
+                  minWidth: 80,
+                  maxWidth: 80,
+                  overflow: "visible",
+                }}
+              >
+                <img
+                  src="/assets/nav/logo.svg"
+                  alt="Logo"
+                  className="h-14 w-auto flex-shrink-0 dark:hidden mx-auto"
+                />
+                <img
+                  src="/assets/nav/logo-white.svg"
+                  alt="Logo"
+                  className="h-14 w-auto flex-shrink-0 hidden dark:block mx-auto"
+                />
+                {/* Título solo visible en lg+ */}
+                <span
+                  aria-hidden="true"
+                  className="hidden lg:block"
+                  style={{
+                    opacity: 0,
+                    display: "block",
+                    fontFamily: "var(--font-monoton), cursive",
+                    fontSize: "1.875rem",
+                    fontWeight: 400,
+                    letterSpacing: "0.04em",
+                    whiteSpace: "nowrap",
+                    width: "100%",
+                    minWidth: 0,
+                    maxWidth: "100%",
+                    height: "auto",
+                  }}
+                >
+                  Mural ARPA
+                </span>
+                <TypewriterText
+                  text="Mural ARPA"
+                  speed={120}
+                  delay={300}
+                  repeat={true}
+                  repeatDelay={5000}
+                  className="block w-full hidden lg:block"
+                  style={{
+                    width: "100%",
+                    minWidth: 0,
+                    maxWidth: "100%",
+                    whiteSpace: "nowrap",
+                    textAlign: "center",
+                    marginTop: "-48px",
+                  }}
+                />
+              </Link>
             </div>
-          </Link>
-          {/* Título a la izquierda en mobile, junto al logo */}
-          <NavigationMenu className="hidden md:block align-middle">
-            {/* DESKTOP: solo enlaces directos */}
-            <NavigationMenuList className="text-sm font-medium relative items-center flex h-full">
-              {menuLinks.map((link) => {
-                const isActive = pathname.startsWith(link.href);
-                return (
-                  <NavigationMenuItem key={link.href} className="relative">
-                    <NavigationMenuLink asChild>
-                      <Link
-                        href={link.href}
-                        className={`navbar-link hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-all px-3 py-2 rounded-lg flex flex-col items-center ${isActive ? "text-primary font-bold" : ""}`}
-                        style={{ position: "relative", zIndex: 1 }}
-                        aria-current={isActive ? "page" : undefined}
-                        onClick={
-                          isActive ? (e) => e.preventDefault() : undefined
-                        }
-                      >
-                        {/* Punto animado arriba del texto, espacio siempre reservado */}
-                        <span className="block h-3 mb-1 w-full flex items-center justify-center">
-                          <motion.span
-                            layoutId="menu-dot-global"
-                            className={
-                              isActive
-                                ? "inline-block w-2 h-2 rounded-full bg-primary"
-                                : "inline-block w-2 h-2 rounded-full bg-gray-400/70"
-                            }
-                            initial={false}
-                            animate={
-                              isActive
-                                ? { scale: 1, opacity: 1 }
-                                : { scale: 0.7, opacity: 0.5 }
-                            }
-                            transition={{
-                              type: "spring",
-                              stiffness: 120,
-                              damping: 18,
-                              mass: 0.7,
-                              duration: 0.45,
-                            }}
-                            style={{ display: "inline-block" }}
-                          />
-                        </span>
-                        {link.label}
-                      </Link>
-                    </NavigationMenuLink>
-                  </NavigationMenuItem>
-                );
-              })}
-            </NavigationMenuList>
-          </NavigationMenu>
+          </div>
+          {/* Links perfectamente centrados en la navbar (md+) */}
+          <div className="hidden md:block absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
+            <NavigationMenu className="align-middle">
+              <NavigationMenuList className="text-sm font-medium relative items-center flex h-full">
+                {menuLinks.map((link) => {
+                  const isActive = pathname.startsWith(link.href);
+                  return (
+                    <NavigationMenuItem key={link.href} className="relative">
+                      <NavigationMenuLink asChild>
+                        <Link
+                          href={link.href}
+                          className={`navbar-link hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-all px-3 py-2 rounded-lg flex flex-col items-center ${isActive ? "text-primary font-bold" : ""}`}
+                          style={{ position: "relative", zIndex: 1 }}
+                          aria-current={isActive ? "page" : undefined}
+                          onClick={
+                            isActive ? (e) => e.preventDefault() : undefined
+                          }
+                        >
+                          <span className="block h-3 mb-1 w-full flex items-center justify-center">
+                            <motion.span
+                              layoutId="menu-dot-global"
+                              className={
+                                isActive
+                                  ? "inline-block w-2 h-2 rounded-full bg-primary"
+                                  : "inline-block w-2 h-2 rounded-full bg-gray-400/70"
+                              }
+                              initial={false}
+                              animate={
+                                isActive
+                                  ? { scale: 1, opacity: 1 }
+                                  : { scale: 0.7, opacity: 0.5 }
+                              }
+                              transition={{
+                                type: "spring",
+                                stiffness: 120,
+                                damping: 18,
+                                mass: 0.7,
+                                duration: 0.45,
+                              }}
+                              style={{ display: "inline-block" }}
+                            />
+                          </span>
+                          {link.label}
+                        </Link>
+                      </NavigationMenuLink>
+                    </NavigationMenuItem>
+                  );
+                })}
+              </NavigationMenuList>
+            </NavigationMenu>
+          </div>
           {/* Usuario autenticado o botón de login */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-8 md:gap-16">
             {status === "loading" ? (
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-muted animate-pulse"></div>
@@ -495,9 +541,10 @@ export default function MainMenu({ onSubirArchivo }) {
             ) : (
               <button
                 onClick={() => handleAuthClick("login")}
-                className="hidden md:inline-block rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-all duration-200 shadow-sm hover:shadow-md"
+                className="hidden md:inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200 shadow-sm hover:shadow-md w-10 h-10 p-0"
+                title="Iniciar sesión"
               >
-                Iniciar sesión
+                <User className="w-6 h-6" />
               </button>
             )}
 
