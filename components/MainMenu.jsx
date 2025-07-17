@@ -400,58 +400,6 @@ export default function MainMenu({ onSubirArchivo }) {
                         </div>
                         {/* En el dropdown del usuario: */}
                         <div className="flex flex-col gap-2">
-                          <div className="px-3 py-2 border-b border-border">
-                            <p className="text-sm font-medium text-foreground">
-                              {userProfile?.name || user?.name || "Usuario"}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {user?.email}
-                            </p>
-                            {userProfile?.roles && (
-                              <div className="flex gap-1 mt-1">
-                                {userProfile.roles.map((role, index) => (
-                                  <span
-                                    key={index}
-                                    className={`text-xs px-2 py-1 rounded-full ${
-                                      role === "admin"
-                                        ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
-                                        : role === "moderator"
-                                          ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
-                                          : "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
-                                    }`}
-                                  >
-                                    {role}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                            {/* Información de la sesión */}
-                            {session && (
-                              <div className="mt-2 pt-2 border-t border-border">
-                                <div className="flex items-center justify-between text-xs">
-                                  <span className="text-muted-foreground">
-                                    Sesión:
-                                  </span>
-                                  <span
-                                    className={`font-medium ${
-                                      isSessionExpiringSoon
-                                        ? "text-yellow-600 dark:text-yellow-400"
-                                        : isSessionExpired
-                                          ? "text-red-600 dark:text-red-400"
-                                          : "text-green-600 dark:text-green-400"
-                                    }`}
-                                  >
-                                    {sessionDuration}
-                                  </span>
-                                </div>
-                                {isSessionExpiringSoon && (
-                                  <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
-                                    ⚠️ Sesión por expirar
-                                  </p>
-                                )}
-                              </div>
-                            )}
-                          </div>
                           {/* Links principales del usuario */}
                           {[
                             { href: "/perfil", label: "Mi perfil" },
