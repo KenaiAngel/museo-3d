@@ -1569,7 +1569,7 @@ function parseColaboradores(colabString) {
 export default function PerfilPage() {
   return (
     <ProtectedRoute>
-      <div className="relative min-h-screen overflow-hidden">
+      <div className="relative min-h-screen overflow-hidden pt-20"> {/* pt-20 para dejar espacio a la navbar fija */}
         {/* Fondo arcoíris con blobs controlados */}
         <RainbowBackground />
         <div className="relative z-10">
