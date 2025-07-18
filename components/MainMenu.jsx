@@ -201,8 +201,8 @@ export default function MainMenu({ onSubirArchivo }) {
             : "bg-transparent md:bg-white/95 md:dark:bg-gray-900/95 md:backdrop-blur-md"
         } text-gray-900 dark:text-white transition-all duration-300`}
       >
-        <div className="max-w-screen-xl mx-auto flex items-center px-4 py-2 md:py-4 min-h-[64px]">
-          {/* Logo a la izquierda en md+ */}
+        <div className="max-w-screen-xl mx-auto flex items-center justify-between px-4 py-2 md:py-4 min-h-[64px]">
+          {/* Logo a la izquierda siempre */}
           <div
             className="flex items-center flex-shrink-0"
             style={{ minWidth: 80 }}
@@ -321,10 +321,12 @@ export default function MainMenu({ onSubirArchivo }) {
               </NavigationMenuList>
             </NavigationMenu>
           </div>
-          {/* Usuario y ThemeSwitch a la derecha en md+ */}
-          {!isMobile && (
-            <div className="flex items-center gap-8 md:gap-16 flex-shrink-0">
-              {status === "loading" ? (
+          {/* ThemeSwitch siempre visible a la derecha */}
+          <div className="flex items-center flex-shrink-0 ml-auto">
+            <ThemeSwitch />
+            {/* Usuario solo en md+ */}
+            {!isMobile &&
+              (status === "loading" ? (
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-full bg-muted animate-pulse"></div>
                   <span className="hidden md:inline text-sm text-muted-foreground">
@@ -511,12 +513,8 @@ export default function MainMenu({ onSubirArchivo }) {
                 >
                   <User className="w-6 h-6" />
                 </button>
-              )}
-              <div>
-                <ThemeSwitch />
-              </div>
-            </div>
-          )}
+              ))}
+          </div>
           {/* Botón hamburguesa solo en mobile */}
           {isMobile && (
             <button
