@@ -346,6 +346,7 @@ export default function CrearMuralStepper() {
           <MuralImageStep
             value={mural.url_imagen}
             onChange={(img) => setMural((m) => ({ ...m, url_imagen: img }))}
+            muralData={mural}
           />
         )}
         {/* Step 3: Ubicación y sala */}

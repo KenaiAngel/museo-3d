@@ -28,8 +28,7 @@ const LayoutContainer = ({ children }) => {
   const pathname = usePathname();
   const isMobile = useIsMobile();
 
-  const noTopPaddingPages = ["/", "/museo", "/perfil"];
-  const needsTopPadding = !noTopPaddingPages.includes(pathname);
+  const needsTopPadding = true;
   const fixedFooterPages = ["/", "/museo"];
   const useFixedFooter = fixedFooterPages.includes(pathname);
 
@@ -60,7 +59,7 @@ const LayoutContainer = ({ children }) => {
       <header className="sticky top-0 z-[60]">
         <MainMenu />
       </header>
-      <main className={`flex-1 ${needsTopPadding ? "pt-16 md:pt-20" : ""}`}>
+      <main className="flex-1 pt-14 md:pt-18">
         {children}
         {useFixedFooter && (
           <div

@@ -198,10 +198,10 @@ export default function MainMenu({ onSubirArchivo }) {
         } ${
           isScrolled
             ? "bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-700/50 shadow-lg"
-            : "bg-transparent md:bg-white/95 md:dark:bg-gray-900/95 md:backdrop-blur-md"
+            : "bg-white/95 dark:bg-gray-900/95 backdrop-blur-md"
         } text-gray-900 dark:text-white transition-all duration-300`}
       >
-        <div className="max-w-screen-xl mx-auto flex items-center justify-between px-4 py-2 md:py-4 min-h-[64px]">
+        <div className="max-w-screen-xl mx-auto flex items-center justify-between px-4 py-2 md:py-4 min-h-[56px] md:min-h-[64px]">
           {/* Logo a la izquierda siempre */}
           <div
             className="flex items-center flex-shrink-0"
@@ -220,12 +220,12 @@ export default function MainMenu({ onSubirArchivo }) {
               <img
                 src="/assets/nav/logo.svg"
                 alt="Logo"
-                className="h-14 w-auto flex-shrink-0 dark:hidden mx-auto"
+                className="h-10 md:h-14 w-auto flex-shrink-0 dark:hidden mx-auto"
               />
               <img
                 src="/assets/nav/logo-white.svg"
                 alt="Logo"
-                className="h-14 w-auto flex-shrink-0 hidden dark:block mx-auto"
+                className="h-10 md:h-14 w-auto flex-shrink-0 hidden dark:block mx-auto"
               />
               {/* Título solo visible en lg+ */}
               <span
@@ -614,12 +614,12 @@ export default function MainMenu({ onSubirArchivo }) {
                 <img
                   src="/assets/nav/logo.svg"
                   alt="Logo"
-                  className="h-16 w-auto flex-shrink-0 dark:hidden"
+                  className="h-10 w-auto flex-shrink-0 dark:hidden"
                 />
                 <img
                   src="/assets/nav/logo-white.svg"
                   alt="Logo"
-                  className="h-16 w-auto flex-shrink-0 hidden dark:block"
+                  className="h-10 w-auto flex-shrink-0 hidden dark:block"
                 />
               </div>
               {/* ThemeSwitch debajo del logo */}
@@ -655,6 +655,35 @@ export default function MainMenu({ onSubirArchivo }) {
                 >
                   Museo Virtual
                 </Link>
+
+                {/* Si el usuario NO está autenticado, mostrar botones de autenticación */}
+                {!isAuthenticated && (
+                  <>
+                    <div className="px-3 py-1 border-t border-border mt-2">
+                      <p className="text-xs text-muted-foreground font-medium">
+                        Cuenta
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        handleAuthClick("login");
+                      }}
+                      className="block w-full text-left px-3 py-2 rounded-md hover:bg-muted hover:text-primary transition-all text-sm font-medium"
+                    >
+                      Iniciar sesión
+                    </button>
+                    <button
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        handleAuthClick("register");
+                      }}
+                      className="block w-full text-left px-3 py-2 rounded-md hover:bg-muted hover:text-primary transition-all text-sm font-medium"
+                    >
+                      Crear sesión
+                    </button>
+                  </>
+                )}
 
                 {/* Si el usuario está autenticado, mostrar opciones de perfil */}
                 {isAuthenticated && (
@@ -724,13 +753,15 @@ export default function MainMenu({ onSubirArchivo }) {
                   </>
                 )}
 
-                {/* Botón de cierre de sesión */}
-                <button
-                  onClick={() => signOut()}
-                  className="block w-full text-left px-3 py-2 rounded-md transition-all text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-950/30 focus:outline-none focus:ring-2 focus:ring-red-500/20"
-                >
-                  Cerrar sesión
-                </button>
+                {/* Botón de cierre de sesión solo si está autenticado */}
+                {isAuthenticated && (
+                  <button
+                    onClick={() => signOut()}
+                    className="block w-full text-left px-3 py-2 rounded-md transition-all text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-950/30 focus:outline-none focus:ring-2 focus:ring-red-500/20"
+                  >
+                    Cerrar sesión
+                  </button>
+                )}
               </div>
               {/* Avatar y nombre de usuario al final del menú móvil */}
               {isAuthenticated && (

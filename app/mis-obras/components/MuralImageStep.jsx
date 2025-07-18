@@ -6,8 +6,10 @@ import Upload from "lucide-react/dist/esm/icons/upload";
 import Image from "next/image";
 import CanvasEditor from "./CanvasEditor";
 import { useFileUpload } from "../hooks/useFileUpload";
+import { useRouter } from "next/navigation";
 
-export default function MuralImageStep({ value, onChange }) {
+export default function MuralImageStep({ value, onChange, muralData = {} }) {
+  const router = useRouter();
   const [tab, setTab] = useState(0);
   const [localImage, setLocalImage] = useState(null); // base64 o File
   const [canvasImage, setCanvasImage] = useState(null);
@@ -134,36 +136,48 @@ export default function MuralImageStep({ value, onChange }) {
         </div>
       )}
       {tab === 1 && !previewUrl && (
-        <Box
-          sx={{
-            width: "100%",
-            minHeight: 400,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            mb: 2,
-          }}
+        <div
+          className="flex flex-col items-center justify-center border-2 border-dashed rounded-2xl p-8 mb-2 w-full transition-all
+          border-gray-300 bg-gray-50 dark:bg-neutral-900/70
+          hover:border-indigo-400 hover:bg-indigo-50 dark:hover:border-indigo-400 dark:hover:bg-neutral-800/80
+        "
         >
-          <CanvasEditor
-            isOpen={true}
-            onClose={() => {}}
-            onSave={handleCanvasSave}
-            ref={canvasRef}
-          />
-          <Button
-            variant="contained"
-            color="primary"
-            sx={{ mt: 2 }}
-            onClick={() => {
-              if (canvasRef.current?.exportImage) {
-                const img = canvasRef.current.exportImage();
-                handleCanvasSave(img);
-              }
-            }}
-          >
-            Guardar dibujo
-          </Button>
-        </Box>
+          <div className="flex flex-col items-center text-center">
+            <span role="img" aria-label="Dibujar" className="text-6xl mb-4">
+              🎨
+            </span>
+            <h3 className="text-xl font-semibold mb-2 text-gray-700 dark:text-gray-100">
+              Editor de dibujo dedicado
+            </h3>
+            <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-md">
+              Accede a un editor de dibujo completo con herramientas
+              profesionales, más espacio de trabajo y mejor experiencia de
+              usuario.
+            </p>
+            <button
+              onClick={() => {
+                // Guardar datos actuales en localStorage antes de navegar
+                const currentData = {
+                  titulo: muralData.titulo || "",
+                  tecnica: muralData.tecnica || "",
+                  year: muralData.anio || muralData.year || undefined,
+                  descripcion: muralData.descripcion || "",
+                };
+                localStorage.setItem(
+                  "muralDraftData",
+                  JSON.stringify(currentData)
+                );
+
+                // Navegar a la página del canvas
+                router.push("/mis-obras/crear/canvas");
+              }}
+              className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+              style={{ cursor: "pointer" }}
+            >
+              Abrir editor de dibujo
+            </button>
+          </div>
+        </div>
       )}
       {previewUrl && (
         <div className="flex flex-col items-center mt-2">
