@@ -200,7 +200,7 @@ export default function MainMenu({ onSubirArchivo }) {
       >
         <div className="max-w-screen-xl mx-auto flex items-center px-4 py-2 md:py-4 min-h-[64px]">
           {/* Logo y título (lg: a la izquierda, md: centrado, sm: centrado) */}
-          <div className={`flex-1 flex items-center ${isAuthenticated ? 'max-[1000px]:hidden' : ''}`}>
+          <div className={`flex-1 flex items-center ${isAuthenticated ? 'max-[1100px]:hidden' : ''}`}>
             <div className="flex flex-col items-center lg:items-start justify-center w-full lg:w-auto lg:pl-8">
               <Link
                 href="/"
@@ -262,7 +262,7 @@ export default function MainMenu({ onSubirArchivo }) {
             </div>
           </div>
           {/* Links perfectamente centrados en la navbar (md+) */}
-          <div className={`hidden md:block absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 ${isAuthenticated ? 'max-[1000px]:hidden' : ''}`}>
+          <div className={`hidden md:block absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 ${isAuthenticated ? 'max-[1100px]:hidden' : ''}`}>
             <NavigationMenu className="align-middle">
               <NavigationMenuList className="text-sm font-medium relative items-center flex h-full">
                 {menuLinks.map((link) => {
@@ -313,7 +313,7 @@ export default function MainMenu({ onSubirArchivo }) {
             </NavigationMenu>
           </div>
           {/* Usuario autenticado o botón de login */}
-          <div className={`flex items-center gap-8 md:gap-16 ${isAuthenticated ? 'max-[1000px]:justify-between max-[1000px]:w-full max-[1000px]:px-4' : ''}`}>
+          <div className={`flex items-center gap-8 md:gap-16 ${isAuthenticated ? 'max-[1100px]:justify-between max-[1100px]:w-full max-[1100px]:px-4' : ''}`}>
             {status === "loading" ? (
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-muted animate-pulse"></div>
@@ -322,7 +322,7 @@ export default function MainMenu({ onSubirArchivo }) {
                 </span>
               </div>
             ) : isAuthenticated ? (
-              <div className={isAuthenticated ? 'max-[1000px]:order-3' : ''}>
+              <div className={isAuthenticated ? 'max-[1100px]:order-3' : ''}>
                 <NavigationMenu>
                   <NavigationMenuList>
                     <NavigationMenuItem>
@@ -499,7 +499,7 @@ export default function MainMenu({ onSubirArchivo }) {
             )}
 
             {/* Theme Switch */}
-            <div className={isAuthenticated ? 'max-[1000px]:order-1' : ''}>
+            <div className={isAuthenticated ? 'max-[1100px]:order-1' : ''}>
               <ThemeSwitch />
             </div>
 
@@ -508,7 +508,7 @@ export default function MainMenu({ onSubirArchivo }) {
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className={`md:hidden p-3 rounded-lg transition-all duration-300 relative overflow-hidden hamburger-button ${
                 mobileMenuOpen ? "hamburger-special-open" : ""
-              } ${isAuthenticated ? 'max-[1000px]:order-2' : ''}`}
+              } ${isAuthenticated ? 'max-[1100px]:order-2' : ''}`}
               aria-label={mobileMenuOpen ? "Cerrar menú" : "Abrir menú"}
             >
               <div className="w-6 h-6 relative flex flex-col justify-center items-center">
