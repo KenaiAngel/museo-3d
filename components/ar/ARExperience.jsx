@@ -21,6 +21,14 @@ export default function ARExperience({
   const [currentEnvironment, setCurrentEnvironment] = useState(0);
   const [sceneReady, setSceneReady] = useState(false);
   const [modelLoaded, setModelLoaded] = useState(false);
+  // Estado para fade de ambiente
+  const [fade, setFade] = useState(false);
+  // Estado para guardar la vista inicial de la cámara
+  const initialCamera = useRef({ position: null, target: null });
+  // Estado para saber si está en AR
+  const [isAR, setIsAR] = useState(false);
+  // Estado para guardar la escala original del modelo
+  const originalScale = useRef(null);
 
   const environments = ["/images/image360.jpg", "/images/image3602.jpg"];
 
@@ -247,30 +255,100 @@ export default function ARExperience({
       textureRef.current.dispose();
       textureRef.current = null;
     }
-    const textureLoader = new THREE.TextureLoader();
-    textureLoader.load(
-      environments[currentEnvironment],
-      (texture) => {
-        texture.mapping = THREE.EquirectangularReflectionMapping;
-        sceneRef.current.background = texture;
-        sceneRef.current.environment = texture;
-        textureRef.current = texture;
-        console.log(
-          "✅ Textura de ambiente cargada:",
-          environments[currentEnvironment]
-        );
-      },
-      undefined,
-      (error) => {
-        sceneRef.current.background = new THREE.Color(0x222222);
-        console.error(
-          "❌ Error cargando textura de ambiente:",
-          environments[currentEnvironment],
-          error
-        );
-      }
-    );
+    // Fade out
+    setFade(true);
+    setTimeout(() => {
+      const textureLoader = new THREE.TextureLoader();
+      textureLoader.load(
+        environments[currentEnvironment],
+        (texture) => {
+          texture.mapping = THREE.EquirectangularReflectionMapping;
+          texture.colorSpace = THREE.SRGBColorSpace;
+          sceneRef.current.background = texture;
+          sceneRef.current.environment = texture;
+          textureRef.current = texture;
+          setFade(false);
+          console.log(
+            "✅ Textura de ambiente cargada:",
+            environments[currentEnvironment]
+          );
+        },
+        undefined,
+        (error) => {
+          sceneRef.current.background = new THREE.Color(0x222222);
+          setFade(false);
+          console.error(
+            "❌ Error cargando textura de ambiente:",
+            environments[currentEnvironment],
+            error
+          );
+        }
+      );
+    }, 250); // Duración del fade out
   }, [currentEnvironment, sceneReady]);
+
+  // Guardar la vista inicial de la cámara al cargar el modelo
+  useEffect(() => {
+    if (!sceneReady || !sceneRef.current || !rendererRef.current) return;
+    if (cameraRef.current && controlsRef.current) {
+      initialCamera.current.position = cameraRef.current.position.clone();
+      initialCamera.current.target = controlsRef.current.target.clone();
+    }
+  }, [modelLoaded, sceneReady]);
+
+  // Efecto para detectar entrada/salida de AR y ajustar modelo y controles
+  useEffect(() => {
+    if (!rendererRef.current || !modelRef.current || !controlsRef.current)
+      return;
+    const renderer = rendererRef.current;
+    const model = modelRef.current;
+    const controls = controlsRef.current;
+
+    function handleSessionStart() {
+      setIsAR(true);
+      // Guardar escala original
+      if (!originalScale.current) {
+        originalScale.current = model.scale.clone();
+      }
+      // Centrar modelo en el origen y escalar pequeño
+      model.position.set(0, 0, 0);
+      const box = new THREE.Box3().setFromObject(model);
+      const size = box.getSize(new THREE.Vector3());
+      const maxDim = Math.max(size.x, size.y, size.z);
+      const arScale = 0.5 / maxDim; // tamaño máximo 0.5 unidades
+      model.scale.setScalar(arScale);
+      controls.enabled = false;
+    }
+    function handleSessionEnd() {
+      setIsAR(false);
+      // Restaurar escala original
+      if (originalScale.current) {
+        model.scale.copy(originalScale.current);
+      }
+      controls.enabled = true;
+    }
+    renderer.xr.addEventListener("sessionstart", handleSessionStart);
+    renderer.xr.addEventListener("sessionend", handleSessionEnd);
+    // Limpieza
+    return () => {
+      renderer.xr.removeEventListener("sessionstart", handleSessionStart);
+      renderer.xr.removeEventListener("sessionend", handleSessionEnd);
+    };
+  }, [modelLoaded, sceneReady]);
+
+  // Función para resetear la cámara
+  const handleResetCamera = () => {
+    if (
+      cameraRef.current &&
+      controlsRef.current &&
+      initialCamera.current.position &&
+      initialCamera.current.target
+    ) {
+      cameraRef.current.position.copy(initialCamera.current.position);
+      controlsRef.current.target.copy(initialCamera.current.target);
+      controlsRef.current.update();
+    }
+  };
 
   // Cambia ambiente
   const changeEnvironment = (index) => {
@@ -376,6 +454,13 @@ export default function ARExperience({
                 color: "#fff",
                 userSelect: "none",
                 fontSize: 15,
+                background:
+                  currentEnvironment === idx
+                    ? "rgba(255,255,255,0.12)"
+                    : "transparent",
+                borderRadius: 8,
+                padding: "2px 6px",
+                transition: "background 0.2s",
               }}
             >
               <input
@@ -402,6 +487,25 @@ export default function ARExperience({
                 aria-checked={currentEnvironment === idx}
                 aria-label={`Ambiente ${idx + 1}`}
               />
+              {/* Miniatura del ambiente */}
+              <img
+                src={env}
+                alt={`Miniatura ambiente ${idx + 1}`}
+                style={{
+                  width: 32,
+                  height: 20,
+                  objectFit: "cover",
+                  borderRadius: 4,
+                  border:
+                    currentEnvironment === idx
+                      ? "2px solid #fff"
+                      : "1px solid #aaa",
+                  boxShadow:
+                    currentEnvironment === idx ? "0 0 6px #764ba2" : undefined,
+                  marginRight: 4,
+                  background: "#222",
+                }}
+              />
               <span style={{ color: "inherit", fontWeight: 600 }}>
                 Ambiente {idx + 1}
               </span>
@@ -409,6 +513,46 @@ export default function ARExperience({
           ))
         )}
       </section>
+      {/* Fade de ambiente */}
+      {fade && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            background: "#000",
+            opacity: 0.6,
+            zIndex: 9998,
+            pointerEvents: "none",
+            transition: "opacity 0.25s",
+          }}
+        />
+      )}
+      {/* Botón reset cámara */}
+      <button
+        onClick={handleResetCamera}
+        style={{
+          position: "fixed",
+          bottom: 32,
+          left: 32,
+          zIndex: 9999,
+          background: "rgba(0,0,0,0.7)",
+          color: "#fff",
+          border: "2px solid #fff",
+          borderRadius: 12,
+          padding: "10px 18px",
+          fontSize: 16,
+          fontWeight: 600,
+          boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
+          cursor: "pointer",
+          transition: "background 0.2s",
+        }}
+        aria-label="Resetear cámara"
+      >
+        Resetear cámara
+      </button>
       {showCloseButton && onClose && (
         <button
           onClick={onClose}

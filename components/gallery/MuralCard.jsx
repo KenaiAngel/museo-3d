@@ -331,6 +331,79 @@ export default function MuralCard({
         )}
       </div>
       <div className="font-bold text-lg mb-1">{mural.titulo}</div>
+      {/* Elimina el toggle debajo del título, regresa a la posición original */}
+      <div className="flex items-center gap-2 mt-2">
+        <div className="relative group">
+          <button
+            onClick={handleLikeClick}
+            aria-label={tooltipText}
+            className={`w-9 h-9 flex items-center justify-center text-pink-500 transition-all duration-200 rounded-full focus:outline-none bg-white dark:bg-neutral-900 border hover:bg-pink-100 dark:hover:bg-pink-900/30 ${isLiked ? "font-bold ring-2 ring-pink-400 bg-pink-100 dark:bg-pink-900/40 border-pink-400 focus:ring-2 focus:ring-pink-400/60" : "border-transparent focus:ring-0"} ${animating ? "scale-125" : ""}`}
+          >
+            ♥
+          </button>
+          <span className="absolute left-1/2 -translate-x-1/2 top-full mt-1 px-2 py-1 rounded bg-black/80 text-white text-xs opacity-0 group-hover:opacity-100 pointer-events-none z-20 whitespace-nowrap">
+            {tooltipText}
+          </span>
+        </div>
+        <span className="text-xs font-semibold text-muted-foreground select-none">
+          {localLikes}
+        </span>
+        {/* Toggle de crear modelo 3D vuelve aquí */}
+        {isAdmin && (
+          <div className="relative inline-block ml-auto">
+            <button
+              ref={buttonRef}
+              onClick={handlePopoverClick}
+              className="flex items-center gap-1 px-2 py-1 rounded bg-indigo-50 dark:bg-neutral-800 text-indigo-700 dark:text-indigo-200 text-xs font-semibold hover:bg-indigo-100 dark:hover:bg-neutral-700 border border-indigo-100 dark:border-neutral-700 transition"
+              title="Opciones modelo 3D"
+              disabled={uploading}
+            >
+              <PlusCircle className="h-4 w-4" /> Modelo 3D
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".glb"
+              style={{ display: "none" }}
+              onClick={(e) => e.stopPropagation()}
+              onChange={(e) => {
+                e.stopPropagation();
+                handleFileChange(e);
+              }}
+            />
+            {showPopover &&
+              typeof window !== "undefined" &&
+              ReactDOM.createPortal(
+                <div
+                  ref={popoverRef}
+                  className="fixed z-[9999] min-w-[180px] bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 rounded-xl shadow-2xl py-2 flex flex-col items-stretch animate-fade-in"
+                  style={{
+                    top: popoverPos.top,
+                    left: popoverPos.left,
+                    transform: "translateX(-50%)",
+                    boxShadow: "0 8px 32px 0 rgba(0,0,0,0.18)",
+                  }}
+                >
+                  <button
+                    onClick={handleFileOption}
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-neutral-800 hover:text-indigo-900 dark:hover:text-indigo-100 transition-all rounded-t-xl focus:outline-none"
+                  >
+                    <UploadCloud className="h-5 w-5 opacity-80" /> Subir modelo
+                    3D
+                  </button>
+                  <button
+                    onClick={handleCreateOption}
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-neutral-800 hover:text-indigo-900 dark:hover:text-indigo-100 transition-all rounded-b-xl focus:outline-none border-t border-gray-100 dark:border-neutral-700"
+                  >
+                    <PlusCircle className="h-5 w-5 opacity-80" /> Crear modelo
+                    3D
+                  </button>
+                </div>,
+                document.body
+              )}
+          </div>
+        )}
+      </div>
       <div className="flex flex-wrap gap-1 mb-1">
         {autores.slice(0, 2).map((autor, idx) => (
           <span
@@ -387,110 +460,6 @@ export default function MuralCard({
           )}
         </div>
       )}
-      <div className="flex items-center gap-2 mt-2">
-        <div className="relative group">
-          <button
-            onClick={handleLikeClick}
-            aria-label={tooltipText}
-            className={`w-9 h-9 flex items-center justify-center text-pink-500 transition-all duration-200 rounded-full focus:outline-none bg-white dark:bg-neutral-900 border hover:bg-pink-100 dark:hover:bg-pink-900/30 ${isLiked ? "font-bold ring-2 ring-pink-400 bg-pink-100 dark:bg-pink-900/40 border-pink-400 focus:ring-2 focus:ring-pink-400/60" : "border-transparent focus:ring-0"} ${animating ? "scale-125" : ""}`}
-          >
-            ♥
-          </button>
-          <span className="absolute left-1/2 -translate-x-1/2 top-full mt-1 px-2 py-1 rounded bg-black/80 text-white text-xs opacity-0 group-hover:opacity-100 pointer-events-none z-20 whitespace-nowrap">
-            {tooltipText}
-          </span>
-        </div>
-        <span className="text-xs font-semibold text-muted-foreground select-none">
-          {localLikes}
-        </span>
-        {isAdmin && (
-          <div className="relative inline-block ml-auto">
-            <button
-              ref={buttonRef}
-              onClick={handlePopoverClick}
-              className="flex items-center gap-1 px-2 py-1 rounded bg-indigo-50 dark:bg-neutral-800 text-indigo-700 dark:text-indigo-200 text-xs font-semibold hover:bg-indigo-100 dark:hover:bg-neutral-700 border border-indigo-100 dark:border-neutral-700 transition"
-              title="Opciones modelo 3D"
-              disabled={uploading}
-            >
-              <PlusCircle className="h-4 w-4" /> Modelo 3D
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".glb"
-              style={{ display: "none" }}
-              onClick={(e) => e.stopPropagation()}
-              onChange={(e) => {
-                e.stopPropagation();
-                handleFileChange(e);
-              }}
-            />
-            {showPopover &&
-              typeof window !== "undefined" &&
-              ReactDOM.createPortal(
-                <div
-                  ref={popoverRef}
-                  className="fixed z-[9999] min-w-[180px] bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 rounded-xl shadow-2xl py-2 flex flex-col items-stretch animate-fade-in"
-                  style={{
-                    top: popoverPos.top,
-                    left: popoverPos.left,
-                    transform: "translateX(-50%)",
-                    boxShadow: "0 8px 32px 0 rgba(0,0,0,0.18)",
-                  }}
-                >
-                  <button
-                    onClick={handleFileOption}
-                    className="flex items-center gap-2 px-4 py-2 text-sm text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-neutral-800 hover:text-indigo-900 dark:hover:text-indigo-100 transition-all rounded-t-xl focus:outline-none"
-                  >
-                    <UploadCloud className="h-5 w-5 opacity-80" /> Subir modelo
-                    3D
-                  </button>
-                  <button
-                    onClick={handleCreateOption}
-                    className="flex items-center gap-2 px-4 py-2 text-sm text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-neutral-800 hover:text-indigo-900 dark:hover:text-indigo-100 transition-all rounded-b-xl focus:outline-none border-t border-gray-100 dark:border-neutral-700"
-                  >
-                    <PlusCircle className="h-5 w-5 opacity-80" /> Crear modelo
-                    3D
-                  </button>
-                  <button
-                    onClick={handleClosePopover}
-                    className="absolute top-1 right-1 p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-neutral-800 rounded transition-colors"
-                    aria-label="Cerrar"
-                  >
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M6 18L18 6M6 6l12 12"
-                      />
-                    </svg>
-                  </button>
-                  {(success || error) && (
-                    <div className="px-4 pt-2 text-xs">
-                      {success && (
-                        <span className="text-green-600 dark:text-green-400">
-                          {success}
-                        </span>
-                      )}
-                      {error && (
-                        <span className="text-red-600 dark:text-red-400">
-                          {error}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>,
-                document.body
-              )}
-          </div>
-        )}
-      </div>
     </div>
   );
 }

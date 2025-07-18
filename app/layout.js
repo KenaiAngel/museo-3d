@@ -59,19 +59,26 @@ export default function RootLayout({ children }) {
           </AppProviders>
         </PushNotificationsProvider>
         <Toaster
-          position="top-center"
+          position="bottom-right"
           reverseOrder={true}
           limit={2}
           containerStyle={{
-            top: "25%",
-            left: "50%",
-            right: "auto",
-            bottom: "auto",
-            transform: "translateX(-50%)",
+            bottom: 32,
+            right: 32,
+            left: "auto",
+            top: "auto",
+            transform: "none",
+            zIndex: 10000,
           }}
           toastOptions={{
             className: "toast-badge",
             duration: 4000,
+            style: {
+              minWidth: 220,
+              fontSize: 15,
+              borderRadius: 10,
+              boxShadow: "0 2px 12px rgba(0,0,0,0.18)",
+            },
             success: {
               className: "toast-badge toast-badge-success",
               icon: <span className="toast-animated-icon">✅</span>,

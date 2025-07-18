@@ -26,6 +26,7 @@ import L from "leaflet";
 import { useState as useLocalState } from "react";
 import { Icon } from "leaflet";
 import { Brush } from "lucide-react";
+import ReactSelect from "react-select";
 
 const STEPS = [
   { label: "Datos básicos", subtitle: "Información principal", icon: <User /> },
@@ -351,89 +352,90 @@ export default function CrearMuralStepper() {
         {step === 2 && <LocationPicker mural={mural} setMural={setMural} />}
         {/* Step 4: Estado y visibilidad */}
         {step === 3 && (
-          <div className="flex flex-col gap-10 mb-8">
-            <label>
-              Estado
-              <input
+          <div className="flex flex-col gap-6 mb-8">
+            <div>
+              <label
+                htmlFor="estado"
+                className="block mb-2 text-base font-semibold text-gray-700 dark:text-gray-200"
+              >
+                Estado
+              </label>
+              <select
+                id="estado"
                 className="input-stepper"
                 value={mural.estado}
                 onChange={(e) =>
                   setMural((m) => ({ ...m, estado: e.target.value }))
                 }
-              />
-            </label>
-            <label>
-              Pública
+              >
+                <option value="">Selecciona un estado</option>
+                <option value="Activo">Activo</option>
+                <option value="En restauración">En restauración</option>
+                <option value="Oculto">Oculto</option>
+                <option value="Archivado">Archivado</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-4">
               <input
+                id="publica"
                 type="checkbox"
                 checked={mural.publica}
                 onChange={(e) =>
                   setMural((m) => ({ ...m, publica: e.target.checked }))
                 }
+                className="form-checkbox h-5 w-5 text-indigo-600 transition-all"
               />
-            </label>
-            <label>
-              Destacada
+              <label
+                htmlFor="publica"
+                className="text-base font-semibold text-gray-700 dark:text-gray-200 select-none cursor-pointer"
+              >
+                Pública
+              </label>
+            </div>
+            <div className="flex items-center gap-4">
               <input
+                id="destacada"
                 type="checkbox"
                 checked={mural.destacada}
                 onChange={(e) =>
                   setMural((m) => ({ ...m, destacada: e.target.checked }))
                 }
+                className="form-checkbox h-5 w-5 text-indigo-600 transition-all"
               />
-            </label>
-            <label>
-              Orden
+              <label
+                htmlFor="destacada"
+                className="text-base font-semibold text-gray-700 dark:text-gray-200 select-none cursor-pointer"
+              >
+                Destacada
+              </label>
+            </div>
+            <div>
+              <label
+                htmlFor="orden"
+                className="block mb-2 text-base font-semibold text-gray-700 dark:text-gray-200"
+              >
+                Orden
+              </label>
               <input
+                id="orden"
                 className="input-stepper"
                 type="number"
                 value={mural.orden}
                 onChange={(e) =>
                   setMural((m) => ({ ...m, orden: e.target.value }))
                 }
+                placeholder="Ejemplo: 1, 2, 3..."
+                min={0}
               />
-            </label>
+              <span className="text-xs text-gray-500 dark:text-gray-400 mt-1 block">
+                Entre menor sea el número, más arriba aparecerá tu obra.
+              </span>
+            </div>
           </div>
         )}
         {/* Step 5: Autores y colaboradores */}
         {step === 4 && (
-          <div className="flex flex-col gap-10 mb-8">
-            <label>
-              Autor principal
-              <input
-                className="input-stepper"
-                value={mural.autor}
-                onChange={(e) =>
-                  setMural((m) => ({ ...m, autor: e.target.value }))
-                }
-              />
-            </label>
-            <label>
-              Artista (ID)
-              <input
-                className="input-stepper"
-                value={mural.artistId}
-                onChange={(e) =>
-                  setMural((m) => ({ ...m, artistId: e.target.value }))
-                }
-              />
-            </label>
-            <label>
-              Colaboradores (JSON)
-              <textarea
-                className="input-stepper"
-                value={JSON.stringify(mural.colaboradores)}
-                onChange={(e) =>
-                  setMural((m) => ({
-                    ...m,
-                    colaboradores: e.target.value
-                      ? JSON.parse(e.target.value)
-                      : [],
-                  }))
-                }
-              />
-            </label>
-          </div>
+          <AutoresColaboradoresStep mural={mural} setMural={setMural} />
         )}
         {/* Step 6: Confirmación */}
         {step === 5 && (
@@ -477,6 +479,17 @@ async function fetchAddressFromLatLon(lat, lon) {
   } catch {
     return "";
   }
+}
+
+// Utilidad para detectar dark mode
+function isDarkMode() {
+  if (typeof window !== "undefined") {
+    return (
+      document.documentElement.classList.contains("dark") ||
+      window.matchMedia("(prefers-color-scheme: dark)").matches
+    );
+  }
+  return false;
 }
 
 // Componente auxiliar para geolocalización automática y reverse geocoding
@@ -531,6 +544,18 @@ function useSalas() {
       .catch(() => setSalas([]));
   }, []);
   return salas;
+}
+
+// Hook para cargar usuarios desde la API
+function useUsuarios() {
+  const [usuarios, setUsuarios] = useState([]);
+  useEffect(() => {
+    fetch("/api/usuarios")
+      .then((res) => res.json())
+      .then((data) => setUsuarios(data.usuarios || []))
+      .catch(() => setUsuarios([]));
+  }, []);
+  return usuarios;
 }
 
 // Componente para seleccionar ubicación con pin draggable y confirmación
@@ -731,6 +756,233 @@ function LocationPicker({ mural, setMural }) {
         />
       </div>
       */}
+    </div>
+  );
+}
+
+// Componente para autores, artista y colaboradores con selects
+function AutoresColaboradoresStep({ mural, setMural }) {
+  const usuarios = useUsuarios();
+  // Opciones para react-select
+  const userOptions = usuarios.map((u) => ({
+    value: u.id,
+    label: u.name ? `${u.name} (${u.email})` : u.email,
+  }));
+  // Para autor principal, puedes usar name o id según tu modelo
+  const autorOption =
+    userOptions.find((opt) => opt.value === mural.autor) || null;
+  const artistaOption =
+    userOptions.find((opt) => opt.value === mural.artistId) || null;
+  const colaboradoresOptions = userOptions.filter((opt) =>
+    (mural.colaboradores || []).includes(opt.value)
+  );
+
+  return (
+    <div className="flex flex-col gap-6 mb-8">
+      <div>
+        <label
+          htmlFor="autor"
+          className="block mb-2 text-base font-semibold text-gray-700 dark:text-gray-200"
+        >
+          Autor principal
+        </label>
+        <ReactSelect
+          inputId="autor"
+          classNamePrefix="react-select"
+          options={userOptions}
+          value={autorOption}
+          onChange={(opt) =>
+            setMural((m) => ({ ...m, autor: opt ? opt.value : "" }))
+          }
+          placeholder="Selecciona un usuario"
+          isClearable
+          menuPortalTarget={
+            typeof window !== "undefined" ? document.body : null
+          }
+          menuPosition="fixed"
+          styles={
+            isDarkMode()
+              ? {
+                  menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                  control: (base, state) => ({
+                    ...base,
+                    backgroundColor: "#18181b",
+                    borderColor: state.isFocused ? "#6366f1" : "#27272a",
+                    color: "#fff",
+                    boxShadow: state.isFocused
+                      ? "0 0 0 1.5px #6366f1"
+                      : undefined,
+                  }),
+                  menu: (base) => ({
+                    ...base,
+                    backgroundColor: "#222",
+                    color: "#fff",
+                  }),
+                  option: (base, state) => ({
+                    ...base,
+                    backgroundColor: state.isSelected
+                      ? "#6366f1"
+                      : state.isFocused
+                        ? "#3730a3"
+                        : "#222",
+                    color: state.isSelected ? "#fff" : "#fff",
+                  }),
+                  multiValue: (base) => ({
+                    ...base,
+                    backgroundColor: "#6366f1",
+                    color: "#fff",
+                  }),
+                  multiValueLabel: (base) => ({ ...base, color: "#fff" }),
+                  multiValueRemove: (base) => ({
+                    ...base,
+                    color: "#fff",
+                    ":hover": { backgroundColor: "#3730a3", color: "#fff" },
+                  }),
+                  placeholder: (base) => ({ ...base, color: "#a1a1aa" }),
+                  singleValue: (base) => ({ ...base, color: "#fff" }),
+                  input: (base) => ({ ...base, color: "#fff" }),
+                }
+              : { menuPortal: (base) => ({ ...base, zIndex: 9999 }) }
+          }
+        />
+      </div>
+      <div>
+        <label
+          htmlFor="artistId"
+          className="block mb-2 text-base font-semibold text-gray-700 dark:text-gray-200"
+        >
+          Artista
+        </label>
+        <ReactSelect
+          inputId="artistId"
+          classNamePrefix="react-select"
+          options={userOptions}
+          value={artistaOption}
+          onChange={(opt) =>
+            setMural((m) => ({ ...m, artistId: opt ? opt.value : "" }))
+          }
+          placeholder="Selecciona un usuario"
+          isClearable
+          menuPortalTarget={
+            typeof window !== "undefined" ? document.body : null
+          }
+          menuPosition="fixed"
+          styles={
+            isDarkMode()
+              ? {
+                  menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                  control: (base, state) => ({
+                    ...base,
+                    backgroundColor: "#18181b",
+                    borderColor: state.isFocused ? "#6366f1" : "#27272a",
+                    color: "#fff",
+                    boxShadow: state.isFocused
+                      ? "0 0 0 1.5px #6366f1"
+                      : undefined,
+                  }),
+                  menu: (base) => ({
+                    ...base,
+                    backgroundColor: "#222",
+                    color: "#fff",
+                  }),
+                  option: (base, state) => ({
+                    ...base,
+                    backgroundColor: state.isSelected
+                      ? "#6366f1"
+                      : state.isFocused
+                        ? "#3730a3"
+                        : "#222",
+                    color: state.isSelected ? "#fff" : "#fff",
+                  }),
+                  multiValue: (base) => ({
+                    ...base,
+                    backgroundColor: "#6366f1",
+                    color: "#fff",
+                  }),
+                  multiValueLabel: (base) => ({ ...base, color: "#fff" }),
+                  multiValueRemove: (base) => ({
+                    ...base,
+                    color: "#fff",
+                    ":hover": { backgroundColor: "#3730a3", color: "#fff" },
+                  }),
+                  placeholder: (base) => ({ ...base, color: "#a1a1aa" }),
+                  singleValue: (base) => ({ ...base, color: "#fff" }),
+                  input: (base) => ({ ...base, color: "#fff" }),
+                }
+              : { menuPortal: (base) => ({ ...base, zIndex: 9999 }) }
+          }
+        />
+      </div>
+      <div>
+        <label
+          htmlFor="colaboradores"
+          className="block mb-2 text-base font-semibold text-gray-700 dark:text-gray-200"
+        >
+          Colaboradores
+        </label>
+        <ReactSelect
+          inputId="colaboradores"
+          classNamePrefix="react-select"
+          options={userOptions}
+          value={colaboradoresOptions}
+          onChange={(opts) =>
+            setMural((m) => ({
+              ...m,
+              colaboradores: opts ? opts.map((o) => o.value) : [],
+            }))
+          }
+          isMulti
+          placeholder="Selecciona uno o varios usuarios"
+          menuPortalTarget={
+            typeof window !== "undefined" ? document.body : null
+          }
+          menuPosition="fixed"
+          styles={
+            isDarkMode()
+              ? {
+                  menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                  control: (base, state) => ({
+                    ...base,
+                    backgroundColor: "#18181b",
+                    borderColor: state.isFocused ? "#6366f1" : "#27272a",
+                    color: "#fff",
+                    boxShadow: state.isFocused
+                      ? "0 0 0 1.5px #6366f1"
+                      : undefined,
+                  }),
+                  menu: (base) => ({
+                    ...base,
+                    backgroundColor: "#222",
+                    color: "#fff",
+                  }),
+                  option: (base, state) => ({
+                    ...base,
+                    backgroundColor: state.isSelected
+                      ? "#6366f1"
+                      : state.isFocused
+                        ? "#3730a3"
+                        : "#222",
+                    color: state.isSelected ? "#fff" : "#fff",
+                  }),
+                  multiValue: (base) => ({
+                    ...base,
+                    backgroundColor: "#6366f1",
+                    color: "#fff",
+                  }),
+                  multiValueLabel: (base) => ({ ...base, color: "#fff" }),
+                  multiValueRemove: (base) => ({
+                    ...base,
+                    color: "#fff",
+                    ":hover": { backgroundColor: "#3730a3", color: "#fff" },
+                  }),
+                  placeholder: (base) => ({ ...base, color: "#a1a1aa" }),
+                  singleValue: (base) => ({ ...base, color: "#fff" }),
+                  input: (base) => ({ ...base, color: "#fff" }),
+                }
+              : { menuPortal: (base) => ({ ...base, zIndex: 9999 }) }
+          }
+        />
+      </div>
     </div>
   );
 }
