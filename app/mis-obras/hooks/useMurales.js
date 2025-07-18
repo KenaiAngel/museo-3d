@@ -101,24 +101,26 @@ export function useMurales() {
   }, []);
 
   // Eliminar mural
-  const handleDeleteMural = useCallback(async (muralId) => {
-    // confirm eliminado, la confirmación ahora es por modal
-    try {
-      const response = await fetch(`/api/murales/${muralId}`, {
-        method: "DELETE",
-      });
+  const handleDeleteMural = useCallback(
+    async (muralId) => {
+      try {
+        const response = await fetch(`/api/murales/${muralId}`, {
+          method: "DELETE",
+        });
 
-      if (response.ok) {
-        setMurales((murales) => murales.filter((m) => m.id !== muralId));
-        toast.success("Obra eliminada exitosamente");
-      } else {
+        if (response.ok) {
+          toast.success("Obra eliminada exitosamente");
+          await fetchUserMurales(); // <-- Recargar lista tras eliminar
+        } else {
+          toast.error("Error al eliminar la obra");
+        }
+      } catch (error) {
+        console.error("Error:", error);
         toast.error("Error al eliminar la obra");
       }
-    } catch (error) {
-      console.error("Error:", error);
-      toast.error("Error al eliminar la obra");
-    }
-  }, []);
+    },
+    [fetchUserMurales]
+  );
 
   // Agregar nueva obra
   const addMural = useCallback((newMural) => {

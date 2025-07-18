@@ -21,6 +21,8 @@ import {
   NavigationMenuTrigger,
 } from "./ui/navigation-menu";
 
+import useIsMobile from "../app/hooks/useIsMobile";
+
 // Componente de efecto máquina de escribir
 function TypewriterText({
   text,
@@ -112,6 +114,7 @@ export default function MainMenu({ onSubirArchivo }) {
   const lastHideY = useRef(0);
   const threshold = 30;
   const [isScrolled, setIsScrolled] = useState(false);
+  const isMobile = useIsMobile();
 
   // Cerrar menú móvil al hacer clic fuera
   useEffect(() => {
@@ -199,8 +202,11 @@ export default function MainMenu({ onSubirArchivo }) {
         } text-gray-900 dark:text-white transition-all duration-300`}
       >
         <div className="max-w-screen-xl mx-auto flex items-center px-4 py-2 md:py-4 min-h-[64px]">
-          {/* Logo y título (lg: a la izquierda, md: centrado, sm: centrado) */}
-          <div className={`flex-1 flex items-center ${isAuthenticated ? 'max-[1100px]:hidden' : ''}`}>
+          {/* Logo a la izquierda en mobile, centrado en desktop */}
+          <div
+            className={`flex-1 flex items-center ${isAuthenticated ? "max-[1100px]:hidden" : ""}`}
+            style={isMobile ? { justifyContent: "flex-start" } : {}}
+          >
             <div className="flex flex-col items-center lg:items-start justify-center w-full lg:w-auto lg:pl-8">
               <Link
                 href="/"
@@ -262,7 +268,9 @@ export default function MainMenu({ onSubirArchivo }) {
             </div>
           </div>
           {/* Links perfectamente centrados en la navbar (md+) */}
-          <div className={`hidden md:block absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 ${isAuthenticated ? 'max-[1100px]:hidden' : ''}`}>
+          <div
+            className={`hidden md:block absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 ${isAuthenticated ? "max-[1100px]:hidden" : ""}`}
+          >
             <NavigationMenu className="align-middle">
               <NavigationMenuList className="text-sm font-medium relative items-center flex h-full">
                 {menuLinks.map((link) => {
@@ -317,203 +325,213 @@ export default function MainMenu({ onSubirArchivo }) {
               </NavigationMenuList>
             </NavigationMenu>
           </div>
-          {/* Usuario autenticado o botón de login */}
-          <div className={`flex items-center gap-8 md:gap-16 ${isAuthenticated ? 'max-[1100px]:justify-between max-[1100px]:w-full max-[1100px]:px-4' : ''}`}>
-            {status === "loading" ? (
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-muted animate-pulse"></div>
-                <span className="hidden md:inline text-sm text-muted-foreground">
-                  Cargando...
-                </span>
-              </div>
-            ) : isAuthenticated ? (
-              <div className={isAuthenticated ? 'max-[1100px]:order-3' : ''}>
-                <NavigationMenu>
-                  <NavigationMenuList>
-                    <NavigationMenuItem>
-                      <NavigationMenuTrigger className="flex items-center gap-2 hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-all">
-                      <img
-                        src={
-                          userProfile?.image ||
-                          user?.image ||
-                          "/assets/default-avatar.svg"
-                        }
-                        alt={userProfile?.name || user?.name || "Usuario"}
-                        className="w-8 h-8 rounded-full object-cover border-2 border-primary/20"
-                        onError={(e) => {
-                          e.target.src = "/assets/default-avatar.svg";
-                        }}
-                      />
-                      <span className="hidden md:inline text-sm font-medium">
-                        {userProfile?.name ||
-                          user?.name ||
-                          user?.email?.split("@")[0]}
-                      </span>
-                    </NavigationMenuTrigger>
-                    <NavigationMenuContent className="bg-card p-4 rounded-lg shadow-lg border min-w-[180px]">
-                      <div className="flex flex-col gap-2">
-                        <div className="px-3 py-2 border-b border-border">
-                          <p className="text-sm font-medium text-foreground">
-                            {userProfile?.name || user?.name || "Usuario"}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {user?.email}
-                          </p>
-                          {userProfile?.roles && (
-                            <div className="flex gap-1 mt-1">
-                              {userProfile.roles.map((role, index) => (
-                                <span
-                                  key={index}
-                                  className={`text-xs px-2 py-1 rounded-full ${
-                                    role === "admin"
-                                      ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
-                                      : role === "moderator"
-                                        ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
-                                        : "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
-                                  }`}
-                                >
-                                  {role}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                          {/* Información de la sesión */}
-                          {session && (
-                            <div className="mt-2 pt-2 border-t border-border">
-                              <div className="flex items-center justify-between text-xs">
-                                <span className="text-muted-foreground">
-                                  Sesión:
-                                </span>
-                                <span
-                                  className={`font-medium ${
-                                    isSessionExpiringSoon
-                                      ? "text-yellow-600 dark:text-yellow-400"
-                                      : isSessionExpired
-                                        ? "text-red-600 dark:text-red-400"
-                                        : "text-green-600 dark:text-green-400"
-                                  }`}
-                                >
-                                  {sessionDuration}
-                                </span>
-                              </div>
-                              {isSessionExpiringSoon && (
-                                <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
-                                  ⚠️ Sesión por expirar
-                                </p>
+          {/* Usuario autenticado o botón de login y ThemeSwitch solo en desktop */}
+          {!isMobile && (
+            <div
+              className={`flex items-center gap-8 md:gap-16 ${isAuthenticated ? "max-[1100px]:justify-between max-[1100px]:w-full max-[1100px]:px-4" : ""}`}
+            >
+              {status === "loading" ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-muted animate-pulse"></div>
+                  <span className="hidden md:inline text-sm text-muted-foreground">
+                    Cargando...
+                  </span>
+                </div>
+              ) : isAuthenticated ? (
+                <div className={isAuthenticated ? "max-[1100px]:order-3" : ""}>
+                  <NavigationMenu>
+                    <NavigationMenuList>
+                      <NavigationMenuItem>
+                        <NavigationMenuTrigger className="flex items-center gap-2 hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-all">
+                          <img
+                            src={
+                              userProfile?.image ||
+                              user?.image ||
+                              "/assets/default-avatar.svg"
+                            }
+                            alt={userProfile?.name || user?.name || "Usuario"}
+                            className="w-8 h-8 rounded-full object-cover border-2 border-primary/20"
+                            onError={(e) => {
+                              e.target.src = "/assets/default-avatar.svg";
+                            }}
+                          />
+                          <span className="hidden md:inline text-sm font-medium">
+                            {userProfile?.name ||
+                              user?.name ||
+                              user?.email?.split("@")[0]}
+                          </span>
+                        </NavigationMenuTrigger>
+                        <NavigationMenuContent className="bg-card p-4 rounded-lg shadow-lg border min-w-[180px]">
+                          <div className="flex flex-col gap-2">
+                            <div className="px-3 py-2 border-b border-border">
+                              <p className="text-sm font-medium text-foreground">
+                                {userProfile?.name || user?.name || "Usuario"}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {user?.email}
+                              </p>
+                              {userProfile?.roles && (
+                                <div className="flex gap-1 mt-1">
+                                  {userProfile.roles.map((role, index) => (
+                                    <span
+                                      key={index}
+                                      className={`text-xs px-2 py-1 rounded-full ${
+                                        role === "admin"
+                                          ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
+                                          : role === "moderator"
+                                            ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
+                                            : "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+                                      }`}
+                                    >
+                                      {role}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                              {/* Información de la sesión */}
+                              {session && (
+                                <div className="mt-2 pt-2 border-t border-border">
+                                  <div className="flex items-center justify-between text-xs">
+                                    <span className="text-muted-foreground">
+                                      Sesión:
+                                    </span>
+                                    <span
+                                      className={`font-medium ${
+                                        isSessionExpiringSoon
+                                          ? "text-yellow-600 dark:text-yellow-400"
+                                          : isSessionExpired
+                                            ? "text-red-600 dark:text-red-400"
+                                            : "text-green-600 dark:text-green-400"
+                                      }`}
+                                    >
+                                      {sessionDuration}
+                                    </span>
+                                  </div>
+                                  {isSessionExpiringSoon && (
+                                    <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
+                                      ⚠️ Sesión por expirar
+                                    </p>
+                                  )}
+                                </div>
                               )}
                             </div>
-                          )}
-                        </div>
-                        {/* En el dropdown del usuario: */}
-                        <div className="flex flex-col gap-2">
-                          {/* Links principales del usuario */}
-                          {[
-                            { href: "/perfil", label: "Mi perfil" },
-                            { href: "/mis-obras", label: "Mis Obras" },
-                            { href: "/mis-salas", label: "Mis Salas" },
-                            {
-                              href: "/admin/usuarios",
-                              label: "Gestionar Usuarios",
-                              admin: true,
-                            },
-                            {
-                              href: "/admin/logs",
-                              label: "Ver Logs",
-                              admin: true,
-                            },
-                            {
-                              href: "/admin/healthcheck",
-                              label: "Estado del sistema",
-                              admin: true,
-                            },
-                          ]
-                            .filter(
-                              (link) => !link.admin || isModerator || isAdmin
-                            )
-                            .map((link) => {
-                              const isActive = pathname.startsWith(link.href);
-                              return (
-                                <Link
-                                  key={link.href}
-                                  href={link.href}
-                                  className="block px-3 py-2 rounded-md hover:bg-muted hover:text-primary transition-all text-sm relative pl-6"
-                                  aria-current={isActive ? "page" : undefined}
-                                  onClick={
-                                    isActive
-                                      ? (e) => e.preventDefault()
-                                      : undefined
-                                  }
-                                >
-                                  <span className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center">
-                                    <motion.span
-                                      layoutId="menu-dot-global"
-                                      className={
-                                        isActive
-                                          ? "inline-block w-2 h-2 rounded-full bg-primary"
-                                          : "inline-block w-2 h-2 rounded-full bg-gray-400/70"
+                            {/* En el dropdown del usuario: */}
+                            <div className="flex flex-col gap-2">
+                              {/* Links principales del usuario */}
+                              {[
+                                { href: "/perfil", label: "Mi perfil" },
+                                { href: "/mis-obras", label: "Mis Obras" },
+                                { href: "/mis-salas", label: "Mis Salas" },
+                                {
+                                  href: "/admin/usuarios",
+                                  label: "Gestionar Usuarios",
+                                  admin: true,
+                                },
+                                {
+                                  href: "/admin/logs",
+                                  label: "Ver Logs",
+                                  admin: true,
+                                },
+                                {
+                                  href: "/admin/healthcheck",
+                                  label: "Estado del sistema",
+                                  admin: true,
+                                },
+                              ]
+                                .filter(
+                                  (link) =>
+                                    !link.admin || isModerator || isAdmin
+                                )
+                                .map((link) => {
+                                  const isActive = pathname.startsWith(
+                                    link.href
+                                  );
+                                  return (
+                                    <Link
+                                      key={link.href}
+                                      href={link.href}
+                                      className="block px-3 py-2 rounded-md hover:bg-muted hover:text-primary transition-all text-sm relative pl-6"
+                                      aria-current={
+                                        isActive ? "page" : undefined
                                       }
-                                      initial={false}
-                                      animate={
+                                      onClick={
                                         isActive
-                                          ? { scale: 1, opacity: 1 }
-                                          : { scale: 0.7, opacity: 0.5 }
+                                          ? (e) => e.preventDefault()
+                                          : undefined
                                       }
-                                      transition={{
-                                        type: "spring",
-                                        stiffness: 120,
-                                        damping: 18,
-                                        mass: 0.7,
-                                        duration: 0.45,
-                                      }}
-                                      style={{ display: "inline-block" }}
-                                    />
-                                  </span>
-                                  {link.label}
-                                </Link>
-                              );
-                            })}
-                          {/* Panel de Gestión solo como título, sin punto ni indicador */}
-                          {(isModerator || isAdmin) && (
-                            <div className="px-3 py-1 border-t border-border">
-                              <p className="text-xs text-muted-foreground font-medium">
-                                Panel de Gestión
-                              </p>
+                                    >
+                                      <span className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center">
+                                        <motion.span
+                                          layoutId="menu-dot-global"
+                                          className={
+                                            isActive
+                                              ? "inline-block w-2 h-2 rounded-full bg-primary"
+                                              : "inline-block w-2 h-2 rounded-full bg-gray-400/70"
+                                          }
+                                          initial={false}
+                                          animate={
+                                            isActive
+                                              ? { scale: 1, opacity: 1 }
+                                              : { scale: 0.7, opacity: 0.5 }
+                                          }
+                                          transition={{
+                                            type: "spring",
+                                            stiffness: 120,
+                                            damping: 18,
+                                            mass: 0.7,
+                                            duration: 0.45,
+                                          }}
+                                          style={{ display: "inline-block" }}
+                                        />
+                                      </span>
+                                      {link.label}
+                                    </Link>
+                                  );
+                                })}
+                              {/* Panel de Gestión solo como título, sin punto ni indicador */}
+                              {(isModerator || isAdmin) && (
+                                <div className="px-3 py-1 border-t border-border">
+                                  <p className="text-xs text-muted-foreground font-medium">
+                                    Panel de Gestión
+                                  </p>
+                                </div>
+                              )}
                             </div>
-                          )}
-                        </div>
-                        <button
-                          onClick={() => signOut()}
-                          className="block w-full text-left px-3 py-2 rounded-md transition-all text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-950/30 focus:outline-none focus:ring-2 focus:ring-red-500/20"
-                        >
-                          Cerrar sesión
-                        </button>
-                      </div>
-                    </NavigationMenuContent>
-                  </NavigationMenuItem>
-                </NavigationMenuList>
-              </NavigationMenu>
+                            <button
+                              onClick={() => signOut()}
+                              className="block w-full text-left px-3 py-2 rounded-md transition-all text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-950/30 focus:outline-none focus:ring-2 focus:ring-red-500/20"
+                            >
+                              Cerrar sesión
+                            </button>
+                          </div>
+                        </NavigationMenuContent>
+                      </NavigationMenuItem>
+                    </NavigationMenuList>
+                  </NavigationMenu>
+                </div>
+              ) : (
+                <button
+                  onClick={() => handleAuthClick("login")}
+                  className="hidden md:inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200 shadow-sm hover:shadow-md w-10 h-10 p-0"
+                  title="Iniciar sesión"
+                >
+                  <User className="w-6 h-6" />
+                </button>
+              )}
+
+              {/* Theme Switch */}
+              <div className={isAuthenticated ? "max-[1100px]:order-1" : ""}>
+                <ThemeSwitch />
               </div>
-            ) : (
-              <button
-                onClick={() => handleAuthClick("login")}
-                className="hidden md:inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200 shadow-sm hover:shadow-md w-10 h-10 p-0"
-                title="Iniciar sesión"
-              >
-                <User className="w-6 h-6" />
-              </button>
-            )}
-
-            {/* Theme Switch */}
-            <div className={isAuthenticated ? 'max-[1100px]:order-1' : ''}>
-              <ThemeSwitch />
             </div>
-
-            {/* Botón hamburguesa con animación especial */}
+          )}
+          {/* Botón hamburguesa solo en mobile */}
+          {isMobile && (
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className={`md:hidden p-3 rounded-lg transition-all duration-300 relative overflow-hidden hamburger-button ${
                 mobileMenuOpen ? "hamburger-special-open" : ""
-              } ${isAuthenticated ? 'max-[1100px]:order-2' : ''}`}
+              } ${isAuthenticated ? "max-[1100px]:order-2" : ""}`}
               aria-label={mobileMenuOpen ? "Cerrar menú" : "Abrir menú"}
             >
               <div className="w-6 h-6 relative flex flex-col justify-center items-center">
@@ -574,7 +592,7 @@ export default function MainMenu({ onSubirArchivo }) {
                 />
               </svg>
             </button>
-          </div>
+          )}
         </div>
       </motion.nav>
 
@@ -601,7 +619,24 @@ export default function MainMenu({ onSubirArchivo }) {
               data-mobile-menu
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="px-1 py-1 space-y-1 overflow-y-auto max-h-[80vh]">
+              {/* Logo centrado arriba en el menú móvil */}
+              <div className="flex flex-col items-center justify-center mt-2 mb-2">
+                <img
+                  src="/assets/nav/logo.svg"
+                  alt="Logo"
+                  className="h-16 w-auto flex-shrink-0 dark:hidden"
+                />
+                <img
+                  src="/assets/nav/logo-white.svg"
+                  alt="Logo"
+                  className="h-16 w-auto flex-shrink-0 hidden dark:block"
+                />
+              </div>
+              {/* ThemeSwitch debajo del logo */}
+              <div className="flex justify-center mb-4">
+                <ThemeSwitch />
+              </div>
+              <div className="px-1 py-1 space-y-1 overflow-y-auto max-h-[60vh]">
                 <Link
                   href="/"
                   onClick={() => setMobileMenuOpen(false)}
@@ -707,6 +742,28 @@ export default function MainMenu({ onSubirArchivo }) {
                   Cerrar sesión
                 </button>
               </div>
+              {/* Avatar y nombre de usuario al final del menú móvil */}
+              {isAuthenticated && (
+                <div className="flex flex-col items-center mt-6 mb-2 border-t border-border pt-4">
+                  <img
+                    src={
+                      userProfile?.image ||
+                      user?.image ||
+                      "/assets/default-avatar.svg"
+                    }
+                    alt={userProfile?.name || user?.name || "Usuario"}
+                    className="w-14 h-14 rounded-full object-cover border-2 border-primary/20 mb-2"
+                    onError={(e) => {
+                      e.target.src = "/assets/default-avatar.svg";
+                    }}
+                  />
+                  <span className="text-base font-medium text-foreground">
+                    {userProfile?.name ||
+                      user?.name ||
+                      user?.email?.split("@")[0]}
+                  </span>
+                </div>
+              )}
             </motion.div>
           </motion.div>
         )}
