@@ -26,6 +26,7 @@ import toast from "react-hot-toast";
 function MuralesEliminadosAdmin() {
   const { data: session } = useSession();
   const [eliminados, setEliminados] = useState({});
+  const [sendingId, setSendingId] = useState(null);
 
   useEffect(() => {
     if (session?.user?.role === "ADMIN") {
@@ -48,38 +49,87 @@ function MuralesEliminadosAdmin() {
     ({ murales }) => (murales || []).length > 0
   );
   if (!hayMuralesEliminados) return null;
-
   if (session?.user?.role !== "ADMIN") return null;
+
+  const handleSendNotification = async (userId, email) => {
+    setSendingId(userId);
+    try {
+      const res = await fetch("/api/push-subscription", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email,
+          message: "Tienes murales eliminados. Puedes restaurarlos desde tu perfil en el museo 3D.",
+        }),
+      });
+      if (res.ok) {
+        toast.success("Notificación enviada a " + (user?.name || email));
+      } else {
+        toast.error("No se pudo enviar la notificación");
+      }
+    } catch (err) {
+      toast.error("Error al enviar notificación");
+    }
+    setSendingId(null);
+  };
 
   return (
     <section className="mt-12">
-      <h2 className="text-2xl font-bold mb-4">
-        Usuarios con murales eliminados
-      </h2>
-      {Object.entries(agrupados).map(([userId, { user, murales }]) =>
-        (murales || []).length === 0 ? null : (
-          <div key={userId} className="mb-8">
-            <h3 className="font-semibold text-lg mb-2">
-              {userId === "sin_usuario"
-                ? "Sin usuario"
-                : user?.name || "Sin usuario"}{" "}
-              ({user?.email || "N/A"})
-            </h3>
-            <span className="text-sm text-gray-500">
-              {murales.length} mural(es) eliminados
-            </span>
-          </div>
-        )
-      )}
+      <h2 className="text-2xl font-bold mb-4">Usuarios con murales eliminados</h2>
+      <div className="overflow-x-auto rounded-xl border border-border bg-white dark:bg-neutral-900 shadow mb-8">
+        <table className="min-w-full divide-y divide-gray-200 dark:divide-neutral-800">
+          <thead className="bg-gray-50 dark:bg-neutral-800">
+            <tr>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Usuario</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Email</th>
+              <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Murales eliminados</th>
+              <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Acciones</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white dark:bg-neutral-900 divide-y divide-gray-100 dark:divide-neutral-800">
+            {Object.entries(agrupados).map(([userId, { user, murales }]) =>
+              (murales || []).length === 0 ? null : (
+                <tr key={userId}>
+                  <td className="px-4 py-2 font-medium text-foreground">
+                    {userId === "sin_usuario" ? "Sin usuario" : user?.name || "Sin usuario"}
+                  </td>
+                  <td className="px-4 py-2 text-sm text-muted-foreground">
+                    {user?.email || "N/A"}
+                  </td>
+                  <td className="px-4 py-2 text-center">{murales.length}</td>
+                  <td className="px-4 py-2 text-center">
+                    <button
+                      className={`px-4 py-2 rounded bg-blue-600 text-white font-semibold shadow transition disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed`}
+                      disabled={
+                        sendingId === userId ||
+                        !user?.email ||
+                        !(
+                          user?.settings?.notificaciones === true ||
+                          user?.settings?.notificaciones === "true"
+                        )
+                      }
+                      onClick={() => handleSendNotification(userId, user.email)}
+                    >
+                      {sendingId === userId ? "Enviando..." : "Notificar"}
+                    </button>
+                  </td>
+                </tr>
+              )
+            )}
+          </tbody>
+        </table>
+      </div>
     </section>
   );
 }
 
-function MisMuralesEliminados() {
+function MisMuralesEliminados({ fetchUserMurales }) {
   const { data: session } = useSession();
   const [murales, setMurales] = useState([]);
   const [loadingId, setLoadingId] = useState(null);
   const [permanentDeleteId, setPermanentDeleteId] = useState(null);
+  const router = useRouter();
+  const { fetchUserMurales: fetchMurales } = useMurales(); // Renombrado para evitar conflicto
   useEffect(() => {
     if (session?.user?.id) {
       fetch(`/api/murales?deleted=1&userId=${session.user.id}`)
@@ -122,6 +172,7 @@ function MisMuralesEliminados() {
                       if (res.ok) {
                         toast.success("Mural restaurado");
                         setMurales(murales.filter((m) => m.id !== mural.id));
+                        await fetchUserMurales();
                       } else {
                         toast.error("Error al restaurar mural");
                       }
@@ -204,6 +255,7 @@ export default function MisObras() {
     handleDeleteMural,
     addMural,
     getFilterOptions,
+    fetchUserMurales,
   } = useMurales();
 
   // Hook para manejar el estado de la UI
@@ -364,7 +416,7 @@ export default function MisObras() {
             />
           )}
         </motion.div>
-        <MisMuralesEliminados />
+        <MisMuralesEliminados fetchUserMurales={fetchUserMurales} />
         <MuralesEliminadosAdmin />
       </div>
 

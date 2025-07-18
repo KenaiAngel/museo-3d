@@ -11,6 +11,7 @@ import { useUser } from "../../../providers/UserProvider";
 import { generateSimpleGLB } from "../../../utils/generateSimpleGLB";
 import { uploadModelToCloudinary } from "../../../utils/uploadToCloudinary";
 import toast from "react-hot-toast";
+import CrearMuralStepper from "../components/CrearMuralStepper";
 
 export default function CrearObraPage() {
   const router = useRouter();
@@ -41,24 +42,7 @@ export default function CrearObraPage() {
             transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
           >
             <div className="w-full flex flex-col gap-4 items-start">
-              <CrearObraModal
-                isOpen={true}
-                asPage={true}
-                onClose={null}
-                onCreate={() => {
-                  setCreated(true);
-                  setTimeout(() => router.push("/mis-obras"), 1200);
-                }}
-                session={{ user: userProfile || user }}
-                hideClose={true}
-              />
-              {/* Botón temporal para pruebas de modelo GLB simple */}
-              <button
-                onClick={handleTestSimpleGLB}
-                className="mt-8 px-4 py-2 bg-blue-600 text-white rounded shadow-lg hover:bg-blue-700"
-              >
-                Subir modelo GLB simple (prueba)
-              </button>
+              <CrearMuralStepper />
             </div>
           </motion.div>
         </div>
