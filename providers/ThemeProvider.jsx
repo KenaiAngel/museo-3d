@@ -7,7 +7,6 @@ export function ThemeProvider({ children }) {
   const [theme, setTheme] = useState("dark");
 
   useEffect(() => {
-    // Cargar tema guardado o detectar preferencia del sistema
     const savedTheme = localStorage.getItem("theme");
     const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
     const initialTheme = savedTheme || systemTheme;
@@ -18,11 +17,12 @@ export function ThemeProvider({ children }) {
 
   const updateDocumentTheme = (newTheme) => {
     const root = document.documentElement;
-    if (newTheme === "dark") {
-      root.classList.add("dark");
-    } else {
-      root.classList.remove("dark");
-    }
+    
+    root.classList.remove("light", "dark");
+    
+    root.classList.add(newTheme);
+    
+    root.setAttribute("data-theme", newTheme);
   };
 
   const toggleTheme = () => {

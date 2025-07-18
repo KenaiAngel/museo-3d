@@ -1418,3 +1418,370 @@ html.dark .graffiti-gradient-bg {
 .input-stepper {
   @apply w-full px-4 py-3 rounded-md border-2 text-base bg-white dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-gray-900 dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] transition-all focus:ring-2 focus:ring-indigo-400 focus:border-indigo-500 hover:border-indigo-400 outline-none;
 }
+
+/* Reglas para las nubes para la experiencia mobile*/
+.cloud-parallax-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+[data-theme="light"] .cloud-parallax-container {
+  z-index: 10;
+}
+
+[data-theme="dark"] .cloud-parallax-container {
+  z-index: 0; 
+}
+
+.cloud {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(4px);
+  transition: all 0.5s ease;
+}
+
+/* Los tamaños para cada capa de nubes que hacen posible el efecto parallax */
+.cloud-layer-1 {
+  width: 120px;
+  height: 60px;
+  opacity: 0.7;
+}
+
+.cloud-layer-2 {
+  width: 140px;
+  height: 70px;
+  opacity: 0.8;
+}
+
+.cloud-layer-3 {
+  width: 180px;
+  height: 90px;
+}
+
+[data-theme="light"] .cloud {
+  background: #ffffff;
+  box-shadow: 
+    -20px 10px 0 -5px rgba(255, 255, 255, 0.95),
+    20px 15px 0 -5px rgba(255, 255, 255, 0.95),
+    0px -10px 0 -5px rgba(255, 255, 255, 0.95),
+    0px 25px 0 -10px rgba(255, 255, 255, 0.95),
+    10px 35px 0 -10px rgba(255, 255, 255, 0.95),
+    -10px 40px 0 -10px rgba(255, 255, 255, 0.95);
+  
+  filter: blur(4px) drop-shadow(0 1px 2px rgba(100, 150, 255, 0.3));
+}
+
+[data-theme="light"] .cloud-layer-1 {
+  opacity: 0.85;
+}
+
+[data-theme="light"] .cloud-layer-2 {
+  opacity: 0.9;
+}
+
+[data-theme="light"] .cloud-layer-3 {
+  opacity: 0.95;
+}
+
+[data-theme="light"] .cloud-layer-1 {
+  width: 130px;
+  height: 65px;
+}
+
+[data-theme="light"] .cloud-layer-2 {
+  width: 160px;
+  height: 80px;
+}
+
+[data-theme="light"] .cloud-layer-3 {
+  width: 200px;
+  height: 100px;
+}
+
+[data-theme="dark"] .cloud {
+  background: #e5e7eb;
+  box-shadow: 
+    -20px 10px 0 -5px rgba(229, 231, 235, 0.7),
+    20px 15px 0 -5px rgba(229, 231, 235, 0.7),
+    0px -10px 0 -5px rgba(229, 231, 235, 0.7),
+    0px 25px 0 -10px rgba(229, 231, 235, 0.7),
+    10px 35px 0 -10px rgba(229, 231, 235, 0.7),
+    -10px 40px 0 -10px rgba(229, 231, 235, 0.7);
+}
+
+@media (max-width: 640px) {
+  .cloud {
+    filter: blur(3px);
+  }
+  
+  .cloud-layer-1 {
+    width: 100px;
+    height: 50px;
+  }
+  
+  .cloud-layer-2 {
+    width: 120px;
+    height: 60px;
+  }
+  
+  .cloud-layer-3 {
+    width: 150px;
+    height: 75px;
+  }
+  
+  [data-theme="light"] .cloud-layer-1 {
+    width: 110px;
+    height: 55px;
+  }
+  
+  [data-theme="light"] .cloud-layer-2 {
+    width: 140px;
+    height: 70px;
+  }
+  
+  [data-theme="light"] .cloud-layer-3 {
+    width: 170px;
+    height: 85px;
+  }
+}
+
+.light-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(80, 197, 236, 0.85); 
+  z-index: -1; 
+}
+
+.content-overlay {
+  position: relative;
+}
+
+[data-theme="light"] .content-overlay {
+  z-index: 20; 
+}
+
+[data-theme="dark"] .content-overlay {
+  z-index: 10;
+}
+
+/*Efecto de sol y luna dependiendo del tema*/
+.light-solar-glow {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(
+    ellipse at top center,
+    rgba(255, 204, 0, 0.3) 0%,
+    rgba(255, 153, 0, 0.2) 20%,
+    rgba(80, 197, 236, 0) 70%
+  );
+  pointer-events: none;
+  z-index: 5; 
+}
+
+.dark-lunar-glow {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(
+    ellipse at top center,
+    rgba(192, 216, 255, 0.2) 0%,
+    rgba(140, 170, 220, 0.15) 20%,
+    rgba(17, 24, 39, 0) 70%
+  );
+  pointer-events: none;
+  z-index: 5; 
+}
+
+.light-solar-flare {
+  position: fixed;
+  top: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 200, 0.4) 0%,
+    rgba(255, 255, 200, 0) 70%
+  );
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 6;
+  filter: blur(15px);
+  animation: pulse 8s infinite ease-in-out;
+}
+
+.dark-lunar-halo {
+  position: fixed;
+  top: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 180px;
+  height: 180px;
+  background: radial-gradient(
+    circle,
+    rgba(200, 220, 255, 0.2) 0%,
+    rgba(200, 220, 255, 0) 70%
+  );
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 6;
+  filter: blur(20px);
+  animation: glow 10s infinite ease-in-out;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.6; transform: translateX(-50%) scale(1); }
+  50% { opacity: 0.8; transform: translateX(-50%) scale(1.1); }
+}
+
+@keyframes glow {
+  0%, 100% { opacity: 0.3; filter: blur(20px); }
+  50% { opacity: 0.5; filter: blur(25px); }
+}
+
+[data-theme="light"] .cloud-layer-1,
+[data-theme="light"] .cloud-layer-2,
+[data-theme="light"] .cloud-layer-3 {
+  mix-blend-mode: soft-light;
+}
+
+[data-theme="dark"] .cloud-layer-1,
+[data-theme="dark"] .cloud-layer-2,
+[data-theme="dark"] .cloud-layer-3 {
+  mix-blend-mode: screen;
+}
+
+.light-solar-rays {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 6;
+}
+
+.light-solar-ray {
+  position: absolute;
+  background: linear-gradient(
+    to bottom right,
+    rgba(255, 230, 100, 0.3),
+    transparent 70%
+  );
+  filter: blur(15px);
+  animation: ray-pulse 12s infinite ease-in-out;
+}
+
+.dark-lunar-rays {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 6;
+}
+
+.dark-lunar-ray {
+  position: absolute;
+  background: linear-gradient(
+    to bottom right,
+    rgba(180, 200, 255, 0.2),
+    transparent 70%
+  );
+  filter: blur(20px);
+  animation: ray-glow 15s infinite ease-in-out;
+}
+
+.light-solar-ray:nth-child(1),
+.dark-lunar-ray:nth-child(1) {
+  top: -10%;
+  left: 10%;
+  width: 150px;
+  height: 300px;
+  transform: rotate(30deg);
+  animation-delay: 0s;
+}
+
+.light-solar-ray:nth-child(2),
+.dark-lunar-ray:nth-child(2) {
+  top: -5%;
+  right: 15%;
+  width: 120px;
+  height: 250px;
+  transform: rotate(-25deg);
+  animation-delay: 2s;
+}
+
+.light-solar-ray:nth-child(3),
+.dark-lunar-ray:nth-child(3) {
+  bottom: 20%;
+  left: 5%;
+  width: 180px;
+  height: 200px;
+  transform: rotate(45deg);
+  animation-delay: 4s;
+}
+
+.light-solar-ray:nth-child(4),
+.dark-lunar-ray:nth-child(4) {
+  bottom: 15%;
+  right: 8%;
+  width: 140px;
+  height: 220px;
+  transform: rotate(-40deg);
+  animation-delay: 6s;
+}
+
+@keyframes ray-pulse {
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 0.4; }
+}
+
+@keyframes ray-glow {
+  0%, 100% { opacity: 0.1; }
+  50% { opacity: 0.25; }
+}
+
+.light-solar-flare {
+  width: 250px;
+  height: 250px;
+  animation: pulse 8s infinite ease-in-out, rotate 30s infinite linear;
+}
+
+.dark-lunar-halo {
+  width: 220px;
+  height: 220px;
+  animation: glow 10s infinite ease-in-out, rotate 40s infinite linear;
+}
+
+@keyframes rotate {
+  0% { transform: translateX(-50%) rotate(0deg); }
+  100% { transform: translateX(-50%) rotate(360deg); }
+}
+
+[data-theme="light"] .cloud-layer-1 {
+  opacity: 0.75;
+}
+
+[data-theme="light"] .cloud-layer-2 {
+  opacity: 0.85;
+}
+
+[data-theme="light"] .cloud-layer-3 {
+  opacity: 0.9;
+}
