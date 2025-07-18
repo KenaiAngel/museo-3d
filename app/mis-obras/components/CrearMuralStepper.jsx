@@ -1,15 +1,15 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Stepper from "@/components/ui/Stepper";
 import {
   CheckCircle,
   AlertCircle,
   Info,
   User,
-  Image as ImageIcon,
   MapPin,
   Eye,
   Users,
+  Image,
 } from "lucide-react";
 import MuralImageStep from "./MuralImageStep";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -20,13 +20,19 @@ import { Select, SelectItem } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { X } from "lucide-react";
 import React from "react";
+import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
+import { useState as useLocalState } from "react";
+import { Icon } from "leaflet";
+import { Brush } from "lucide-react";
 
 const STEPS = [
   { label: "Datos básicos", subtitle: "Información principal", icon: <User /> },
   {
     label: "Imágenes y medios",
     subtitle: "Sube o crea tu imagen",
-    icon: <ImageIcon />,
+    icon: <Image />,
   },
   {
     label: "Ubicación y sala",
@@ -111,6 +117,34 @@ export default function CrearMuralStepper() {
     (_, i) => currentYear - i
   );
 
+  // Fix default marker icon for leaflet in React (otherwise no marker icon)
+  delete L.Icon.Default.prototype._getIconUrl;
+  L.Icon.Default.mergeOptions({
+    iconRetinaUrl: require("leaflet/dist/images/marker-icon-2x.png"),
+    iconUrl: require("leaflet/dist/images/marker-icon.png"),
+    shadowUrl: require("leaflet/dist/images/marker-shadow.png"),
+  });
+
+  function LocationMarker({ lat, lng, setLatLng }) {
+    useMapEvents({
+      click(e) {
+        setLatLng([e.latlng.lat, e.latlng.lng]);
+      },
+    });
+    return lat && lng ? <Marker position={[lat, lng]} /> : null;
+  }
+
+  // Utilidad para generar SVG string de un icono Lucide
+  function getLucideSvgUrl(iconName = "brush", color = "#4F46E5") {
+    let svg = "";
+    if (iconName === "brush") {
+      svg = `<svg xmlns='http://www.w3.org/2000/svg' width='36' height='36' fill='none' stroke='${color}' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='lucide lucide-brush' viewBox='0 0 24 24'><path d='M9 7 17 15'/><path d='M12 20h9'/><path d='M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19.5a2.121 2.121 0 1 1-3-3Z'/></svg>`;
+    } else if (iconName === "image") {
+      svg = `<svg xmlns='http://www.w3.org/2000/svg' width='36' height='36' fill='none' stroke='${color}' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='lucide lucide-image' viewBox='0 0 24 24'><rect width='18' height='18' x='3' y='3' rx='2'/><circle cx='9' cy='9' r='2'/><path d='m21 15-4.586-4.586a2 2 0 0 0-2.828 0L3 21'/></svg>`;
+    }
+    return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+  }
+
   // Determinar estados de los steps para feedback visual
   const stepStates = STEPS.map((stepObj, i) => {
     if (i < step)
@@ -149,6 +183,14 @@ export default function CrearMuralStepper() {
       </div>
       {/* Formulario principal */}
       <div className="bg-white/90 dark:bg-neutral-900/90 rounded-xl px-4 md:px-10 py-8 flex flex-col gap-12 shadow-lg border border-indigo-100 dark:border-indigo-900">
+        {/* Título del paso actual */}
+        <div className="mb-6 text-center">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+            {STEPS[step].label}
+          </h2>
+        </div>
+        {/* Geolocalización automática para el paso de ubicación */}
+        {step === 2 && <GeolocateIfNeeded mural={mural} setMural={setMural} />}
         {step === 0 && (
           <div className="flex flex-col gap-10 mb-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
@@ -158,7 +200,7 @@ export default function CrearMuralStepper() {
                 </label>
                 <input
                   id="titulo"
-                  className={underlineInputClass}
+                  className="input-stepper"
                   value={mural.titulo}
                   onChange={(e) =>
                     setMural((m) => ({ ...m, titulo: e.target.value }))
@@ -177,7 +219,7 @@ export default function CrearMuralStepper() {
                 </label>
                 <input
                   id="tecnica"
-                  className={underlineInputClass}
+                  className="input-stepper"
                   value={mural.tecnica}
                   onChange={(e) =>
                     setMural((m) => ({ ...m, tecnica: e.target.value }))
@@ -194,19 +236,20 @@ export default function CrearMuralStepper() {
                 <label htmlFor="anio" className={labelClass}>
                   Año*
                 </label>
-                <Select
+                <select
+                  className="input-stepper"
                   value={String(mural.anio)}
-                  onValueChange={(val) =>
-                    setMural((m) => ({ ...m, anio: val }))
+                  onChange={(e) =>
+                    setMural((m) => ({ ...m, anio: e.target.value }))
                   }
-                  placeholder="Selecciona el año"
                 >
+                  <option value="">Selecciona el año</option>
                   {years.map((y) => (
-                    <SelectItem key={y} value={String(y)}>
+                    <option key={y} value={String(y)}>
                       {y}
-                    </SelectItem>
+                    </option>
                   ))}
-                </Select>
+                </select>
                 {errors.anio && (
                   <span className={errorClass}>{errors.anio}</span>
                 )}
@@ -217,7 +260,7 @@ export default function CrearMuralStepper() {
                 </label>
                 <input
                   id="dimensiones"
-                  className={underlineInputClass}
+                  className="input-stepper"
                   value={mural.dimensiones}
                   onChange={(e) =>
                     setMural((m) => ({ ...m, dimensiones: e.target.value }))
@@ -233,7 +276,7 @@ export default function CrearMuralStepper() {
               </label>
               <textarea
                 id="descripcion"
-                className={underlineInputClass + " min-h-[80px] resize-y mt-1"}
+                className="input-stepper min-h-[80px] resize-y mt-1"
                 value={mural.descripcion}
                 onChange={(e) =>
                   setMural((m) => ({ ...m, descripcion: e.target.value }))
@@ -247,7 +290,7 @@ export default function CrearMuralStepper() {
               </label>
               <input
                 id="tags"
-                className={underlineInputClass}
+                className="input-stepper"
                 value={mural.tagsInput || ""}
                 onChange={(e) =>
                   setMural((m) => ({ ...m, tagsInput: e.target.value }))
@@ -305,74 +348,14 @@ export default function CrearMuralStepper() {
           />
         )}
         {/* Step 3: Ubicación y sala */}
-        {step === 2 && (
-          <div className="flex flex-col gap-10 mb-8">
-            <label>
-              Ubicación
-              <input
-                className="input"
-                value={mural.ubicacion}
-                onChange={(e) =>
-                  setMural((m) => ({ ...m, ubicacion: e.target.value }))
-                }
-              />
-            </label>
-            <label>
-              Latitud
-              <input
-                className="input"
-                type="number"
-                value={mural.latitud}
-                onChange={(e) =>
-                  setMural((m) => ({ ...m, latitud: e.target.value }))
-                }
-              />
-            </label>
-            <label>
-              Longitud
-              <input
-                className="input"
-                type="number"
-                value={mural.longitud}
-                onChange={(e) =>
-                  setMural((m) => ({ ...m, longitud: e.target.value }))
-                }
-              />
-            </label>
-            <label>
-              Sala (ID)
-              <input
-                className="input"
-                value={mural.salaId}
-                onChange={(e) =>
-                  setMural((m) => ({ ...m, salaId: e.target.value }))
-                }
-              />
-            </label>
-            <label>
-              Exposiciones (JSON)
-              <textarea
-                className="input"
-                value={JSON.stringify(mural.exposiciones)}
-                onChange={(e) =>
-                  setMural((m) => ({
-                    ...m,
-                    exposiciones: e.target.value
-                      ? JSON.parse(e.target.value)
-                      : [],
-                  }))
-                }
-              />
-            </label>
-          </div>
-        )}
+        {step === 2 && <LocationPicker mural={mural} setMural={setMural} />}
         {/* Step 4: Estado y visibilidad */}
         {step === 3 && (
           <div className="flex flex-col gap-10 mb-8">
             <label>
               Estado
               <input
-                className="input"
+                className="input-stepper"
                 value={mural.estado}
                 onChange={(e) =>
                   setMural((m) => ({ ...m, estado: e.target.value }))
@@ -402,7 +385,7 @@ export default function CrearMuralStepper() {
             <label>
               Orden
               <input
-                className="input"
+                className="input-stepper"
                 type="number"
                 value={mural.orden}
                 onChange={(e) =>
@@ -418,7 +401,7 @@ export default function CrearMuralStepper() {
             <label>
               Autor principal
               <input
-                className="input"
+                className="input-stepper"
                 value={mural.autor}
                 onChange={(e) =>
                   setMural((m) => ({ ...m, autor: e.target.value }))
@@ -428,7 +411,7 @@ export default function CrearMuralStepper() {
             <label>
               Artista (ID)
               <input
-                className="input"
+                className="input-stepper"
                 value={mural.artistId}
                 onChange={(e) =>
                   setMural((m) => ({ ...m, artistId: e.target.value }))
@@ -438,7 +421,7 @@ export default function CrearMuralStepper() {
             <label>
               Colaboradores (JSON)
               <textarea
-                className="input"
+                className="input-stepper"
                 value={JSON.stringify(mural.colaboradores)}
                 onChange={(e) =>
                   setMural((m) => ({
@@ -478,6 +461,276 @@ export default function CrearMuralStepper() {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+// Utilidad para reverse geocoding con Nominatim
+async function fetchAddressFromLatLon(lat, lon) {
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`
+    );
+    if (!res.ok) return "";
+    const data = await res.json();
+    return data.display_name || "";
+  } catch {
+    return "";
+  }
+}
+
+// Componente auxiliar para geolocalización automática y reverse geocoding
+function GeolocateIfNeeded({ mural, setMural }) {
+  useEffect(() => {
+    // Solo si no hay lat/lon ya seleccionadas
+    if (!mural.latitud && !mural.longitud) {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          async (pos) => {
+            const lat = pos.coords.latitude;
+            const lon = pos.coords.longitude;
+            let ubicacion = mural.ubicacion;
+            if (!ubicacion) {
+              ubicacion = await fetchAddressFromLatLon(lat, lon);
+            }
+            setMural((m) => ({ ...m, latitud: lat, longitud: lon, ubicacion }));
+          },
+          () => {
+            // Si falla, no hacer nada (se usará el default CCU BUAP)
+          },
+          { enableHighAccuracy: true, timeout: 5000 }
+        );
+      }
+    }
+  }, [mural.latitud, mural.longitud, mural.ubicacion, setMural]);
+
+  // Reverse geocoding cuando el usuario selecciona en el mapa
+  useEffect(() => {
+    if (mural.latitud && mural.longitud && !mural.ubicacion) {
+      let ignore = false;
+      fetchAddressFromLatLon(mural.latitud, mural.longitud).then((address) => {
+        if (!ignore && address) {
+          setMural((m) => ({ ...m, ubicacion: address }));
+        }
+      });
+      return () => {
+        ignore = true;
+      };
+    }
+  }, [mural.latitud, mural.longitud, mural.ubicacion, setMural]);
+  return null;
+}
+
+// Hook para cargar salas desde la API
+function useSalas() {
+  const [salas, setSalas] = useState([]);
+  useEffect(() => {
+    fetch("/api/salas")
+      .then((res) => res.json())
+      .then((data) => setSalas(data.salas || []))
+      .catch(() => setSalas([]));
+  }, []);
+  return salas;
+}
+
+// Componente para seleccionar ubicación con pin draggable y confirmación
+function LocationPicker({ mural, setMural }) {
+  const salas = useSalas();
+  // Utilidad para generar SVG string de un icono Lucide
+  function getLucideSvgUrl(iconName = "brush", color = "#4F46E5") {
+    let svg = "";
+    if (iconName === "brush") {
+      svg = `<svg xmlns='http://www.w3.org/2000/svg' width='36' height='36' fill='none' stroke='${color}' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='lucide lucide-brush' viewBox='0 0 24 24'><path d='M9 7 17 15'/><path d='M12 20h9'/><path d='M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19.5a2.121 2.121 0 1 1-3-3Z'/></svg>`;
+    } else if (iconName === "image") {
+      svg = `<svg xmlns='http://www.w3.org/2000/svg' width='36' height='36' fill='none' stroke='${color}' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='lucide lucide-image' viewBox='0 0 24 24'><rect width='18' height='18' x='3' y='3' rx='2'/><circle cx='9' cy='9' r='2'/><path d='m21 15-4.586-4.586a2 2 0 0 0-2.828 0L3 21'/></svg>`;
+    }
+    return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+  }
+
+  const [tempLatLng, setTempLatLng] = useLocalState(() => [
+    mural.latitud && !isNaN(Number(mural.latitud))
+      ? Number(mural.latitud)
+      : 18.9996,
+    mural.longitud && !isNaN(Number(mural.longitud))
+      ? Number(mural.longitud)
+      : -98.2417,
+  ]);
+  const [showConfirm, setShowConfirm] = useLocalState(false);
+  const [loading, setLoading] = useLocalState(false);
+
+  // brushIcon debe estar definido aquí para que esté en scope
+  const brushIcon = new Icon({
+    iconUrl: getLucideSvgUrl("brush", "#4F46E5"),
+    iconSize: [36, 36],
+    iconAnchor: [18, 36],
+    popupAnchor: [0, -36],
+    className: "leaflet-brush-icon",
+  });
+
+  function DraggableMarker() {
+    const [position, setPosition] = useLocalState(tempLatLng);
+    const eventHandlers = {
+      dragend(e) {
+        const marker = e.target;
+        const latlng = marker.getLatLng();
+        setPosition([latlng.lat, latlng.lng]);
+        setTempLatLng([latlng.lat, latlng.lng]);
+        setShowConfirm(true);
+      },
+    };
+    return (
+      <Marker
+        position={position}
+        icon={brushIcon}
+        draggable={true}
+        eventHandlers={eventHandlers}
+      />
+    );
+  }
+
+  // Centrar el mapa en la posición temporal
+  const mapCenter = tempLatLng;
+
+  // Confirmar ubicación: actualiza mural.lat/lon y hace reverse geocoding
+  const handleConfirm = async () => {
+    setLoading(true);
+    const [lat, lon] = tempLatLng;
+    const ubicacion = await fetchAddressFromLatLon(lat, lon);
+    setMural((m) => ({ ...m, latitud: lat, longitud: lon, ubicacion }));
+    setShowConfirm(false);
+    setLoading(false);
+  };
+
+  return (
+    <div className="flex flex-col gap-6 mb-8">
+      <label className="block mb-2 text-base font-semibold text-gray-700 dark:text-gray-200">
+        Selecciona la ubicación del mural en el mapa
+      </label>
+      <div className="w-full h-72 rounded-xl overflow-hidden border border-gray-300 dark:border-neutral-700 mb-2">
+        <MapContainer
+          center={mapCenter}
+          zoom={15}
+          style={{ width: "100%", height: "100%" }}
+          scrollWheelZoom={true}
+        >
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+          <DraggableMarker />
+        </MapContainer>
+      </div>
+      {showConfirm && (
+        <button
+          className="px-4 py-2 rounded bg-indigo-600 text-white font-semibold shadow hover:bg-indigo-700 transition w-fit mx-auto"
+          onClick={handleConfirm}
+          disabled={loading}
+        >
+          {loading ? "Confirmando..." : "Confirmar ubicación"}
+        </button>
+      )}
+      {/* Inputs debajo del mapa */}
+      <div>
+        <label
+          htmlFor="ubicacion"
+          className="block mb-2 text-base font-semibold text-gray-700 dark:text-gray-200"
+        >
+          Ubicación
+        </label>
+        <input
+          id="ubicacion"
+          type="text"
+          placeholder="Ejemplo: Edificio A, Planta Baja, Pasillo 2"
+          value={mural.ubicacion}
+          onChange={(e) =>
+            setMural((m) => ({ ...m, ubicacion: e.target.value }))
+          }
+          className="input-stepper"
+        />
+      </div>
+      <div className="flex gap-4">
+        <div className="flex-1">
+          <label
+            htmlFor="latitud"
+            className="block mb-2 text-base font-semibold text-gray-700 dark:text-gray-200"
+          >
+            Latitud
+          </label>
+          <input
+            id="latitud"
+            type="number"
+            placeholder="Ejemplo: 19.0432"
+            value={
+              mural.latitud !== undefined && mural.latitud !== null
+                ? String(mural.latitud)
+                : ""
+            }
+            onChange={(e) =>
+              setMural((m) => ({ ...m, latitud: e.target.value }))
+            }
+            className="input-stepper"
+          />
+        </div>
+        <div className="flex-1">
+          <label
+            htmlFor="longitud"
+            className="block mb-2 text-base font-semibold text-gray-700 dark:text-gray-200"
+          >
+            Longitud
+          </label>
+          <input
+            id="longitud"
+            type="number"
+            placeholder="Ejemplo: -98.1987"
+            value={
+              mural.longitud !== undefined && mural.longitud !== null
+                ? String(mural.longitud)
+                : ""
+            }
+            onChange={(e) =>
+              setMural((m) => ({ ...m, longitud: e.target.value }))
+            }
+            className="input-stepper"
+          />
+        </div>
+      </div>
+      <div>
+        <label
+          htmlFor="salaId"
+          className="block mb-2 text-base font-semibold text-gray-700 dark:text-gray-200"
+        >
+          Sala
+        </label>
+        <select
+          id="salaId"
+          className="input-stepper"
+          value={mural.salaId || ""}
+          onChange={(e) => setMural((m) => ({ ...m, salaId: e.target.value }))}
+        >
+          <option value="">Selecciona una sala (opcional)</option>
+          {salas.map((sala) => (
+            <option key={sala.id} value={sala.id}>
+              {sala.nombre ? `${sala.nombre} (ID: ${sala.id})` : sala.id}
+            </option>
+          ))}
+        </select>
+      </div>
+      {/*
+      <div>
+        <label htmlFor="exposiciones" className="block mb-2 text-base font-semibold text-gray-700 dark:text-gray-200">Exposiciones (JSON)</label>
+        <input
+          id="exposiciones"
+          type="text"
+          placeholder='Ejemplo: ["Expo 2023", "Muestra Digital"]'
+          value={JSON.stringify(mural.exposiciones)}
+          onChange={(e) => setMural((m) => ({
+            ...m,
+            exposiciones: e.target.value ? JSON.parse(e.target.value) : [],
+          }))}
+          className="input-stepper font-mono"
+        />
+      </div>
+      */}
     </div>
   );
 }

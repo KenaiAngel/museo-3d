@@ -2,6 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../../../../lib/auth";
 import cloudinary from "../../../../../utils/cloudinary";
+import { generateMuralGLB } from "../../../../../utils/generateMuralGLB";
 
 const prisma = new PrismaClient();
 
@@ -19,42 +20,32 @@ export async function POST(req, context) {
   }
 
   try {
-    console.log(`📁 Iniciando subida de modelo 3D para mural ID: ${muralId}`);
-
-    const contentType = req.headers.get("content-type") || "";
-    if (!contentType.includes("multipart/form-data")) {
-      return new Response(
-        JSON.stringify({ error: "Content-Type debe ser multipart/form-data" }),
-        { status: 415, headers: { "Content-Type": "application/json" } }
-      );
-    }
-
-    const form = await req.formData();
-    const file = form.get("modelo3d");
-
-    if (!file || typeof file !== "object" || !file.type || !file.name) {
-      return new Response(
-        JSON.stringify({ error: "Archivo modelo3d (.glb) requerido" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
-    }
-
-    if (!file.name.endsWith(".glb")) {
-      return new Response(
-        JSON.stringify({ error: "Solo se permiten archivos .glb" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
-    }
-
     console.log(
-      `📄 Archivo recibido: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`
+      `🚀 Generando modelo 3D automáticamente para mural ID: ${muralId}`
     );
 
-    // Subir a Cloudinary
-    console.log("☁️ Iniciando subida a Cloudinary...");
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    // Obtener mural y su imagen
+    const mural = await prisma.mural.findUnique({ where: { id: muralId } });
+    if (!mural || !mural.url_imagen) {
+      return new Response(
+        JSON.stringify({ error: "Mural o imagen no encontrada" }),
+        { status: 404, headers: { "Content-Type": "application/json" } }
+      );
+    }
 
+    // Generar modelo 3D a partir de la imagen
+    const glbBlob = await generateMuralGLB(mural.url_imagen);
+    if (!glbBlob) {
+      return new Response(
+        JSON.stringify({ error: "No se pudo generar el modelo 3D" }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    // Subir a Cloudinary
+    console.log("☁️ Subiendo modelo generado a Cloudinary...");
+    const arrayBuffer = await glbBlob.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
     const upload = await new Promise((resolve, reject) => {
       cloudinary.uploader
         .upload_stream(
@@ -76,29 +67,24 @@ export async function POST(req, context) {
         )
         .end(buffer);
     });
-
     const modelo3dUrl = upload.secure_url;
 
     // Actualizar mural
     console.log("💾 Actualizando base de datos...");
-    const mural = await prisma.mural.update({
+    await prisma.mural.update({
       where: { id: muralId },
       data: { modelo3dUrl },
     });
 
-    console.log(`✅ Modelo 3D subido exitosamente para mural ID: ${muralId}`);
+    console.log(
+      `✅ Modelo 3D generado y subido exitosamente para mural ID: ${muralId}`
+    );
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: "Modelo 3D subido exitosamente",
+        message: "Modelo 3D generado y subido exitosamente",
         modelo3dUrl,
-        fileInfo: {
-          originalName: file.name,
-          size: file.size,
-          sizeFormatted: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
-          uploadedAt: new Date().toISOString(),
-        },
         muralId: muralId,
       }),
       {
@@ -107,11 +93,11 @@ export async function POST(req, context) {
       }
     );
   } catch (error) {
-    console.error("❌ Error al subir modelo 3D:", error);
+    console.error("❌ Error al generar/subir modelo 3D:", error);
     return new Response(
       JSON.stringify({
         success: false,
-        error: "Error interno al subir modelo 3D",
+        error: "Error interno al generar/subir modelo 3D",
         details: error.message,
         timestamp: new Date().toISOString(),
       }),

@@ -1414,3 +1414,7 @@ html.dark .graffiti-gradient-bg {
   50% { transform: scale(1.025); opacity: 0.96; }
 }
 .animate-soft-pulse { animation: soft-pulse 3.5s ease-in-out infinite; }
+
+.input-stepper {
+  @apply w-full px-4 py-3 rounded-md border-2 text-base bg-white dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-gray-900 dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] transition-all focus:ring-2 focus:ring-indigo-400 focus:border-indigo-500 hover:border-indigo-400 outline-none;
+}

@@ -157,31 +157,57 @@ export async function PUT(req, context) {
       );
     }
 
+    // Filtrar solo los campos válidos para el modelo Prisma
+    const allowedFields = [
+      "titulo",
+      "descripcion",
+      "autor",
+      "tecnica",
+      "ubicacion",
+      "url_imagen",
+      "modelo3dUrl",
+      "latitud",
+      "longitud",
+      "anio",
+      "artistId",
+      "userId",
+      "dimensiones",
+      "estado",
+      "imagenUrl",
+      "imagenUrlWebp",
+      "salaId",
+      "exposiciones",
+      "publica",
+      "destacada",
+      "deletedAt",
+      "tags",
+      "orden",
+      "visitas",
+    ];
+    const updateData = {};
+    for (const key of allowedFields) {
+      if (key === "url_imagen" || key === "imagenUrl") {
+        if (url_imagen !== undefined) updateData[key] = url_imagen;
+      } else if (data[key] !== undefined) {
+        updateData[key] = data[key];
+      }
+    }
+    // Conversión de tipos para algunos campos
+    if (updateData.latitud !== undefined && updateData.latitud !== null) {
+      updateData.latitud = parseFloat(updateData.latitud);
+    }
+    if (updateData.longitud !== undefined && updateData.longitud !== null) {
+      updateData.longitud = parseFloat(updateData.longitud);
+    }
+    if (updateData.anio !== undefined && updateData.anio !== null) {
+      updateData.anio = Number(updateData.anio);
+    }
     // Actualizar mural
     const mural = await prisma.mural.update({
       where: { id: muralId },
-      data: {
-        titulo: data.titulo,
-        descripcion: data.descripcion,
-        artista: data.artista,
-        tecnica: data.tecnica,
-        fechaCreacion: data.fechaCreacion ? new Date(data.fechaCreacion) : null,
-        ubicacion: data.ubicacion,
-        dimensiones: data.dimensiones,
-        estado: data.estado,
-        url_imagen: url_imagen,
-        imagenUrl: url_imagen, // por compatibilidad
-        imagenUrlWebp: data.imagenUrlWebp,
-        latitud: data.latitud ? parseFloat(data.latitud) : null,
-        longitud: data.longitud ? parseFloat(data.longitud) : null,
-        anio: data.anio
-          ? Number(data.anio)
-          : data.year
-            ? Number(data.year)
-            : null,
-      },
+      data: updateData,
       include: {
-        salas: {
+        SalaMural: {
           include: {
             sala: {
               select: {

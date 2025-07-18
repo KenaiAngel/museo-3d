@@ -7,6 +7,8 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { PlusCircle, UploadCloud } from "lucide-react";
 import ReactDOM from "react-dom";
+import { generateMuralGLB } from "../../utils/generateMuralGLB";
+import { uploadModelToCloudinary } from "../../utils/uploadToCloudinary";
 
 export default function MuralCard({
   mural,
@@ -79,10 +81,59 @@ export default function MuralCard({
     if (fileInputRef.current) fileInputRef.current.value = null;
     fileInputRef.current?.click();
   };
-  const handleCreateOption = (e) => {
+  const handleCreateOption = async (e) => {
     e.stopPropagation();
     setShowPopover(false);
-    router.push(`/mis-obras/crear-modelo3d/${mural.id}`);
+    setUploading(true);
+    toast.loading("Generando modelo 3D en el navegador...", {
+      id: "create-modelo3d",
+    });
+    try {
+      // 1. Generar modelo 3D en el frontend
+      const glbBlob = await generateMuralGLB(mural.url_imagen);
+      if (!glbBlob) throw new Error("No se pudo generar el modelo 3D");
+      // 2. Subir a Cloudinary
+      toast.loading("Subiendo modelo 3D a la nube...", {
+        id: "create-modelo3d",
+      });
+      const fileName = `modelo_mural_${mural.id}_${Date.now()}.glb`;
+      const modelo3dUrl = await uploadModelToCloudinary(glbBlob, fileName);
+      if (!modelo3dUrl) throw new Error("No se pudo subir el modelo 3D");
+      // 3. Guardar la URL en la base de datos
+      const res = await fetch(`/api/murales/${mural.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ modelo3dUrl }),
+      });
+      if (!res.ok) throw new Error("No se pudo guardar la URL del modelo 3D");
+      setLocalMuralData((prev) => ({ ...prev, modelo3dUrl }));
+      toast.success(
+        <div className="flex items-center gap-2">
+          <span className="text-lg">🎯</span>
+          <div>
+            <div className="font-semibold">
+              Modelo 3D generado correctamente
+            </div>
+            <div className="text-sm opacity-75">¡AR disponible ahora!</div>
+          </div>
+        </div>,
+        {
+          id: "create-modelo3d",
+          duration: 5000,
+          style: { minWidth: "300px" },
+        }
+      );
+      setTimeout(() => {
+        setSuccess("");
+        router.refresh();
+      }, 1200);
+    } catch (err) {
+      const errorMsg = err.message || "Error al generar modelo 3D";
+      setError(errorMsg);
+      toast.error(errorMsg, { id: "create-modelo3d" });
+    } finally {
+      setUploading(false);
+    }
   };
   const handleFileChange = async (e) => {
     setError("");
@@ -241,7 +292,7 @@ export default function MuralCard({
           <button
             onClick={handleLikeClick}
             aria-label={tooltipText}
-            className={`w-9 h-9 flex items-center justify-center text-pink-500 transition-all duration-200 rounded-full focus:outline-none focus:ring-2 focus:ring-pink-400/60 bg-white dark:bg-neutral-900 border border-transparent hover:bg-pink-100 dark:hover:bg-pink-900/30 ${isLiked ? "font-bold ring-2 ring-pink-400 bg-pink-100 dark:bg-pink-900/40" : ""} ${animating ? "scale-125" : ""}`}
+            className={`w-9 h-9 flex items-center justify-center text-pink-500 transition-all duration-200 rounded-full focus:outline-none bg-white dark:bg-neutral-900 border hover:bg-pink-100 dark:hover:bg-pink-900/30 ${isLiked ? "font-bold ring-2 ring-pink-400 bg-pink-100 dark:bg-pink-900/40 border-pink-400 focus:ring-2 focus:ring-pink-400/60" : "border-transparent focus:ring-0"} ${animating ? "scale-125" : ""}`}
           >
             ♥
           </button>
@@ -341,7 +392,7 @@ export default function MuralCard({
           <button
             onClick={handleLikeClick}
             aria-label={tooltipText}
-            className={`w-9 h-9 flex items-center justify-center text-pink-500 transition-all duration-200 rounded-full focus:outline-none focus:ring-2 focus:ring-pink-400/60 bg-white dark:bg-neutral-900 border border-transparent hover:bg-pink-100 dark:hover:bg-pink-900/30 ${isLiked ? "font-bold ring-2 ring-pink-400 bg-pink-100 dark:bg-pink-900/40" : ""} ${animating ? "scale-125" : ""}`}
+            className={`w-9 h-9 flex items-center justify-center text-pink-500 transition-all duration-200 rounded-full focus:outline-none bg-white dark:bg-neutral-900 border hover:bg-pink-100 dark:hover:bg-pink-900/30 ${isLiked ? "font-bold ring-2 ring-pink-400 bg-pink-100 dark:bg-pink-900/40 border-pink-400 focus:ring-2 focus:ring-pink-400/60" : "border-transparent focus:ring-0"} ${animating ? "scale-125" : ""}`}
           >
             ♥
           </button>

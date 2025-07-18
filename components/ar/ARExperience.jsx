@@ -1,397 +1,435 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
-import { ARButton } from "three/examples/jsm/webxr/ARButton.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { ARButton } from "three/examples/jsm/webxr/ARButton.js";
 
-export default function ARExperience({ modelUrl, onClose }) {
+export default function ARExperience({
+  modelUrl,
+  onClose,
+  showCloseButton,
+  restoreMaterials,
+}) {
   const mountRef = useRef();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const sceneRef = useRef();
+  const rendererRef = useRef();
+  const cameraRef = useRef();
+  const controlsRef = useRef();
+  const modelRef = useRef();
+  const textureRef = useRef();
   const [currentEnvironment, setCurrentEnvironment] = useState(0);
-  
-  // Imágenes 360° disponibles
-  const environments = [
-    '/images/image360.jpg',
-    '/images/image3602.jpg'
-  ];
+  const [sceneReady, setSceneReady] = useState(false);
+  const [modelLoaded, setModelLoaded] = useState(false);
 
+  const environments = ["/images/image360.jpg", "/images/image3602.jpg"];
+
+  // Inicializa Three.js solo una vez
   useEffect(() => {
-    if (!mountRef.current) {
-      console.log("❌ mountRef.current no está disponible");
-      return;
+    if (!mountRef.current) return;
+    // Elimina cualquier canvas previo
+    while (mountRef.current.firstChild) {
+      mountRef.current.removeChild(mountRef.current.firstChild);
     }
-
-    console.log("🚀 Iniciando ARExperience con modelo:", modelUrl);
-    console.log("🌐 Ambiente actual:", environments[currentEnvironment]);
-    console.log("📍 mountRef.current:", mountRef.current);
-
-    // Limpiar cualquier canvas existente antes de crear uno nuevo
-    if (mountRef.current.children.length > 0) {
-      console.log("🧹 Limpiando canvas existente");
-      while (mountRef.current.firstChild) {
-        mountRef.current.removeChild(mountRef.current.firstChild);
-      }
-    }
-
-    // Variables de Three.js
-    let scene, camera, renderer, controls, model;
-
-    // 1. Configurar renderer
-    renderer = new THREE.WebGLRenderer({ antialias: true });
+    // Renderer
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
-    renderer.xr.enabled = true;
+    renderer.xr.enabled = false;
+    renderer.setClearColor(0x00ff00); // fondo verde para depuración
     mountRef.current.appendChild(renderer.domElement);
+    rendererRef.current = renderer;
 
-    // 2. Crear escena
-    scene = new THREE.Scene();
+    // Scene
+    const scene = new THREE.Scene();
+    sceneRef.current = scene;
 
-    // 3. Configurar fondo 360° equirectangular
-    const textureLoader = new THREE.TextureLoader();
-    console.log("📥 Cargando textura:", environments[currentEnvironment]);
-    textureLoader.load(
-      environments[currentEnvironment],
-      (texture) => {
-        console.log("✅ Textura 360° cargada exitosamente");
-        texture.mapping = THREE.EquirectangularReflectionMapping;
-        scene.background = texture;
-        scene.environment = texture; // Para reflejos en el modelo
-      },
-      (progress) => {
-        console.log("📥 Progreso textura 360°:", (progress.loaded / progress.total * 100).toFixed(0) + '%');
-      },
-      (error) => {
-        console.error("❌ Error cargando textura 360°:", error);
-        // Fallback a color sólido
-        scene.background = new THREE.Color(0x222222);
-      }
+    // Camera
+    const camera = new THREE.PerspectiveCamera(
+      75,
+      window.innerWidth / window.innerHeight,
+      0.01,
+      1000
     );
+    camera.position.set(0, 1.6, 3);
+    cameraRef.current = camera;
 
-    // 4. Configurar cámara
-    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.set(0, 1.6, 3); // Posición típica de usuario
-
-    // 5. Configurar controles
-    controls = new OrbitControls(camera, renderer.domElement);
+    // Controls
+    const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
     controls.screenSpacePanning = false;
     controls.minDistance = 0.5;
     controls.maxDistance = 10;
     controls.target.set(0, 0, 0);
+    controlsRef.current = controls;
 
-    // 6. Iluminación básica
+    // Lights
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
     scene.add(ambientLight);
-
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
     directionalLight.position.set(1, 1, 1).normalize();
     scene.add(directionalLight);
 
-    // 7. Cargar modelo 3D si existe
-    if (modelUrl) {
-      console.log("📦 Cargando modelo:", modelUrl);
-      const loader = new GLTFLoader();
-      
-      loader.load(
-        modelUrl,
-        (gltf) => {
-          console.log("✅ Modelo cargado:", gltf);
-          model = gltf.scene;
-
-          // Centrar y escalar modelo
-          const box = new THREE.Box3().setFromObject(model);
-          const center = box.getCenter(new THREE.Vector3());
-          const size = box.getSize(new THREE.Vector3());
-
-          // Centrar en origen
-          model.position.sub(center);
-
-          // Escalar para que sea visible
-          const maxDim = Math.max(size.x, size.y, size.z);
-          const scale = 2 / maxDim; // Escala para que tenga 2 unidades
-          model.scale.setScalar(scale);
-
-          // Posicionar frente al usuario
-          model.position.set(0, 0, 0);
-
-          scene.add(model);
-          setLoading(false);
-          console.log("✅ Modelo añadido a la escena");
-        },
-        (progress) => {
-          console.log("📥 Progreso modelo:", (progress.loaded / progress.total * 100).toFixed(0) + '%');
-        },
-        (error) => {
-          console.error("❌ Error cargando modelo:", error);
-          setError("No se pudo cargar el modelo 3D");
-          setLoading(false);
-        }
-      );
-    } else {
-      setLoading(false);
+    // Render loop
+    let stop = false;
+    function animate() {
+      if (stop) return;
+      // Solo renderiza si el canvas sigue en el DOM
+      if (!mountRef.current || !renderer.domElement.parentNode) return;
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
     }
+    animate();
 
-    // 8. Botón AR
-    if (modelUrl) {
-      const arButton = ARButton.createButton(renderer);
-      arButton.style.position = 'absolute';
-      arButton.style.bottom = '20px';
-      arButton.style.right = '20px';
-      arButton.style.padding = '12px 20px';
-      arButton.style.backgroundColor = '#1976d2';
-      arButton.style.color = 'white';
-      arButton.style.border = 'none';
-      arButton.style.borderRadius = '8px';
-      arButton.style.fontSize = '16px';
-      arButton.textContent = 'Entrar a AR';
-      document.body.appendChild(arButton);
-
-      // Eventos AR
-      renderer.xr.addEventListener('sessionstart', () => {
-        console.log("🚀 Sesión AR iniciada");
-        controls.enabled = false;
-      });
-
-      renderer.xr.addEventListener('sessionend', () => {
-        console.log("🛑 Sesión AR terminada");
-        controls.enabled = true;
-      });
-    }
-
-    // 9. Manejar redimensionado
+    // Resize
     const handleResize = () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
     };
-    window.addEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
 
-    // 10. Loop de animación
-    const animate = () => {
-      requestAnimationFrame(animate);
-      controls.update();
-      renderer.render(scene, camera);
-    };
-    animate();
+    // Espera un poco antes de poner sceneReady en true
+    const readyTimeout = setTimeout(() => {
+      setSceneReady(true);
+    }, 50);
 
     // Cleanup
     return () => {
-      console.log("🧹 Limpiando ARExperience");
-      window.removeEventListener('resize', handleResize);
-      
-      if (controls) {
-        controls.dispose();
-      }
-      
+      stop = true;
+      window.removeEventListener("resize", handleResize);
+      if (controls) controls.dispose();
       if (renderer) {
         renderer.dispose();
-        if (mountRef.current && renderer.domElement && mountRef.current.contains(renderer.domElement)) {
+        if (
+          mountRef.current &&
+          renderer.domElement &&
+          mountRef.current.contains(renderer.domElement)
+        ) {
           mountRef.current.removeChild(renderer.domElement);
         }
       }
-      
-      // Remover botón AR
-      const arButtons = document.querySelectorAll('[data-ar-button], button[style*="position: absolute"]');
-      arButtons.forEach(button => {
-        if (button.parentNode) {
-          button.parentNode.removeChild(button);
-        }
-      });
-      
-      console.log("✅ Cleanup completado");
+      sceneRef.current = null;
+      rendererRef.current = null;
+      cameraRef.current = null;
+      controlsRef.current = null;
+      if (textureRef.current) {
+        textureRef.current.dispose();
+        textureRef.current = null;
+      }
+      modelRef.current = null;
+      setSceneReady(false);
+      clearTimeout(readyTimeout);
     };
-  }, [modelUrl, currentEnvironment]); // Añadido currentEnvironment como dependencia
+  }, []); // Solo al montar/desmontar
 
-  // Función para cambiar ambiente
+  // Cambia el modelo dinámicamente SOLO cuando la escena está lista y los refs existen
+  useEffect(() => {
+    if (!sceneReady || !sceneRef.current || !rendererRef.current) return;
+    // Elimina modelo anterior
+    if (modelRef.current) {
+      sceneRef.current.remove(modelRef.current);
+      modelRef.current = null;
+    }
+    setModelLoaded(false);
+    if (!modelUrl) return;
+    const loader = new GLTFLoader();
+    loader.load(
+      modelUrl,
+      (gltf) => {
+        const model = gltf.scene;
+        const box = new THREE.Box3().setFromObject(model);
+        const center = box.getCenter(new THREE.Vector3());
+        const size = box.getSize(new THREE.Vector3());
+        model.position.sub(center);
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const scale = 2 / maxDim;
+        model.scale.setScalar(scale);
+        model.position.set(0, 0, 0);
+        // Restaurar materiales originales si se solicita
+        if (!restoreMaterials) {
+          model.traverse((child) => {
+            if (child.isMesh) {
+              child.material = new THREE.MeshStandardMaterial({
+                color: 0xff00ff,
+              });
+            }
+          });
+        }
+        sceneRef.current.add(model);
+        modelRef.current = model;
+        // Ajuste automático de cámara
+        const camera = cameraRef.current;
+        const controls = controlsRef.current;
+        const fov = camera.fov * (Math.PI / 180);
+        let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2));
+        cameraZ *= 5; // mucho más lejos
+        camera.position.set(center.x, center.y, cameraZ + center.z + 2);
+        camera.lookAt(center);
+        controls.target.copy(center);
+        controls.update();
+        setModelLoaded(true);
+        console.log("✅ Modelo 3D cargado correctamente", modelUrl);
+        console.log(
+          "Objetos en la escena tras añadir modelo:",
+          sceneRef.current.children
+        );
+        console.log("Cámara:", camera.position, "Centro modelo:", center);
+      },
+      undefined,
+      (error) => {
+        setModelLoaded(false);
+        console.error("❌ Error cargando modelo 3D:", modelUrl, error);
+      }
+    );
+  }, [modelUrl, sceneReady, restoreMaterials]);
+
+  // Botón AR personalizado
+  useEffect(() => {
+    let arButton = null;
+    if (modelLoaded && rendererRef.current) {
+      arButton = ARButton.createButton(rendererRef.current);
+      // Personaliza el botón
+      arButton.style.position = "fixed";
+      arButton.style.bottom = "32px";
+      arButton.style.right = "32px";
+      arButton.style.padding = "14px 28px";
+      arButton.style.background =
+        "linear-gradient(135deg, #667eea 0%, #764ba2 100%)";
+      arButton.style.color = "#fff";
+      arButton.style.border = "none";
+      arButton.style.borderRadius = "12px";
+      arButton.style.fontSize = "18px";
+      arButton.style.fontWeight = "bold";
+      arButton.style.boxShadow = "0 4px 24px rgba(0,0,0,0.18)";
+      arButton.style.zIndex = "3200";
+      arButton.onmouseenter = function () {
+        arButton.style.opacity = "1.0";
+      };
+      arButton.onmouseleave = function () {
+        arButton.style.opacity = "0.85";
+      };
+      // Forzar texto en español
+      arButton.textContent = "Entrar a AR";
+      // Mutar el texto cuando cambia el estado
+      const observer = new MutationObserver(() => {
+        if (arButton.textContent === "START AR")
+          arButton.textContent = "Entrar a AR";
+        if (arButton.textContent === "STOP AR")
+          arButton.textContent = "Salir de AR";
+        if (arButton.textContent === "AR NOT SUPPORTED")
+          arButton.textContent = "AR no soportado";
+      });
+      observer.observe(arButton, {
+        childList: true,
+        subtree: true,
+        characterData: true,
+      });
+      document.body.appendChild(arButton);
+      // Limpieza
+      return () => {
+        observer.disconnect();
+        if (arButton && arButton.parentNode) {
+          arButton.parentNode.removeChild(arButton);
+        }
+      };
+    }
+  }, [modelLoaded]);
+
+  // Cambia la textura de ambiente dinámicamente SOLO cuando la escena está lista y los refs existen
+  useEffect(() => {
+    if (!sceneReady || !sceneRef.current || !rendererRef.current) return;
+    // Limpia la textura anterior
+    if (textureRef.current) {
+      textureRef.current.dispose();
+      textureRef.current = null;
+    }
+    const textureLoader = new THREE.TextureLoader();
+    textureLoader.load(
+      environments[currentEnvironment],
+      (texture) => {
+        texture.mapping = THREE.EquirectangularReflectionMapping;
+        sceneRef.current.background = texture;
+        sceneRef.current.environment = texture;
+        textureRef.current = texture;
+        console.log(
+          "✅ Textura de ambiente cargada:",
+          environments[currentEnvironment]
+        );
+      },
+      undefined,
+      (error) => {
+        sceneRef.current.background = new THREE.Color(0x222222);
+        console.error(
+          "❌ Error cargando textura de ambiente:",
+          environments[currentEnvironment],
+          error
+        );
+      }
+    );
+  }, [currentEnvironment, sceneReady]);
+
+  // Cambia ambiente
   const changeEnvironment = (index) => {
-    console.log("🔄 Cambiando ambiente a:", environments[index]);
     setCurrentEnvironment(index);
   };
 
-  return (
-    <div style={{ position: 'relative', width: '100vw', height: '100vh', background: '#000' }}>
-      {/* Debug info */}
-      <div style={{
-        position: 'absolute',
-        top: '10px',
-        left: '10px',
-        background: 'rgba(0,255,0,0.8)',
-        color: 'black',
-        padding: '5px',
-        fontSize: '12px',
-        zIndex: 2000
-      }}>
-        ARExperience Cargado ✅ | Ambiente: {currentEnvironment + 1}
-      </div>
+  // Desactiva scroll del body mientras está activa la experiencia AR
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, []);
 
-      {/* Contenedor Three.js */}
-      <div 
-        ref={mountRef} 
-        style={{ 
-          width: '100%', 
-          height: '100%',
-          position: 'relative'
-        }} 
-      />
-      
-      {/* Loading */}
-      {loading && (
-        <div style={{
-          position: 'absolute',
+  // Depuración: log de ambientes y ambiente actual
+  console.log(
+    "Ambientes:",
+    environments,
+    "Ambiente actual:",
+    currentEnvironment
+  );
+  return (
+    <div
+      style={{
+        position: "fixed",
+        width: "100vw",
+        height: "100vh",
+        background: "#000",
+        overflow: "hidden",
+        top: 0,
+        left: 0,
+        zIndex: 3000,
+      }}
+    >
+      {/* Instrucciones flotantes arriba */}
+      <div
+        style={{
+          position: "absolute",
+          top: 20,
+          left: "50%",
+          transform: "translateX(-50%)",
+          background: "rgba(0,0,0,0.7)",
+          color: "#fff",
+          padding: "12px 24px",
+          borderRadius: "10px",
+          fontSize: "15px",
+          zIndex: 9999,
+          maxWidth: "90vw",
+          textAlign: "center",
+          pointerEvents: "none",
+        }}
+      >
+        <strong>Controles:</strong> Arrastra para rotar, rueda para zoom, clic
+        derecho para mover. <br />
+        Usa los botones para cambiar ambiente. <br />
+        {onClose && "Pulsa ← Volver para salir."}
+      </div>
+      <div
+        ref={mountRef}
+        style={{
+          width: "100vw",
+          height: "100vh",
+          position: "fixed",
           top: 0,
           left: 0,
-          width: '100%',
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: 'rgba(0,0,0,0.8)',
-          color: 'white',
-          fontSize: '18px',
-          zIndex: 1000
-        }}>
-          <div style={{
-            width: '50px',
-            height: '50px',
-            border: '3px solid #333',
-            borderTop: '3px solid #1976d2',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite',
-            marginBottom: '20px'
-          }} />
-          Cargando experiencia 3D...
-          <style jsx>{`
-            @keyframes spin {
-              0% { transform: rotate(0deg); }
-              100% { transform: rotate(360deg); }
-            }
-          `}</style>
-        </div>
-      )}
-
-      {/* Error */}
-      {error && (
-        <div style={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          backgroundColor: 'rgba(255,0,0,0.9)',
-          color: 'white',
-          padding: '20px',
-          borderRadius: '8px',
-          textAlign: 'center',
-          zIndex: 1000
-        }}>
-          <h3 style={{ margin: '0 0 10px 0' }}>Error</h3>
-          <p style={{ margin: 0 }}>{error}</p>
-        </div>
-      )}
-
-      {/* Botón volver */}
-      {onClose && (
+          zIndex: 3001,
+        }}
+      />
+      {/* Sección de ambientes flotante */}
+      <section
+        style={{
+          position: "absolute",
+          top: 140,
+          right: 20,
+          zIndex: 9999,
+          background: "rgba(0,0,0,0.7)",
+          border: "2px solid #fff",
+          borderRadius: 16,
+          padding: "14px 24px",
+          display: "flex",
+          alignItems: "center",
+          gap: 18,
+          boxShadow: "0 4px 24px rgba(0,0,0,0.18)",
+          minWidth: 180,
+        }}
+        aria-label="Selector de ambiente"
+      >
+        {environments.length < 2 ? (
+          <span style={{ color: "#fff", fontWeight: 600 }}>
+            Solo hay un ambiente disponible
+          </span>
+        ) : (
+          environments.map((env, idx) => (
+            <label
+              key={idx}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                cursor: "pointer",
+                gap: 6,
+                fontWeight: 600,
+                color: "#fff",
+                userSelect: "none",
+                fontSize: 15,
+              }}
+            >
+              <input
+                type="radio"
+                name="ambiente"
+                checked={currentEnvironment === idx}
+                onChange={() => changeEnvironment(idx)}
+                style={{
+                  accentColor: currentEnvironment === idx ? "#667eea" : "#fff",
+                  width: 16,
+                  height: 16,
+                  marginRight: 4,
+                  borderRadius: "50%",
+                  border: "2px solid #fff",
+                  background:
+                    currentEnvironment === idx ? "#667eea" : "transparent",
+                  outline: "none",
+                  boxShadow:
+                    currentEnvironment === idx
+                      ? "0 0 0 2px #764ba2"
+                      : undefined,
+                  cursor: "pointer",
+                }}
+                aria-checked={currentEnvironment === idx}
+                aria-label={`Ambiente ${idx + 1}`}
+              />
+              <span style={{ color: "inherit", fontWeight: 600 }}>
+                Ambiente {idx + 1}
+              </span>
+            </label>
+          ))
+        )}
+      </section>
+      {showCloseButton && onClose && (
         <button
           onClick={onClose}
           style={{
-            position: 'absolute',
-            top: '20px',
-            left: '20px',
-            padding: '10px 15px',
-            backgroundColor: 'rgba(255,255,255,0.9)',
-            border: 'none',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontSize: '14px',
-            zIndex: 1001
+            position: "absolute",
+            top: 140,
+            left: 20,
+            padding: "10px 15px",
+            backgroundColor: "rgba(255,255,255,0.9)",
+            border: "none",
+            borderRadius: "8px",
+            cursor: "pointer",
+            fontSize: "14px",
+            zIndex: 9999,
+            color: "#222",
+            fontWeight: 600,
+            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
           }}
         >
           ← Volver
         </button>
-      )}
-
-      {/* Instrucciones */}
-      {!loading && !error && (
-        <div style={{
-          position: 'absolute',
-          bottom: '20px',
-          left: '20px',
-          backgroundColor: 'rgba(0,0,0,0.7)',
-          color: 'white',
-          padding: '15px',
-          borderRadius: '8px',
-          fontSize: '14px',
-          maxWidth: '300px',
-          zIndex: 1001
-        }}>
-          <strong>Controles:</strong>
-          <br />• Arrastra para rotar la vista
-          <br />• Rueda del ratón para zoom
-          <br />• Clic derecho + arrastrar para mover
-          {modelUrl && (
-            <>
-              <br />• Usa el botón "Entrar a AR" para modo AR
-            </>
-          )}
-        </div>
-      )}
-
-      {/* Controles de cambio de ambiente */}
-      {!loading && !error && (
-        <div style={{
-          position: 'absolute',
-          top: '20px',
-          right: '20px',
-          backgroundColor: 'rgba(0,0,0,0.8)',
-          backdropFilter: 'blur(10px)',
-          color: 'white',
-          padding: '15px',
-          borderRadius: '12px',
-          fontSize: '14px',
-          zIndex: 1001,
-          border: '1px solid rgba(255,255,255,0.1)'
-        }}>
-          <div style={{ fontWeight: '600', marginBottom: '12px', textAlign: 'center' }}>
-            🌐 Cambiar Ambiente
-          </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            {environments.map((env, index) => (
-              <button
-                key={index}
-                onClick={() => changeEnvironment(index)}
-                style={{
-                  background: currentEnvironment === index 
-                    ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' 
-                    : 'rgba(255,255,255,0.1)',
-                  border: '1px solid rgba(255,255,255,0.2)',
-                  borderRadius: '8px',
-                  padding: '8px 12px',
-                  color: '#fff',
-                  fontSize: '12px',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease'
-                }}
-                onMouseEnter={(e) => {
-                  if (currentEnvironment !== index) {
-                    e.target.style.background = 'rgba(255,255,255,0.2)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (currentEnvironment !== index) {
-                    e.target.style.background = 'rgba(255,255,255,0.1)';
-                  }
-                }}
-              >
-                Ambiente {index + 1}
-              </button>
-            ))}
-          </div>
-        </div>
       )}
     </div>
   );
