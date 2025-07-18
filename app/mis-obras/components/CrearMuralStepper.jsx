@@ -1,7 +1,16 @@
 "use client";
 import { useState } from "react";
 import Stepper from "@/components/ui/Stepper";
-import { CheckCircle, AlertCircle, Info, User, Image as ImageIcon, MapPin, Eye, Users } from "lucide-react";
+import {
+  CheckCircle,
+  AlertCircle,
+  Info,
+  User,
+  Image as ImageIcon,
+  MapPin,
+  Eye,
+  Users,
+} from "lucide-react";
 import MuralImageStep from "./MuralImageStep";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,8 +23,16 @@ import React from "react";
 
 const STEPS = [
   { label: "Datos básicos", subtitle: "Información principal", icon: <User /> },
-  { label: "Imágenes y medios", subtitle: "Sube o crea tu imagen", icon: <ImageIcon /> },
-  { label: "Ubicación y sala", subtitle: "Dónde está el mural", icon: <MapPin /> },
+  {
+    label: "Imágenes y medios",
+    subtitle: "Sube o crea tu imagen",
+    icon: <ImageIcon />,
+  },
+  {
+    label: "Ubicación y sala",
+    subtitle: "Dónde está el mural",
+    icon: <MapPin />,
+  },
   { label: "Estado", subtitle: "Visibilidad y orden", icon: <Eye /> },
   { label: "Autores", subtitle: "Artistas y colaboradores", icon: <Users /> },
   { label: "Confirmar", subtitle: "Revisa y crea", icon: <CheckCircle /> },
@@ -28,7 +45,7 @@ export default function CrearMuralStepper() {
     titulo: "",
     descripcion: "",
     tecnica: "",
-    anio: new Date().getFullYear(),
+    anio: undefined,
     dimensiones: "",
     tags: [],
     url_imagen: null,
@@ -52,6 +69,12 @@ export default function CrearMuralStepper() {
     tagsInput: "",
   });
   const [errors, setErrors] = useState({});
+
+  React.useEffect(() => {
+    if (mural.anio === undefined) {
+      setMural((prev) => ({ ...prev, anio: new Date().getFullYear() }));
+    }
+  }, [mural.anio]);
 
   // Validación simple por step
   const validateStep = () => {
@@ -83,13 +106,29 @@ export default function CrearMuralStepper() {
 
   // Generar años para el select
   const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: currentYear - 1899 }, (_, i) => currentYear - i);
+  const years = Array.from(
+    { length: currentYear - 1899 },
+    (_, i) => currentYear - i
+  );
 
   // Determinar estados de los steps para feedback visual
   const stepStates = STEPS.map((stepObj, i) => {
-    if (i < step) return { ...stepObj, status: "success", icon: <CheckCircle className="text-green-600 mx-auto" /> };
-    if (i === step && Object.keys(errors).length > 0) return { ...stepObj, status: "error", icon: <AlertCircle className="text-red-500 mx-auto" /> };
-    return { ...stepObj, icon: React.cloneElement(stepObj.icon, { className: "mx-auto" }) };
+    if (i < step)
+      return {
+        ...stepObj,
+        status: "success",
+        icon: <CheckCircle className="text-green-600 mx-auto" />,
+      };
+    if (i === step && Object.keys(errors).length > 0)
+      return {
+        ...stepObj,
+        status: "error",
+        icon: <AlertCircle className="text-red-500 mx-auto" />,
+      };
+    return {
+      ...stepObj,
+      icon: React.cloneElement(stepObj.icon, { className: "mx-auto" }),
+    };
   });
 
   // Render steps
@@ -100,7 +139,9 @@ export default function CrearMuralStepper() {
         activeStep={step}
         color="indigo"
         className="mb-8"
-        onStepClick={i => { if (i < step) setStep(i); }}
+        onStepClick={(i) => {
+          if (i < step) setStep(i);
+        }}
       />
       {/* Separador visual */}
       <div className="w-full flex items-center justify-center mb-10">
@@ -112,84 +153,124 @@ export default function CrearMuralStepper() {
           <div className="flex flex-col gap-10 mb-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
               <div>
-                <label htmlFor="titulo" className={labelClass}>Título*</label>
+                <label htmlFor="titulo" className={labelClass}>
+                  Título*
+                </label>
                 <input
                   id="titulo"
                   className={underlineInputClass}
                   value={mural.titulo}
-                  onChange={e => setMural(m => ({ ...m, titulo: e.target.value }))}
+                  onChange={(e) =>
+                    setMural((m) => ({ ...m, titulo: e.target.value }))
+                  }
                   aria-invalid={!!errors.titulo}
                   placeholder="Ej: Mural de la esperanza"
                   autoComplete="off"
                 />
-                {errors.titulo && <span className={errorClass}>{errors.titulo}</span>}
+                {errors.titulo && (
+                  <span className={errorClass}>{errors.titulo}</span>
+                )}
               </div>
               <div>
-                <label htmlFor="tecnica" className={labelClass}>Técnica*</label>
+                <label htmlFor="tecnica" className={labelClass}>
+                  Técnica*
+                </label>
                 <input
                   id="tecnica"
                   className={underlineInputClass}
                   value={mural.tecnica}
-                  onChange={e => setMural(m => ({ ...m, tecnica: e.target.value }))}
+                  onChange={(e) =>
+                    setMural((m) => ({ ...m, tecnica: e.target.value }))
+                  }
                   aria-invalid={!!errors.tecnica}
                   placeholder="Ej: Acrílico sobre muro"
                   autoComplete="off"
                 />
-                {errors.tecnica && <span className={errorClass}>{errors.tecnica}</span>}
+                {errors.tecnica && (
+                  <span className={errorClass}>{errors.tecnica}</span>
+                )}
               </div>
               <div>
-                <label htmlFor="anio" className={labelClass}>Año*</label>
+                <label htmlFor="anio" className={labelClass}>
+                  Año*
+                </label>
                 <Select
                   value={String(mural.anio)}
-                  onValueChange={val => setMural(m => ({ ...m, anio: val }))}
+                  onValueChange={(val) =>
+                    setMural((m) => ({ ...m, anio: val }))
+                  }
                   placeholder="Selecciona el año"
                 >
-                  {years.map(y => (
-                    <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                  {years.map((y) => (
+                    <SelectItem key={y} value={String(y)}>
+                      {y}
+                    </SelectItem>
                   ))}
                 </Select>
-                {errors.anio && <span className={errorClass}>{errors.anio}</span>}
+                {errors.anio && (
+                  <span className={errorClass}>{errors.anio}</span>
+                )}
               </div>
               <div>
-                <label htmlFor="dimensiones" className={labelClass}>Dimensiones</label>
+                <label htmlFor="dimensiones" className={labelClass}>
+                  Dimensiones
+                </label>
                 <input
                   id="dimensiones"
                   className={underlineInputClass}
                   value={mural.dimensiones}
-                  onChange={e => setMural(m => ({ ...m, dimensiones: e.target.value }))}
+                  onChange={(e) =>
+                    setMural((m) => ({ ...m, dimensiones: e.target.value }))
+                  }
                   placeholder="Ej: 3m x 5m"
                   autoComplete="off"
                 />
               </div>
             </div>
             <div>
-              <label htmlFor="descripcion" className={labelClass}>Descripción</label>
+              <label htmlFor="descripcion" className={labelClass}>
+                Descripción
+              </label>
               <textarea
                 id="descripcion"
                 className={underlineInputClass + " min-h-[80px] resize-y mt-1"}
                 value={mural.descripcion}
-                onChange={e => setMural(m => ({ ...m, descripcion: e.target.value }))}
+                onChange={(e) =>
+                  setMural((m) => ({ ...m, descripcion: e.target.value }))
+                }
                 placeholder="Describe brevemente el mural, su inspiración, etc."
               />
             </div>
             <div>
-              <label htmlFor="tags" className={labelClass}>Tags</label>
+              <label htmlFor="tags" className={labelClass}>
+                Tags
+              </label>
               <input
                 id="tags"
                 className={underlineInputClass}
                 value={mural.tagsInput || ""}
-                onChange={e => setMural(m => ({ ...m, tagsInput: e.target.value }))}
+                onChange={(e) =>
+                  setMural((m) => ({ ...m, tagsInput: e.target.value }))
+                }
                 placeholder="Escribe un tag y presiona Enter o coma"
                 autoComplete="off"
-                onKeyDown={e => {
+                onKeyDown={(e) => {
                   if (["Enter", ","].includes(e.key)) {
                     e.preventDefault();
                     const val = mural.tagsInput?.trim();
                     if (val && !mural.tags.includes(val)) {
-                      setMural(m => ({ ...m, tags: [...m.tags, val], tagsInput: "" }));
+                      setMural((m) => ({
+                        ...m,
+                        tags: [...m.tags, val],
+                        tagsInput: "",
+                      }));
                     }
-                  } else if (e.key === "Backspace" && !mural.tagsInput && mural.tags.length > 0) {
-                    setMural(m => ({ ...m, tags: m.tags.slice(0, -1) }));
+                  } else if (
+                    e.key === "Backspace" &&
+                    !mural.tagsInput &&
+                    mural.tags.length > 0
+                  ) {
+                    setMural((m) => ({ ...m, tags: m.tags.slice(0, -1) }));
                   }
                 }}
               />
@@ -200,7 +281,12 @@ export default function CrearMuralStepper() {
                     <button
                       type="button"
                       className="ml-1 text-blue-700 hover:text-red-500 focus:outline-none"
-                      onClick={() => setMural(m => ({ ...m, tags: m.tags.filter((t, idx) => idx !== i) }))}
+                      onClick={() =>
+                        setMural((m) => ({
+                          ...m,
+                          tags: m.tags.filter((t, idx) => idx !== i),
+                        }))
+                      }
                       aria-label={`Eliminar tag ${tag}`}
                     >
                       <X className="w-3 h-3" />
@@ -215,7 +301,7 @@ export default function CrearMuralStepper() {
         {step === 1 && (
           <MuralImageStep
             value={mural.url_imagen}
-            onChange={img => setMural(m => ({ ...m, url_imagen: img }))}
+            onChange={(img) => setMural((m) => ({ ...m, url_imagen: img }))}
           />
         )}
         {/* Step 3: Ubicación y sala */}
@@ -226,7 +312,9 @@ export default function CrearMuralStepper() {
               <input
                 className="input"
                 value={mural.ubicacion}
-                onChange={e => setMural(m => ({ ...m, ubicacion: e.target.value }))}
+                onChange={(e) =>
+                  setMural((m) => ({ ...m, ubicacion: e.target.value }))
+                }
               />
             </label>
             <label>
@@ -235,7 +323,9 @@ export default function CrearMuralStepper() {
                 className="input"
                 type="number"
                 value={mural.latitud}
-                onChange={e => setMural(m => ({ ...m, latitud: e.target.value }))}
+                onChange={(e) =>
+                  setMural((m) => ({ ...m, latitud: e.target.value }))
+                }
               />
             </label>
             <label>
@@ -244,7 +334,9 @@ export default function CrearMuralStepper() {
                 className="input"
                 type="number"
                 value={mural.longitud}
-                onChange={e => setMural(m => ({ ...m, longitud: e.target.value }))}
+                onChange={(e) =>
+                  setMural((m) => ({ ...m, longitud: e.target.value }))
+                }
               />
             </label>
             <label>
@@ -252,7 +344,9 @@ export default function CrearMuralStepper() {
               <input
                 className="input"
                 value={mural.salaId}
-                onChange={e => setMural(m => ({ ...m, salaId: e.target.value }))}
+                onChange={(e) =>
+                  setMural((m) => ({ ...m, salaId: e.target.value }))
+                }
               />
             </label>
             <label>
@@ -260,7 +354,14 @@ export default function CrearMuralStepper() {
               <textarea
                 className="input"
                 value={JSON.stringify(mural.exposiciones)}
-                onChange={e => setMural(m => ({ ...m, exposiciones: e.target.value ? JSON.parse(e.target.value) : [] }))}
+                onChange={(e) =>
+                  setMural((m) => ({
+                    ...m,
+                    exposiciones: e.target.value
+                      ? JSON.parse(e.target.value)
+                      : [],
+                  }))
+                }
               />
             </label>
           </div>
@@ -273,7 +374,9 @@ export default function CrearMuralStepper() {
               <input
                 className="input"
                 value={mural.estado}
-                onChange={e => setMural(m => ({ ...m, estado: e.target.value }))}
+                onChange={(e) =>
+                  setMural((m) => ({ ...m, estado: e.target.value }))
+                }
               />
             </label>
             <label>
@@ -281,7 +384,9 @@ export default function CrearMuralStepper() {
               <input
                 type="checkbox"
                 checked={mural.publica}
-                onChange={e => setMural(m => ({ ...m, publica: e.target.checked }))}
+                onChange={(e) =>
+                  setMural((m) => ({ ...m, publica: e.target.checked }))
+                }
               />
             </label>
             <label>
@@ -289,7 +394,9 @@ export default function CrearMuralStepper() {
               <input
                 type="checkbox"
                 checked={mural.destacada}
-                onChange={e => setMural(m => ({ ...m, destacada: e.target.checked }))}
+                onChange={(e) =>
+                  setMural((m) => ({ ...m, destacada: e.target.checked }))
+                }
               />
             </label>
             <label>
@@ -298,7 +405,9 @@ export default function CrearMuralStepper() {
                 className="input"
                 type="number"
                 value={mural.orden}
-                onChange={e => setMural(m => ({ ...m, orden: e.target.value }))}
+                onChange={(e) =>
+                  setMural((m) => ({ ...m, orden: e.target.value }))
+                }
               />
             </label>
           </div>
@@ -311,7 +420,9 @@ export default function CrearMuralStepper() {
               <input
                 className="input"
                 value={mural.autor}
-                onChange={e => setMural(m => ({ ...m, autor: e.target.value }))}
+                onChange={(e) =>
+                  setMural((m) => ({ ...m, autor: e.target.value }))
+                }
               />
             </label>
             <label>
@@ -319,7 +430,9 @@ export default function CrearMuralStepper() {
               <input
                 className="input"
                 value={mural.artistId}
-                onChange={e => setMural(m => ({ ...m, artistId: e.target.value }))}
+                onChange={(e) =>
+                  setMural((m) => ({ ...m, artistId: e.target.value }))
+                }
               />
             </label>
             <label>
@@ -327,7 +440,14 @@ export default function CrearMuralStepper() {
               <textarea
                 className="input"
                 value={JSON.stringify(mural.colaboradores)}
-                onChange={e => setMural(m => ({ ...m, colaboradores: e.target.value ? JSON.parse(e.target.value) : [] }))}
+                onChange={(e) =>
+                  setMural((m) => ({
+                    ...m,
+                    colaboradores: e.target.value
+                      ? JSON.parse(e.target.value)
+                      : [],
+                  }))
+                }
               />
             </label>
           </div>
@@ -338,7 +458,12 @@ export default function CrearMuralStepper() {
             <pre className="bg-gray-100 dark:bg-neutral-800 rounded p-4 text-xs overflow-x-auto">
               {JSON.stringify(mural, null, 2)}
             </pre>
-            <Button className="mt-4" onClick={() => alert("Crear mural (TODO)")}>Crear mural</Button>
+            <Button
+              className="mt-4"
+              onClick={() => alert("Crear mural (TODO)")}
+            >
+              Crear mural
+            </Button>
           </div>
         )}
         {/* Navegación */}
@@ -349,12 +474,10 @@ export default function CrearMuralStepper() {
             </Button>
           )}
           {step < STEPS.length - 1 && (
-            <Button onClick={handleNext}>
-              Siguiente
-            </Button>
+            <Button onClick={handleNext}>Siguiente</Button>
           )}
         </div>
       </div>
     </div>
   );
-} 
+}

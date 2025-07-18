@@ -39,7 +39,9 @@ const MuralGrid = ({ murales, view = "grid", onEditMural, onDeleteMural }) => {
             mural={mural}
             view={view}
             onEdit={onEditMural}
-            onDelete={() => handleRequestDelete(mural.id, mural.titulo, mural.url_imagen)}
+            onDelete={() =>
+              handleRequestDelete(mural.id, mural.titulo, mural.url_imagen)
+            }
           />
         ))}
       </div>
@@ -50,11 +52,20 @@ const MuralGrid = ({ murales, view = "grid", onEditMural, onDeleteMural }) => {
         size="sm"
       >
         <div className="mb-4 flex flex-col items-center gap-2">
-          <span>¿Estás seguro de que quieres eliminar la obra <b>{deleteTitle}</b>?</span>
+          <span className="text-gray-900 dark:text-gray-100">
+            ¿Estás seguro de que quieres eliminar la obra{" "}
+            <b className="text-gray-900 dark:text-gray-100">{deleteTitle}</b>?
+          </span>
           {deleteImage && (
-            <img src={deleteImage} alt={deleteTitle} className="w-20 h-20 object-cover rounded shadow border" />
+            <img
+              src={deleteImage}
+              alt={deleteTitle}
+              className="w-20 h-20 object-cover rounded shadow border"
+            />
           )}
-          <span className="text-xs text-muted-foreground">Esta acción no se puede deshacer.</span>
+          <span className="text-xs text-muted-foreground dark:text-gray-400">
+            Esta acción no se puede deshacer.
+          </span>
         </div>
         <div className="flex gap-4 justify-end">
           <button

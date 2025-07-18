@@ -54,12 +54,13 @@ function MuralesEliminadosAdmin() {
   const handleSendNotification = async (userId, email) => {
     setSendingId(userId);
     try {
-      const res = await fetch("/api/push-subscription", {
+      const res = await fetch("/api/push-subscription/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: email,
-          message: "Tienes murales eliminados. Puedes restaurarlos desde tu perfil en el museo 3D.",
+          message:
+            "Tienes murales eliminados. Puedes restaurarlos desde tu perfil en el museo 3D.",
         }),
       });
       if (res.ok) {
@@ -75,38 +76,63 @@ function MuralesEliminadosAdmin() {
 
   return (
     <section className="mt-12">
-      <h2 className="text-2xl font-bold mb-4">Usuarios con murales eliminados</h2>
+      <h2 className="text-2xl font-bold mb-4">
+        Usuarios con murales eliminados
+      </h2>
       <div className="overflow-x-auto rounded-xl border border-border bg-white dark:bg-neutral-900 shadow mb-8">
         <table className="min-w-full divide-y divide-gray-200 dark:divide-neutral-800">
           <thead className="bg-gray-50 dark:bg-neutral-800">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Usuario</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Email</th>
-              <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Murales eliminados</th>
-              <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Acciones</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                Usuario
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                Email
+              </th>
+              <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                Murales eliminados
+              </th>
+              <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                Acciones
+              </th>
             </tr>
           </thead>
           <tbody className="bg-white dark:bg-neutral-900 divide-y divide-gray-100 dark:divide-neutral-800">
-            {Object.entries(agrupados).map(([userId, { user, murales }]) =>
-              (murales || []).length === 0 ? null : (
+            {Object.entries(agrupados).map(([userId, { user, murales }]) => {
+              if ((murales || []).length === 0) return null;
+              // Parsear settings si es string
+              const settings =
+                typeof user?.settings === "string"
+                  ? JSON.parse(user.settings)
+                  : user?.settings;
+              return (
                 <tr key={userId}>
                   <td className="px-4 py-2 font-medium text-foreground">
-                    {userId === "sin_usuario" ? "Sin usuario" : user?.name || "Sin usuario"}
+                    {userId === "sin_usuario"
+                      ? "Sin usuario"
+                      : user?.name || "Sin usuario"}
                   </td>
                   <td className="px-4 py-2 text-sm text-muted-foreground">
                     {user?.email || "N/A"}
                   </td>
                   <td className="px-4 py-2 text-center">{murales.length}</td>
                   <td className="px-4 py-2 text-center">
+                    {console.log(
+                      "DEBUG userId:",
+                      userId,
+                      "settings:",
+                      settings,
+                      "notificaciones:",
+                      settings?.notificaciones,
+                      "email:",
+                      user?.email
+                    )}
                     <button
                       className={`px-4 py-2 rounded bg-blue-600 text-white font-semibold shadow transition disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed`}
                       disabled={
                         sendingId === userId ||
                         !user?.email ||
-                        !(
-                          user?.settings?.notificaciones === true ||
-                          user?.settings?.notificaciones === "true"
-                        )
+                        settings?.notificaciones !== "true"
                       }
                       onClick={() => handleSendNotification(userId, user.email)}
                     >
@@ -114,8 +140,8 @@ function MuralesEliminadosAdmin() {
                     </button>
                   </td>
                 </tr>
-              )
-            )}
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -146,29 +172,48 @@ function MisMuralesEliminados({ fetchUserMurales }) {
         <table className="min-w-full divide-y divide-gray-200 dark:divide-neutral-800">
           <thead className="bg-gray-50 dark:bg-neutral-800">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Imagen</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Título</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Eliminado</th>
-              <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Acciones</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                Imagen
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                Título
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                Eliminado
+              </th>
+              <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                Acciones
+              </th>
             </tr>
           </thead>
           <tbody className="bg-white dark:bg-neutral-900 divide-y divide-gray-100 dark:divide-neutral-800">
             {murales.map((mural) => (
               <tr key={mural.id}>
                 <td className="px-4 py-2">
-                  <img src={mural.url_imagen} alt={mural.titulo} className="w-16 h-16 object-cover rounded shadow border" />
+                  <img
+                    src={mural.url_imagen}
+                    alt={mural.titulo}
+                    className="w-16 h-16 object-cover rounded shadow border"
+                  />
                 </td>
-                <td className="px-4 py-2 font-medium text-foreground">{mural.titulo}</td>
-                <td className="px-4 py-2 text-xs text-muted-foreground">{new Date(mural.deletedAt).toLocaleString()}</td>
+                <td className="px-4 py-2 font-medium text-foreground">
+                  {mural.titulo}
+                </td>
+                <td className="px-4 py-2 text-xs text-muted-foreground">
+                  {new Date(mural.deletedAt).toLocaleString()}
+                </td>
                 <td className="px-4 py-2 text-center flex gap-2 justify-center items-center">
                   <button
                     className="px-3 py-1 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition disabled:opacity-50"
                     disabled={loadingId === mural.id}
                     onClick={async () => {
                       setLoadingId(mural.id);
-                      const res = await fetch(`/api/murales/${mural.id}/restore`, {
-                        method: "POST",
-                      });
+                      const res = await fetch(
+                        `/api/murales/${mural.id}/restore`,
+                        {
+                          method: "POST",
+                        }
+                      );
                       if (res.ok) {
                         toast.success("Mural restaurado");
                         setMurales(murales.filter((m) => m.id !== mural.id));
@@ -201,7 +246,8 @@ function MisMuralesEliminados({ fetchUserMurales }) {
               ¿Eliminar mural permanentemente?
             </h3>
             <p className="mb-6 text-gray-700 dark:text-gray-200">
-              Esta acción no se puede deshacer. ¿Seguro que quieres eliminar este mural de forma permanente?
+              Esta acción no se puede deshacer. ¿Seguro que quieres eliminar
+              este mural de forma permanente?
             </p>
             <div className="flex gap-4">
               <button
@@ -219,7 +265,9 @@ function MisMuralesEliminados({ fetchUserMurales }) {
                   });
                   if (res.ok) {
                     toast.success("Mural eliminado permanentemente");
-                    setMurales(murales.filter((m) => m.id !== permanentDeleteId));
+                    setMurales(
+                      murales.filter((m) => m.id !== permanentDeleteId)
+                    );
                   } else {
                     toast.error("Error al eliminar permanentemente");
                   }
@@ -285,7 +333,9 @@ export default function MisObras() {
 
   // Estrategia: 'Mis obras' = murales donde userId === session.user.id
   const propios = murales
-    .filter((m) => session?.user?.id && m.userId === session.user.id && !m.deletedAt)
+    .filter(
+      (m) => session?.user?.id && m.userId === session.user.id && !m.deletedAt
+    )
     .map((m) => ({ ...m, editable: true, fromCollection: false }));
 
   // Colección: favoritos (no editables)

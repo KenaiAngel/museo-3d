@@ -18,7 +18,11 @@ export function PushNotificationsProvider({ children }) {
   const [subscription, setSubscription] = useState(null);
 
   useEffect(() => {
-    if (typeof window !== "undefined" && "serviceWorker" in navigator && "PushManager" in window) {
+    if (
+      typeof window !== "undefined" &&
+      "serviceWorker" in navigator &&
+      "PushManager" in window
+    ) {
       setIsSupported(true);
       setPermission(Notification.permission);
     }
@@ -36,22 +40,29 @@ export function PushNotificationsProvider({ children }) {
   const subscribe = async () => {
     setLoading(true);
     try {
-      console.log("[Push] Intentando registrar Service Worker y suscribirse a push...");
-      const registration = await navigator.serviceWorker.register("/push-sw.js");
+      console.log(
+        "[Push] Intentando registrar Service Worker y suscribirse a push..."
+      );
+      const registration =
+        await navigator.serviceWorker.register("/push-sw.js");
       console.log("[Push] Service Worker registrado:", registration);
       const sub = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY),
+        applicationServerKey: urlBase64ToUint8Array(
+          process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+        ),
       });
       console.log("[Push] Suscripción push obtenida:", sub);
       setIsSubscribed(true);
       setSubscription(sub);
       setPermission(Notification.permission);
-      // Enviar al backend
+      // Serializar la suscripción antes de enviarla al backend
+      const subJson = subscriptionToJSON(sub);
+      console.log("[Push] subJson a enviar:", subJson);
       const res = await fetch("/api/push-subscription", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(sub),
+        body: JSON.stringify(subJson),
       });
       console.log("[Push] Respuesta backend:", res.status);
     } catch (err) {
@@ -113,4 +124,22 @@ function urlBase64ToUint8Array(base64String) {
     outputArray[i] = rawData.charCodeAt(i);
   }
   return outputArray;
-} 
+}
+
+// Helper para serializar la suscripción push
+function subscriptionToJSON(subscription) {
+  if (!subscription) return null;
+  const rawKey = subscription.getKey("p256dh");
+  const rawAuthSecret = subscription.getKey("auth");
+  return {
+    endpoint: subscription.endpoint,
+    keys: {
+      p256dh: rawKey
+        ? btoa(String.fromCharCode.apply(null, new Uint8Array(rawKey)))
+        : null,
+      auth: rawAuthSecret
+        ? btoa(String.fromCharCode.apply(null, new Uint8Array(rawAuthSecret)))
+        : null,
+    },
+  };
+}

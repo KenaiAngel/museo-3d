@@ -202,75 +202,71 @@ export default function MainMenu({ onSubirArchivo }) {
         } text-gray-900 dark:text-white transition-all duration-300`}
       >
         <div className="max-w-screen-xl mx-auto flex items-center px-4 py-2 md:py-4 min-h-[64px]">
-          {/* Logo a la izquierda en mobile, centrado en desktop */}
+          {/* Logo a la izquierda en md+ */}
           <div
-            className={`flex-1 flex items-center ${isAuthenticated ? "max-[1100px]:hidden" : ""}`}
-            style={isMobile ? { justifyContent: "flex-start" } : {}}
+            className="flex items-center flex-shrink-0"
+            style={{ minWidth: 80 }}
           >
-            <div className="flex flex-col items-center lg:items-start justify-center w-full lg:w-auto lg:pl-8">
-              <Link
-                href="/"
-                className="flex flex-col items-center lg:items-start justify-center navbar-link"
+            <Link
+              href="/"
+              className="flex flex-col items-center lg:items-start justify-center navbar-link"
+              style={{
+                width: 80,
+                minWidth: 80,
+                maxWidth: 80,
+                overflow: "visible",
+              }}
+            >
+              <img
+                src="/assets/nav/logo.svg"
+                alt="Logo"
+                className="h-14 w-auto flex-shrink-0 dark:hidden mx-auto"
+              />
+              <img
+                src="/assets/nav/logo-white.svg"
+                alt="Logo"
+                className="h-14 w-auto flex-shrink-0 hidden dark:block mx-auto"
+              />
+              {/* Título solo visible en lg+ */}
+              <span
+                aria-hidden="true"
+                className="hidden lg:block"
                 style={{
-                  width: 80,
-                  minWidth: 80,
-                  maxWidth: 80,
-                  overflow: "visible",
+                  opacity: 0,
+                  display: "block",
+                  fontFamily: "var(--font-monoton), cursive",
+                  fontSize: "1.875rem",
+                  fontWeight: 400,
+                  letterSpacing: "0.04em",
+                  whiteSpace: "nowrap",
+                  width: "100%",
+                  minWidth: 0,
+                  maxWidth: "100%",
+                  height: "auto",
                 }}
               >
-                <img
-                  src="/assets/nav/logo.svg"
-                  alt="Logo"
-                  className="h-14 w-auto flex-shrink-0 dark:hidden mx-auto"
-                />
-                <img
-                  src="/assets/nav/logo-white.svg"
-                  alt="Logo"
-                  className="h-14 w-auto flex-shrink-0 hidden dark:block mx-auto"
-                />
-                {/* Título solo visible en lg+ */}
-                <span
-                  aria-hidden="true"
-                  className="hidden lg:block"
-                  style={{
-                    opacity: 0,
-                    display: "block",
-                    fontFamily: "var(--font-monoton), cursive",
-                    fontSize: "1.875rem",
-                    fontWeight: 400,
-                    letterSpacing: "0.04em",
-                    whiteSpace: "nowrap",
-                    width: "100%",
-                    minWidth: 0,
-                    maxWidth: "100%",
-                    height: "auto",
-                  }}
-                >
-                  Mural ARPA
-                </span>
-                <TypewriterText
-                  text="Mural ARPA"
-                  speed={120}
-                  delay={300}
-                  repeat={true}
-                  repeatDelay={5000}
-                  className="block w-full hidden lg:block"
-                  style={{
-                    width: "100%",
-                    minWidth: 0,
-                    maxWidth: "100%",
-                    whiteSpace: "nowrap",
-                    textAlign: "center",
-                    marginTop: "-48px",
-                  }}
-                />
-              </Link>
-            </div>
+                Mural ARPA
+              </span>
+              <TypewriterText
+                text="Mural ARPA"
+                speed={120}
+                delay={300}
+                repeat={true}
+                repeatDelay={5000}
+                className="block w-full hidden lg:block"
+                style={{
+                  width: "100%",
+                  minWidth: 0,
+                  maxWidth: "100%",
+                  whiteSpace: "nowrap",
+                  textAlign: "center",
+                  marginTop: "-48px",
+                }}
+              />
+            </Link>
           </div>
-          {/* Links perfectamente centrados en la navbar (md+) */}
-          <div
-            className={`hidden md:block absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 ${isAuthenticated ? "max-[1100px]:hidden" : ""}`}
-          >
+          {/* Links centrados en md+ */}
+          <div className="flex-1 flex justify-center items-center hidden md:flex">
             <NavigationMenu className="align-middle">
               <NavigationMenuList className="text-sm font-medium relative items-center flex h-full">
                 {menuLinks.map((link) => {
@@ -325,11 +321,9 @@ export default function MainMenu({ onSubirArchivo }) {
               </NavigationMenuList>
             </NavigationMenu>
           </div>
-          {/* Usuario autenticado o botón de login y ThemeSwitch solo en desktop */}
+          {/* Usuario y ThemeSwitch a la derecha en md+ */}
           {!isMobile && (
-            <div
-              className={`flex items-center gap-8 md:gap-16 ${isAuthenticated ? "max-[1100px]:justify-between max-[1100px]:w-full max-[1100px]:px-4" : ""}`}
-            >
+            <div className="flex items-center gap-8 md:gap-16 flex-shrink-0">
               {status === "loading" ? (
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-full bg-muted animate-pulse"></div>
@@ -338,7 +332,7 @@ export default function MainMenu({ onSubirArchivo }) {
                   </span>
                 </div>
               ) : isAuthenticated ? (
-                <div className={isAuthenticated ? "max-[1100px]:order-3" : ""}>
+                <div>
                   <NavigationMenu>
                     <NavigationMenuList>
                       <NavigationMenuItem>
@@ -518,9 +512,7 @@ export default function MainMenu({ onSubirArchivo }) {
                   <User className="w-6 h-6" />
                 </button>
               )}
-
-              {/* Theme Switch */}
-              <div className={isAuthenticated ? "max-[1100px]:order-1" : ""}>
+              <div>
                 <ThemeSwitch />
               </div>
             </div>

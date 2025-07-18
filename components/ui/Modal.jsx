@@ -62,16 +62,18 @@ export function Modal({
 
       {/* Modal */}
       <div
-        className={`relative bg-white rounded-2xl shadow-2xl w-full ${sizeClasses[size]} max-h-[90vh] overflow-hidden`}
+        className={`relative bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl w-full ${sizeClasses[size]} max-h-[90vh] overflow-hidden`}
       >
         {/* Header */}
         {title && (
-          <div className="flex items-center justify-between p-6 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
+          <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+              {title}
+            </h2>
             {showCloseButton && (
               <button
                 onClick={onClose ? onClose : closeModal}
-                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 text-gray-400 dark:text-gray-300 hover:text-gray-600 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
               >
                 <svg
                   className="w-5 h-5"
@@ -92,7 +94,7 @@ export function Modal({
         )}
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+        <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)] bg-white dark:bg-neutral-900 text-gray-900 dark:text-gray-100">
           {children}
         </div>
       </div>

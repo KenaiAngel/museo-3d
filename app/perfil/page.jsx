@@ -1093,7 +1093,8 @@ function PerfilContent() {
     );
   }
 
-  const emailVerified = userProfile?.emailVerified ?? session?.user?.emailVerified;
+  const emailVerified =
+    userProfile?.emailVerified ?? session?.user?.emailVerified;
 
   return (
     <>
@@ -1142,13 +1143,15 @@ function PerfilContent() {
                   <div className="w-full text-left mb-6">
                     <div className="text-left">
                       <Label>Email</Label>
-                      <div className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
-                        {session?.user?.email || "No disponible"}
+                      <div className="text-sm text-muted-foreground mt-1 flex items-center gap-2 flex-wrap max-w-full overflow-x-auto">
+                        <span className="break-all whitespace-pre-wrap max-w-[90vw] md:max-w-[420px]">
+                          {session?.user?.email || "No disponible"}
+                        </span>
                         {!emailVerified && (
                           <button
                             onClick={handleVerifyEmail}
                             disabled={verifLoading}
-                            className="text-primary hover:underline text-xs font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="text-primary hover:underline text-xs font-semibold disabled:opacity-50 disabled:cursor-not-allowed break-words"
                           >
                             {verifLoading ? "Enviando..." : "(Verificar)"}
                           </button>
@@ -1184,12 +1187,23 @@ function PerfilContent() {
                         <Switch
                           checked={subsEnabled}
                           disabled={!session?.user?.emailVerified || subLoading}
-                          onCheckedChange={(checked, e) => onSubsChange(checked, e)}
+                          onCheckedChange={(checked, e) =>
+                            onSubsChange(checked, e)
+                          }
                         />
                         <span className="text-xs text-muted-foreground">
-                          {subLoading ? "Cargando..." : subsEnabled ? "Activa" : "Inactiva"}
-                          {!session?.user?.emailVerified && " (Requiere email verificado)"}
-                          {subError && <span className="text-red-500 ml-2">{subError}</span>}
+                          {subLoading
+                            ? "Cargando..."
+                            : subsEnabled
+                              ? "Activa"
+                              : "Inactiva"}
+                          {!session?.user?.emailVerified &&
+                            " (Requiere email verificado)"}
+                          {subError && (
+                            <span className="text-red-500 ml-2">
+                              {subError}
+                            </span>
+                          )}
                         </span>
                       </div>
                       {!session?.user?.emailVerified && (
@@ -1215,12 +1229,20 @@ function PerfilContent() {
                         <Switch
                           checked={pushSubscribed}
                           disabled={!pushSupported || pushLoading}
-                          onCheckedChange={checked => checked ? enablePush() : disablePush()}
+                          onCheckedChange={(checked) =>
+                            checked ? enablePush() : disablePush()
+                          }
                         />
                         <span className="text-xs text-muted-foreground">
-                          {pushLoading ? "Cargando..." : pushSubscribed ? "Activas" : "Inactivas"}
-                          {!pushSupported && " (No soportado en este navegador)"}
-                          {pushPermission === "denied" && " (Bloqueadas en el navegador)"}
+                          {pushLoading
+                            ? "Cargando..."
+                            : pushSubscribed
+                              ? "Activas"
+                              : "Inactivas"}
+                          {!pushSupported &&
+                            " (No soportado en este navegador)"}
+                          {pushPermission === "denied" &&
+                            " (Bloqueadas en el navegador)"}
                         </span>
                       </div>
                     </div>
@@ -1608,7 +1630,9 @@ function useSubscriptionStatus(type = "all") {
 export default function PerfilPage() {
   return (
     <ProtectedRoute>
-      <div className="relative min-h-screen overflow-hidden pt-20"> {/* pt-20 para dejar espacio a la navbar fija */}
+      <div className="relative min-h-screen overflow-hidden pt-20">
+        {" "}
+        {/* pt-20 para dejar espacio a la navbar fija */}
         {/* Fondo arcoíris con blobs controlados */}
         <RainbowBackground />
         <div className="relative z-10">

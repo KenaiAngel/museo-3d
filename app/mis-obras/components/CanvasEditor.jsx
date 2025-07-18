@@ -113,7 +113,7 @@ export default function CanvasEditor({
     titulo: editingMural?.titulo || "",
     descripcion: editingMural?.descripcion || "",
     tecnica: editingMural?.tecnica || "Digital",
-    year: editingMural?.year || new Date().getFullYear(),
+    year: editingMural?.year || undefined,
   });
   const [muralDataError, setMuralDataError] = useState(null);
   const [canvasZoom, setCanvasZoom] = useState(1);
@@ -125,8 +125,6 @@ export default function CanvasEditor({
   const [prevColors, setPrevColors] = useState([]);
   const [showBrushModal, setShowBrushModal] = useState(false);
   const [artistList, setArtistList] = useState([]);
-
-
 
   // --- useCanvas reemplaza la lógica de dibujo y eventos ---
   const {
@@ -219,8 +217,6 @@ export default function CanvasEditor({
       }
     }
   }, [isOpen, editingMural]);
-
-
 
   // Undo/Redo usando el hook
   const undo = () => {
@@ -472,6 +468,12 @@ export default function CanvasEditor({
     }
   }, [isOpen, editingMural]);
 
+  useEffect(() => {
+    if (muralData.year === undefined) {
+      setMuralData((prev) => ({ ...prev, year: new Date().getFullYear() }));
+    }
+  }, [muralData.year]);
+
   if (!isOpen) return null;
 
   return (
@@ -628,7 +630,8 @@ export default function CanvasEditor({
                     background: canvasBg ? `url(${canvasBg})` : canvasBgColor,
                     borderRadius: 16,
                     boxShadow: "0 2px 16px rgba(0,0,0,0.12)",
-                    cursor: currentTool === "eraser" ? "crosshair" : "crosshair",
+                    cursor:
+                      currentTool === "eraser" ? "crosshair" : "crosshair",
                   }}
                   onMouseDown={handlePointerDown}
                   onMouseMove={handlePointerMove}

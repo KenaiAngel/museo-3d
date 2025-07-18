@@ -190,7 +190,7 @@ const TOOL_ICONS = {
 const BRUSH_SECTIONS = [
   {
     label: "Básicos",
-          keys: ["pencil", "shadow", "brush", "eraser"],
+    keys: ["pencil", "shadow", "brush", "eraser"],
   },
   {
     label: "Artísticos",
@@ -452,7 +452,7 @@ export default function CrearObraModal({
   const [step, setStep] = useState(0);
   const [titulo, setTitulo] = useState("");
   const [tecnica, setTecnica] = useState("");
-  const [year, setYear] = useState(new Date().getFullYear());
+  const [year, setYear] = useState(undefined);
   const [imagen, setImagen] = useState(null);
   const [canvasImage, setCanvasImage] = useState(null);
   const [errors, setErrors] = useState({});
@@ -633,7 +633,7 @@ export default function CrearObraModal({
     setStep(0);
     setTitulo("");
     setTecnica("");
-    setYear(new Date().getFullYear());
+    setYear(undefined);
     setImagen(null);
     setCanvasImage(null);
     setErrors({});
@@ -2773,6 +2773,12 @@ export default function CrearObraModal({
     }
   };
 
+  useEffect(() => {
+    if (year === undefined) {
+      setYear(new Date().getFullYear());
+    }
+  }, [year]);
+
   if (!isOpen && !asPage) return null;
 
   // Si es modo página, no usar backdrop ni fixed ni max-h/overflow
@@ -2925,7 +2931,7 @@ export default function CrearObraModal({
                         if (errors.year)
                           setErrors((prev) => ({ ...prev, year: undefined }));
                       } else {
-                        setYear(null);
+                        setYear(undefined);
                       }
                     }}
                     placeholder="Selecciona el año..."
@@ -3021,7 +3027,8 @@ export default function CrearObraModal({
                   setImagen(img);
                   setCanvasImage(null);
                 }
-                if (errors.imagen) setErrors((prev) => ({ ...prev, imagen: undefined }));
+                if (errors.imagen)
+                  setErrors((prev) => ({ ...prev, imagen: undefined }));
               }}
             />
           )}
@@ -3310,7 +3317,7 @@ export default function CrearObraModal({
                         if (errors.year)
                           setErrors((prev) => ({ ...prev, year: undefined }));
                       } else {
-                        setYear(null);
+                        setYear(undefined);
                       }
                     }}
                     placeholder="Selecciona el año..."
@@ -3406,7 +3413,8 @@ export default function CrearObraModal({
                   setImagen(img);
                   setCanvasImage(null);
                 }
-                if (errors.imagen) setErrors((prev) => ({ ...prev, imagen: undefined }));
+                if (errors.imagen)
+                  setErrors((prev) => ({ ...prev, imagen: undefined }));
               }}
             />
           )}
@@ -3543,15 +3551,15 @@ export default function CrearObraModal({
         onClose={() => setShowConfirmClear(false)}
         title="¿Limpiar lienzo y fondo?"
       >
-        <div className="flex flex-col gap-4 items-center">
-          <p className="text-center text-lg">
+        <div className="flex flex-col gap-4 items-center bg-white dark:bg-neutral-900 text-gray-900 dark:text-gray-100 p-2 rounded-xl">
+          <p className="text-center text-lg text-gray-900 dark:text-gray-100">
             ¿Seguro que quieres limpiar el lienzo y eliminar el fondo?
             <br />
             Esta acción no se puede deshacer.
           </p>
           <div className="flex gap-4 justify-center mt-2">
             <button
-              className="px-4 py-2 rounded-lg bg-gray-200 text-gray-800 font-bold hover:bg-gray-300 transition"
+              className="px-4 py-2 rounded-lg bg-gray-200 dark:bg-neutral-800 text-gray-800 dark:text-gray-200 font-bold hover:bg-gray-300 dark:hover:bg-neutral-700 transition"
               onClick={() => setShowConfirmClear(false)}
             >
               Cancelar
