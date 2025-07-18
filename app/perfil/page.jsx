@@ -922,21 +922,6 @@ function PerfilContent() {
     }
   }
 
-  const onNotifChange = async (checked, e) => {
-    if (e && typeof e.preventDefault === "function") e.preventDefault();
-    setNotifEnabled(checked);
-    try {
-      await handleSettingsChange({
-        ...session.user.settings,
-        notificaciones: checked ? "true" : "false",
-        subscripcion: subsEnabled ? "true" : "false",
-      });
-      toast.success(`Notificaciones ${checked ? "activadas" : "desactivadas"}`);
-    } catch (error) {
-      toast.error("Error al cambiar configuración de notificaciones");
-    }
-  };
-
   const onSubsChange = async (checked, e) => {
     if (e && typeof e.preventDefault === "function") e.preventDefault();
     if (subLoading) return;
@@ -1191,20 +1176,6 @@ function PerfilContent() {
                       <Label>ID de usuario</Label>
                       <div className="text-xs font-mono text-muted-foreground mt-1">
                         {userId || "No disponible"}
-                      </div>
-                    </div>
-                    <div className="text-left mt-4">
-                      <Label>Notificaciones</Label>
-                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mt-1">
-                        <Switch
-                          checked={notifEnabled}
-                          onCheckedChange={(checked, e) =>
-                            onNotifChange(checked, e)
-                          }
-                        />
-                        <span className="text-xs text-muted-foreground">
-                          {notifEnabled ? "Activadas" : "Desactivadas"}
-                        </span>
                       </div>
                     </div>
                     <div className="text-left mt-2">

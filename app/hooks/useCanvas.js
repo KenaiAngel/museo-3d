@@ -1,13 +1,10 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useEffect } from "react";
 import {
-  clearCanvas as clearCanvasUtil,
   BrushEngine,
+  clearCanvas as clearCanvasUtil,
 } from "@/utils/drawingFunctions";
+import { useCanvasEvents } from "./useCanvasEvents";
 
-/**
- * Hook para manejar la lógica principal de un canvas de dibujo.
- * Usa una sola instancia de BrushEngine para todos los trazos.
- */
 export function useCanvas({
   initialColor = "#000",
   initialSize = 5,
@@ -16,12 +13,6 @@ export function useCanvas({
   const canvasRef = useRef(null);
   const brushEngineRef = useRef(null);
   const drawCompleteCallbackRef = useRef(null);
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [brushColor, setBrushColor] = useState(initialColor);
-  const [brushSize, setBrushSize] = useState(initialSize);
-  const [currentTool, setCurrentTool] = useState(initialTool);
-  const [lastPoint, setLastPoint] = useState(null);
-  const [cursorPos, setCursorPos] = useState(null);
 
   // Inicializar BrushEngine una sola vez
   useEffect(() => {
@@ -34,65 +25,55 @@ export function useCanvas({
   useEffect(() => {
     if (brushEngineRef.current) {
       brushEngineRef.current.configure({
-        type: currentTool,
-        color: brushColor,
-        size: brushSize,
+        type: initialTool,
+        color: initialColor,
+        size: initialSize,
       });
     }
-  }, [currentTool, brushColor, brushSize]);
+  }, [initialTool, initialColor, initialSize]);
 
-  const handlePointerDown = (e) => {
-    setIsDrawing(true);
-    const canvas = canvasRef.current;
-    const rect = canvas.getBoundingClientRect();
-    const cssX = e.clientX - rect.left;
-    const cssY = e.clientY - rect.top;
-    const x = (cssX * canvas.width) / rect.width;
-    const y = (cssY * canvas.height) / rect.height;
-    setLastPoint({ x, y });
-    drawAt(x, y);
-  };
-
-  const handlePointerMove = (e) => {
-    const canvas = canvasRef.current;
-    const rect = canvas.getBoundingClientRect();
-    const cssX = e.clientX - rect.left;
-    const cssY = e.clientY - rect.top;
-    setCursorPos({ x: cssX, y: cssY });
-    const x = (cssX * canvas.width) / rect.width;
-    const y = (cssY * canvas.height) / rect.height;
-    if (isDrawing) {
-      drawAt(x, y);
-    }
-  };
-
-  const handlePointerUp = () => {
-    setIsDrawing(false);
-    setLastPoint(null);
-    // Llamar callback si existe
-    if (drawCompleteCallbackRef.current) {
-      drawCompleteCallbackRef.current();
-    }
-  };
-
-  const handlePointerLeave = () => {
-    setCursorPos(null);
-    setIsDrawing(false);
-    setLastPoint(null);
-    // Llamar callback si existe
-    if (drawCompleteCallbackRef.current) {
-      drawCompleteCallbackRef.current();
-    }
-  };
-
-  // Usar BrushEngine para dibujar
-  const drawAt = (x, y) => {
+  // Callback para dibujar
+  const onDraw = (x, y, lastPoint) => {
     if (brushEngineRef.current) {
       brushEngineRef.current.draw({ x, y }, lastPoint);
-      setLastPoint({ x, y });
     }
   };
 
+  // Callback para cuando termina el trazo
+  const onDrawEnd = () => {
+    if (drawCompleteCallbackRef.current) {
+      drawCompleteCallbackRef.current();
+    }
+  };
+
+  // Hook de eventos de canvas
+  const {
+    isDrawing,
+    lastPoint,
+    cursorPos,
+    handlePointerDown,
+    handlePointerMove,
+    handlePointerUp,
+    handlePointerLeave,
+  } = useCanvasEvents({
+    canvasRef,
+    onDraw,
+    onDrawEnd,
+  });
+
+  // Métodos para cambiar configuración del pincel
+  const setBrushColor = (color) => {
+    if (brushEngineRef.current) brushEngineRef.current.configure({ color });
+  };
+  const setBrushSize = (size) => {
+    if (brushEngineRef.current) brushEngineRef.current.configure({ size });
+  };
+  const setCurrentTool = (tool) => {
+    if (brushEngineRef.current)
+      brushEngineRef.current.configure({ type: tool });
+  };
+
+  // Limpiar canvas
   const clearCanvas = () => {
     const canvas = canvasRef.current;
     if (canvas) {
@@ -100,6 +81,7 @@ export function useCanvas({
     }
   };
 
+  // Exportar imagen
   const exportImage = () => {
     const canvas = canvasRef.current;
     if (canvas) {
@@ -108,6 +90,7 @@ export function useCanvas({
     return null;
   };
 
+  // Permitir configurar el callback de trazo completo
   const setDrawCompleteCallback = (callback) => {
     drawCompleteCallbackRef.current = callback;
   };
@@ -115,9 +98,8 @@ export function useCanvas({
   return {
     canvasRef,
     isDrawing,
-    brushColor,
-    brushSize,
-    currentTool,
+    lastPoint,
+    cursorPos,
     setBrushColor,
     setBrushSize,
     setCurrentTool,
@@ -127,7 +109,6 @@ export function useCanvas({
     handlePointerLeave,
     clearCanvas,
     exportImage,
-    cursorPos,
     setDrawCompleteCallback,
   };
 }

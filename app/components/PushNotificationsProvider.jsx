@@ -36,22 +36,26 @@ export function PushNotificationsProvider({ children }) {
   const subscribe = async () => {
     setLoading(true);
     try {
+      console.log("[Push] Intentando registrar Service Worker y suscribirse a push...");
       const registration = await navigator.serviceWorker.register("/push-sw.js");
+      console.log("[Push] Service Worker registrado:", registration);
       const sub = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY),
       });
+      console.log("[Push] Suscripción push obtenida:", sub);
       setIsSubscribed(true);
       setSubscription(sub);
       setPermission(Notification.permission);
       // Enviar al backend
-      await fetch("/api/push-subscription", {
+      const res = await fetch("/api/push-subscription", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(sub),
       });
+      console.log("[Push] Respuesta backend:", res.status);
     } catch (err) {
-      console.error("Error al suscribirse a push:", err);
+      console.error("[Push] Error al suscribirse a push:", err);
     }
     setLoading(false);
   };
@@ -73,7 +77,7 @@ export function PushNotificationsProvider({ children }) {
         });
       }
     } catch (err) {
-      console.error("Error al desuscribirse de push:", err);
+      console.error("[Push] Error al desuscribirse de push:", err);
     }
     setLoading(false);
   };

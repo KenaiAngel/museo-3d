@@ -60,6 +60,7 @@ import {
   getCanvasCoordinates,
 } from "@/utils/drawingFunctions";
 import { useCanvas } from "../../hooks/useCanvas";
+import { useCanvasHistory } from "../../hooks/useCanvasHistory";
 
 // Estilos CSS para animaciones del cursor
 const cursorAnimationStyles = `
@@ -95,9 +96,19 @@ export default function CanvasEditor({
   onSave,
   editingMural = null,
 }) {
+  // Historial de canvas con hook especializado
+  const {
+    history,
+    historyIndex,
+    canUndo,
+    canRedo,
+    save: saveHistory,
+    undo: undoHistory,
+    redo: redoHistory,
+    clear: clearHistory,
+  } = useCanvasHistory();
+
   // Mantén los estados y lógica que no son de canvas puro (historial, datos de mural, etc.)
-  const [canvasHistory, setCanvasHistory] = useState([]);
-  const [historyIndex, setHistoryIndex] = useState(-1);
   const [muralData, setMuralData] = useState({
     titulo: editingMural?.titulo || "",
     descripcion: editingMural?.descripcion || "",
@@ -141,18 +152,10 @@ export default function CanvasEditor({
     initialTool: "brush",
   });
 
-  // Definir saveToHistory después del hook useCanvas
+  // Guardar en historial después de cada trazo
   const saveToHistory = useCallback(() => {
-    if (!canvasRef?.current) return;
-    const canvas = canvasRef.current;
-    const { newHistory, newIndex } = saveCanvasToHistory(
-      canvas,
-      canvasHistory,
-      historyIndex
-    );
-    setCanvasHistory(newHistory);
-    setHistoryIndex(newIndex);
-  }, [canvasRef, canvasHistory, historyIndex]);
+    if (canvasRef?.current) saveHistory(canvasRef.current);
+  }, [canvasRef, saveHistory]);
 
   // Configurar el callback de dibujo completo
   useEffect(() => {
@@ -219,28 +222,12 @@ export default function CanvasEditor({
 
 
 
+  // Undo/Redo usando el hook
   const undo = () => {
-    if (!canvasRef.current) return;
-    const canvas = canvasRef.current;
-    const { newHistory, newIndex } = undoCanvas(
-      canvas,
-      canvasHistory,
-      historyIndex
-    );
-    setCanvasHistory(newHistory);
-    setHistoryIndex(newIndex);
+    if (canvasRef?.current) undoHistory(canvasRef.current);
   };
-
   const redo = () => {
-    if (!canvasRef.current) return;
-    const canvas = canvasRef.current;
-    const { newHistory, newIndex } = redoCanvas(
-      canvas,
-      canvasHistory,
-      historyIndex
-    );
-    setCanvasHistory(newHistory);
-    setHistoryIndex(newIndex);
+    if (canvasRef?.current) redoHistory(canvasRef.current);
   };
 
   // Refs para siempre tener el valor actual de brushType y brushColor
@@ -596,7 +583,9 @@ export default function CanvasEditor({
                 download={downloadCanvas}
                 save={handleSave}
                 historyIndex={historyIndex}
-                canvasHistory={canvasHistory}
+                canvasHistory={history}
+                canUndo={canUndo}
+                canRedo={canRedo}
               />
               {/* Controles de zoom arriba del canvas */}
               <div className="flex gap-2 mb-2 items-center">
