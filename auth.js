@@ -1,7 +1,10 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
+import { PrismaClient } from "@prisma/client";
+const prisma = new PrismaClient();
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+// Exporta las opciones por separado
+export const authOptions = {
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID,
@@ -12,17 +15,28 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     strategy: "jwt",
   },
   pages: {
-    signIn: "/", // Puedes personalizar la ruta de login
+    signIn: "/",
   },
   callbacks: {
     async signIn({ user, account, profile }) {
       return true;
     },
-    async session({ session, token }) {
-      return session;
-    },
-    async jwt({ token, user, account, profile }) {
+    async jwt({ token, user }) {
+      // Si es la primera vez (login), busca el usuario en la base de datos y agrega el rol
+      if (user && user.email) {
+        const dbUser = await prisma.user.findUnique({
+          where: { email: user.email },
+        });
+        token.role = dbUser?.role || "USER";
+      }
       return token;
+    },
+    async session({ session, token }) {
+      // Pasa el rol del token a la sesión
+      if (token && session.user) {
+        session.user.role = token.role;
+      }
+      return session;
     },
   },
   events: {
@@ -41,4 +55,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       console.log("🐛 NextAuth Debug:", code, metadata);
     },
   },
-});
+};
+
+// Exporta los handlers para el app router
+export const { handlers, auth, signIn, signOut } = NextAuth(authOptions);

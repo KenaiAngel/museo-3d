@@ -1,7 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { getServerSession } from "next-auth";
-import { authOptions } from "../../../../auth"; // Ajusta la ruta según tu estructura
-import cloudinary from "../../../../utils/cloudinary";
+import { authOptions } from "../../../../../auth";
+import cloudinary from "../../../../../utils/cloudinary";
 
 const prisma = new PrismaClient();
 
@@ -11,21 +11,34 @@ export async function DELETE(req, context) {
 
   // Validar sesión y rol
   const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== "ADMIN") {
-    return new Response(JSON.stringify({ error: "No autorizado" }), {
-      status: 403,
-    });
+  console.log("[DELETE mural] session:", session);
+  if (!session || !session.user || session.user.role !== "ADMIN") {
+    console.warn("[DELETE mural] No autorizado o sesión inválida", session);
+    return new Response(
+      JSON.stringify({ error: "No autorizado o sesión inválida" }),
+      {
+        status: 403,
+      }
+    );
   }
 
   try {
     // Obtener el mural antes de borrar
     const mural = await prisma.mural.findUnique({ where: { id: Number(id) } });
-    if (mural && mural.url_imagen && mural.url_imagen.includes("cloudinary")) {
+    console.log("[DELETE mural] mural:", mural);
+    if (!mural) {
+      console.warn(`[DELETE mural] Mural con id ${id} no encontrado`);
+      return new Response(
+        JSON.stringify({ error: `Mural con id ${id} no encontrado` }),
+        {
+          status: 404,
+        }
+      );
+    }
+    if (mural.url_imagen && mural.url_imagen.includes("cloudinary")) {
       try {
         // Extraer public_id de la url_imagen
         const url = new URL(mural.url_imagen);
-        // Ejemplo: https://res.cloudinary.com/daol1ohso/image/upload/v1234567890/murales/filename.jpg
-        // public_id = murales/filename (sin extensión)
         const parts = url.pathname.split("/");
         const folder = parts[parts.length - 2];
         const filename = parts[parts.length - 1].split(".")[0];
@@ -41,11 +54,7 @@ export async function DELETE(req, context) {
       }
     }
     // Eliminar modelo 3D de Cloudinary si existe
-    if (
-      mural &&
-      mural.modelo3dUrl &&
-      mural.modelo3dUrl.includes("cloudinary")
-    ) {
+    if (mural.modelo3dUrl && mural.modelo3dUrl.includes("cloudinary")) {
       try {
         const url3d = new URL(mural.modelo3dUrl);
         const parts3d = url3d.pathname.split("/");
@@ -65,10 +74,14 @@ export async function DELETE(req, context) {
     await prisma.mural.delete({ where: { id: Number(id) } });
     return new Response(JSON.stringify({ success: true }), { status: 200 });
   } catch (error) {
+    console.error(
+      "[DELETE mural] Error al eliminar mural permanentemente:",
+      error
+    );
     return new Response(
       JSON.stringify({
         error: "Error al eliminar mural permanentemente",
-        details: error.message,
+        details: error.message || String(error),
       }),
       { status: 500, headers: { "Content-Type": "application/json" } }
     );
