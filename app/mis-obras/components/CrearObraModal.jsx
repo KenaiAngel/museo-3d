@@ -136,7 +136,6 @@ function hexToRgba(hex, alpha) {
 // Definir herramientas principales con íconos
 const TOOL_ICONS = {
   pencil: Brush,
-  smooth: Sparkles,
   shadow: Zap,
   eraser: Eraser,
   carboncillo: Scissors,
@@ -190,7 +189,7 @@ const TOOL_ICONS = {
 const BRUSH_SECTIONS = [
   {
     label: "Básicos",
-    keys: ["pencil", "smooth", "shadow", "brush", "eraser"],
+          keys: ["pencil", "shadow", "brush", "eraser"],
   },
   {
     label: "Artísticos",
@@ -346,7 +345,6 @@ const BRUSH_LABELS = (() => {
   // Fallback labels si BRUSH_TYPES no está disponible
   return {
     pencil: "Lápiz",
-    smooth: "Lápiz suave",
     shadow: "Sombra",
     eraser: "Borrador",
     carboncillo: "Carboncillo",
@@ -783,8 +781,7 @@ export default function CrearObraModal({
       // Pinceles básicos
       brush: "brush",
       eraser: "eraser",
-      pencil: "brush-soft",
-      smooth: "brush-soft",
+      pencil: "pencil",
       shadow: "glow",
 
       // Pinceles artísticos
@@ -793,14 +790,14 @@ export default function CrearObraModal({
       thick: "brush",
       sliced: "brush",
       multi: "brush",
-      multi_opacity: "brush-soft",
+      multi_opacity: "brush",
       carboncillo: "carboncillo",
       acuarela: "acuarela",
       tiza: "tiza",
       marcador: "marcador",
       oleo: "oleo",
       beads: "puntos",
-      wiggle: "brush-soft",
+      wiggle: "brush",
 
       // Efectos
       glow: "glow",
@@ -825,7 +822,7 @@ export default function CrearObraModal({
       spray: "spray",
       aerosol: "spray",
       spray_time: "spray",
-      spray_speed: "spray", // ← ESTE ERA EL QUE FALTABA
+      spray_speed: "spray",
 
       // Sketch/Harmony
       sketchy: "sketch",
@@ -873,27 +870,6 @@ export default function CrearObraModal({
       vintage: "vintage",
       grunge: "grunge",
       digital: "digital",
-
-      // Geométricos
-      geometric: "geometric",
-      organic: "organic",
-      fractal: "fractal",
-      mandala: "mandala",
-      celtic: "celtic",
-      tribal: "tribal",
-      kaleidoscope: "kaleidoscope",
-      mosaic: "mosaic",
-
-      // Especiales
-      galaxy: "galaxy",
-      plasma: "plasma",
-      electric: "electric",
-      crystal: "crystal",
-      magic: "magic",
-      gradient: "gradient",
-      textured: "textured",
-      sketch: "sketch",
-      splatter: "splatter",
     };
 
     // Retornar el tipo mapeado o el tipo original si no existe mapeo
@@ -1012,20 +988,7 @@ export default function CrearObraModal({
         ctx.stroke();
         break;
       }
-      // Lápiz suave: línea continua, sin sombra ni glow, solo lineJoin y lineCap 'round'
-      case "smooth": {
-        ctx.globalCompositeOperation = "source-over";
-        ctx.strokeStyle = brushColor;
-        ctx.lineWidth = brushSize;
-        ctx.lineCap = "round";
-        ctx.lineJoin = "round";
-        ctx.globalAlpha = 1;
-        ctx.beginPath();
-        ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
-        ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
-        ctx.stroke();
-        break;
-      }
+
       // Glow: resplandor intenso, modo lighter, halo extenso
       case "shadow": {
         ctx.globalCompositeOperation = "lighter";
@@ -4539,7 +4502,9 @@ export default function CrearObraModal({
                               <input
                                 type="color"
                                 value={canvasBgColor}
-                                onChange={(e) => applyBgColor(e.target.value)}
+                                onChange={(e) =>
+                                  applyBgColor(e.target.value)
+                                }
                                 className="w-24 h-12 rounded-xl border-2 border-green-300 shadow-sm bg-white dark:bg-neutral-700"
                                 style={{ cursor: "pointer" }}
                               />

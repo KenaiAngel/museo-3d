@@ -1,41 +1,46 @@
 import { useRef, useState, useEffect } from "react";
 import {
   clearCanvas as clearCanvasUtil,
-  drawAt as drawAtUtil,
+  BrushEngine,
 } from "@/utils/drawingFunctions";
 
 /**
  * Hook para manejar la lógica principal de un canvas de dibujo.
- * Extrae la lógica de eventos, contexto y herramientas del componente principal.
- * Puedes expandirlo según las necesidades de tu editor.
+ * Usa una sola instancia de BrushEngine para todos los trazos.
  */
 export function useCanvas({
   initialColor = "#000",
   initialSize = 5,
   initialTool = "brush",
 } = {}) {
-  // Ref para el elemento <canvas>
   const canvasRef = useRef(null);
-  // Estado para saber si se está dibujando
+  const brushEngineRef = useRef(null);
+  const drawCompleteCallbackRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
-  // Estado para color y tamaño del pincel
   const [brushColor, setBrushColor] = useState(initialColor);
   const [brushSize, setBrushSize] = useState(initialSize);
   const [currentTool, setCurrentTool] = useState(initialTool);
   const [lastPoint, setLastPoint] = useState(null);
   const [cursorPos, setCursorPos] = useState(null);
 
-  // Refs para valores actuales de tool y color
-  const brushTypeRef = useRef(currentTool);
-  const brushColorRef = useRef(brushColor);
+  // Inicializar BrushEngine una sola vez
   useEffect(() => {
-    brushTypeRef.current = currentTool;
-  }, [currentTool]);
-  useEffect(() => {
-    brushColorRef.current = brushColor;
-  }, [brushColor]);
+    if (canvasRef.current && !brushEngineRef.current) {
+      brushEngineRef.current = new BrushEngine(canvasRef.current);
+    }
+  }, [canvasRef]);
 
-  // Handler para mouse/touch down
+  // Configurar BrushEngine cuando cambian los parámetros
+  useEffect(() => {
+    if (brushEngineRef.current) {
+      brushEngineRef.current.configure({
+        type: currentTool,
+        color: brushColor,
+        size: brushSize,
+      });
+    }
+  }, [currentTool, brushColor, brushSize]);
+
   const handlePointerDown = (e) => {
     setIsDrawing(true);
     const canvas = canvasRef.current;
@@ -44,17 +49,10 @@ export function useCanvas({
     const cssY = e.clientY - rect.top;
     const x = (cssX * canvas.width) / rect.width;
     const y = (cssY * canvas.height) / rect.height;
-    const ctx = canvas.getContext("2d");
-    const type = brushTypeRef.current;
-    if (type === "brush" || type === "marcador" || type === "oleo") {
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-    }
     setLastPoint({ x, y });
     drawAt(x, y);
   };
 
-  // Handler para mouse/touch move
   const handlePointerMove = (e) => {
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
@@ -68,31 +66,33 @@ export function useCanvas({
     }
   };
 
-  // Handler para mouse/touch up
   const handlePointerUp = () => {
     setIsDrawing(false);
     setLastPoint(null);
-    // Aquí puedes llamar a saveToHistory si lo implementas en el hook
+    // Llamar callback si existe
+    if (drawCompleteCallbackRef.current) {
+      drawCompleteCallbackRef.current();
+    }
   };
 
-  // Handler para mouse leave
   const handlePointerLeave = () => {
     setCursorPos(null);
     setIsDrawing(false);
     setLastPoint(null);
+    // Llamar callback si existe
+    if (drawCompleteCallbackRef.current) {
+      drawCompleteCallbackRef.current();
+    }
   };
 
-  // Función principal de dibujo
+  // Usar BrushEngine para dibujar
   const drawAt = (x, y) => {
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-    const type = brushTypeRef.current;
-    const color = brushColorRef.current;
-    drawAtUtil(x, y, canvas, ctx, type, color, brushSize, lastPoint);
-    setLastPoint({ x, y });
+    if (brushEngineRef.current) {
+      brushEngineRef.current.draw({ x, y }, lastPoint);
+      setLastPoint({ x, y });
+    }
   };
 
-  // Limpiar el canvas
   const clearCanvas = () => {
     const canvas = canvasRef.current;
     if (canvas) {
@@ -100,13 +100,16 @@ export function useCanvas({
     }
   };
 
-  // Exportar imagen (ejemplo básico)
   const exportImage = () => {
     const canvas = canvasRef.current;
     if (canvas) {
       return canvas.toDataURL("image/png");
     }
     return null;
+  };
+
+  const setDrawCompleteCallback = (callback) => {
+    drawCompleteCallbackRef.current = callback;
   };
 
   return {
@@ -125,6 +128,6 @@ export function useCanvas({
     clearCanvas,
     exportImage,
     cursorPos,
-    // ...otros métodos
+    setDrawCompleteCallback,
   };
 }

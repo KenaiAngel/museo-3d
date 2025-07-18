@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
   X,
@@ -48,7 +48,6 @@ import BackgroundSelector from "./tools/BackgroundSelector";
 import ToolActions from "./tools/ToolActions";
 // Importar las funciones de dibujo
 import {
-  drawAt as drawAtUtil,
   hexToRgb as hexToRgbUtil,
   BRUSH_TYPES,
   BRUSH_CONFIGS,
@@ -60,6 +59,7 @@ import {
   loadImageToCanvas,
   getCanvasCoordinates,
 } from "@/utils/drawingFunctions";
+import { useCanvas } from "../../hooks/useCanvas";
 
 // Estilos CSS para animaciones del cursor
 const cursorAnimationStyles = `
@@ -95,15 +95,9 @@ export default function CanvasEditor({
   onSave,
   editingMural = null,
 }) {
-  const canvasRef = useRef(null);
-  const [currentTool, setCurrentTool] = useState("brush");
-  const [brushSize, setBrushSize] = useState(15);
-  const [currentColor, setCurrentColor] = useState("#000000");
+  // Mantén los estados y lógica que no son de canvas puro (historial, datos de mural, etc.)
   const [canvasHistory, setCanvasHistory] = useState([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [lastPoint, setLastPoint] = useState(null);
-  const [cursorPos, setCursorPos] = useState(null);
   const [muralData, setMuralData] = useState({
     titulo: editingMural?.titulo || "",
     descripcion: editingMural?.descripcion || "",
@@ -120,6 +114,50 @@ export default function CanvasEditor({
   const [prevColors, setPrevColors] = useState([]);
   const [showBrushModal, setShowBrushModal] = useState(false);
   const [artistList, setArtistList] = useState([]);
+
+
+
+  // --- useCanvas reemplaza la lógica de dibujo y eventos ---
+  const {
+    canvasRef,
+    isDrawing,
+    brushColor,
+    brushSize,
+    currentTool,
+    setBrushColor,
+    setBrushSize,
+    setCurrentTool,
+    handlePointerDown,
+    handlePointerMove,
+    handlePointerUp,
+    handlePointerLeave,
+    clearCanvas,
+    exportImage,
+    cursorPos,
+    setDrawCompleteCallback,
+  } = useCanvas({
+    initialColor: "#000000",
+    initialSize: 15,
+    initialTool: "brush",
+  });
+
+  // Definir saveToHistory después del hook useCanvas
+  const saveToHistory = useCallback(() => {
+    if (!canvasRef?.current) return;
+    const canvas = canvasRef.current;
+    const { newHistory, newIndex } = saveCanvasToHistory(
+      canvas,
+      canvasHistory,
+      historyIndex
+    );
+    setCanvasHistory(newHistory);
+    setHistoryIndex(newIndex);
+  }, [canvasRef, canvasHistory, historyIndex]);
+
+  // Configurar el callback de dibujo completo
+  useEffect(() => {
+    setDrawCompleteCallback(saveToHistory);
+  }, [saveToHistory, setDrawCompleteCallback]);
 
   useEffect(() => {
     fetch("/api/artists?limit=100")
@@ -179,17 +217,7 @@ export default function CanvasEditor({
     }
   }, [isOpen, editingMural]);
 
-  const saveToHistory = () => {
-    if (!canvasRef.current) return;
-    const canvas = canvasRef.current;
-    const { newHistory, newIndex } = saveCanvasToHistory(
-      canvas,
-      canvasHistory,
-      historyIndex
-    );
-    setCanvasHistory(newHistory);
-    setHistoryIndex(newIndex);
-  };
+
 
   const undo = () => {
     if (!canvasRef.current) return;
@@ -215,70 +243,63 @@ export default function CanvasEditor({
     setHistoryIndex(newIndex);
   };
 
-  const clearCanvas = () => {
-    if (!canvasRef.current) return;
-    const canvas = canvasRef.current;
-    clearCanvasUtil(canvas);
-    saveToHistory();
-  };
-
   // Refs para siempre tener el valor actual de brushType y brushColor
   const brushTypeRef = useRef(currentTool);
-  const brushColorRef = useRef(currentColor);
+  const brushColorRef = useRef(brushColor);
   useEffect(() => {
     brushTypeRef.current = currentTool;
   }, [currentTool]);
   useEffect(() => {
-    brushColorRef.current = currentColor;
-  }, [currentColor]);
+    brushColorRef.current = brushColor;
+  }, [brushColor]);
 
   // Sistema de coordenadas y handlers
-  const handleMouseMove = (e) => {
-    const canvas = canvasRef.current;
-    const rect = canvas.getBoundingClientRect();
-    const cssX = e.clientX - rect.left;
-    const cssY = e.clientY - rect.top;
-    setCursorPos({ x: cssX, y: cssY });
-    const x = (cssX * canvas.width) / rect.width;
-    const y = (cssY * canvas.height) / rect.height;
-    if (isDrawing) {
-      drawAt(x, y);
-    }
-  };
+  // const handleMouseMove = (e) => {
+  //   const canvas = canvasRef.current;
+  //   const rect = canvas.getBoundingClientRect();
+  //   const cssX = e.clientX - rect.left;
+  //   const cssY = e.clientY - rect.top;
+  //   setCursorPos({ x: cssX, y: cssY });
+  //   const x = (cssX * canvas.width) / rect.width;
+  //   const y = (cssY * canvas.height) / rect.height;
+  //   if (isDrawing) {
+  //     drawAt(x, y);
+  //   }
+  // };
 
-  const handleMouseLeave = () => {
-    setCursorPos(null);
-    setIsDrawing(false);
-    setLastPoint(null);
-  };
+  // const handleMouseLeave = () => {
+  //   setCursorPos(null);
+  //   setIsDrawing(false);
+  //   setLastPoint(null);
+  // };
 
-  const handleMouseUp = () => {
-    setIsDrawing(false);
-    setLastPoint(null);
-    saveToHistory();
-  };
+  // const handleMouseUp = () => {
+  //   setIsDrawing(false);
+  //   setLastPoint(null);
+  //   saveToHistory();
+  // };
 
-  const handleMouseDown = (e) => {
-    setIsDrawing(true);
-    const canvas = canvasRef.current;
-    const rect = canvas.getBoundingClientRect();
-    const cssX = e.clientX - rect.left;
-    const cssY = e.clientY - rect.top;
-    const x = (cssX * canvas.width) / rect.width;
-    const y = (cssY * canvas.height) / rect.height;
+  // const handleMouseDown = (e) => {
+  //   setIsDrawing(true);
+  //   const canvas = canvasRef.current;
+  //   const rect = canvas.getBoundingClientRect();
+  //   const cssX = e.clientX - rect.left;
+  //   const cssY = e.clientY - rect.top;
+  //   const x = (cssX * canvas.width) / rect.width;
+  //   const y = (cssY * canvas.height) / rect.height;
 
-    const ctx = canvas.getContext("2d");
-    const type = brushTypeRef.current;
+  //   const ctx = canvas.getContext("2d");
+  //   const type = brushTypeRef.current;
 
-    // Inicializar el trazo basado en el tipo de pincel
-    if (type === "brush" || type === "marcador" || type === "oleo") {
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-    }
+  //   // Inicializar el trazo basado en el tipo de pincel
+  //   if (type === "brush" || type === "marcador" || type === "oleo") {
+  //     ctx.beginPath();
+  //     ctx.moveTo(x, y);
+  //   }
 
-    setLastPoint({ x, y });
-    drawAt(x, y);
-  };
+  //   setLastPoint({ x, y });
+  //   drawAt(x, y);
+  // };
 
   // Función para resetear completamente el contexto del canvas
   const resetCanvasContext = (ctx) => {
@@ -295,16 +316,16 @@ export default function CanvasEditor({
     ctx.fillStyle = "#000000";
   };
 
-  // Función principal de dibujo con técnicas avanzadas basadas en perfectionkills.com
-  const drawAt = (x, y) => {
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-    const type = brushTypeRef.current;
-    const brushColor = brushColorRef.current;
+  // Función principal de dibujo - ya no necesaria porque useCanvas maneja el dibujo
+  // const drawAt = (x, y) => {
+  //   const canvas = canvasRef.current;
+  //   const ctx = canvas.getContext("2d");
+  //   const type = brushTypeRef.current;
+  //   const brushColor = brushColorRef.current;
 
-    drawAtUtil(x, y, canvas, ctx, type, brushColor, brushSize, lastPoint);
-    setLastPoint({ x, y });
-  };
+  //   drawAtUtil(x, y, canvas, ctx, type, brushColor, brushSize, lastPoint);
+  //   setLastPoint({ x, y });
+  // };
 
   const handleSave = async () => {
     if (!muralData.titulo.trim()) {
@@ -403,11 +424,11 @@ export default function CanvasEditor({
   });
 
   const paletteColors = Array.from(
-    new Set([currentColor, ...recentColors, ...prevColors, ...colors])
+    new Set([brushColor, ...recentColors, ...prevColors, ...colors])
   ).slice(0, 12);
 
   const handleSetBrushColor = (color) => {
-    setCurrentColor(color);
+    setBrushColor(color);
     setRecentColors((prev) => {
       const filtered = prev.filter((c) => c !== color);
       return [color, ...filtered].slice(0, 6);
@@ -552,12 +573,12 @@ export default function CanvasEditor({
                   <h4 className="font-semibold text-sm mb-1">Color</h4>
                   <Palette
                     colors={paletteColors}
-                    currentColor={currentColor}
+                    currentColor={brushColor}
                     onSelectColor={handleSetBrushColor}
                   />
                   <input
                     type="color"
-                    value={currentColor}
+                    value={brushColor}
                     onChange={(e) => handleSetBrushColor(e.target.value)}
                     className="w-16 h-10 rounded-xl border-2 border-indigo-300 shadow-sm bg-white dark:bg-neutral-700"
                     style={{ margin: "0 auto" }}
@@ -613,20 +634,17 @@ export default function CanvasEditor({
                   width={800}
                   height={600}
                   style={{
-                    width: "100%",
-                    height: "100%",
-                    display: "block",
-                    background: "#fff",
-                    borderRadius: 12,
-                    border: "2px solid #d1d5db",
-                    cursor: "crosshair",
-                    transform: `scale(${canvasZoom})`,
-                    transformOrigin: "center center",
+                    width: 800 * canvasZoom,
+                    height: 600 * canvasZoom,
+                    background: canvasBg ? `url(${canvasBg})` : canvasBgColor,
+                    borderRadius: 16,
+                    boxShadow: "0 2px 16px rgba(0,0,0,0.12)",
+                    cursor: currentTool === "eraser" ? "crosshair" : "crosshair",
                   }}
-                  onMouseDown={handleMouseDown}
-                  onMouseMove={handleMouseMove}
-                  onMouseUp={handleMouseUp}
-                  onMouseLeave={handleMouseLeave}
+                  onMouseDown={handlePointerDown}
+                  onMouseMove={handlePointerMove}
+                  onMouseUp={handlePointerUp}
+                  onMouseLeave={handlePointerLeave}
                 />
                 {/* Cursor personalizado avanzado con previsualización de cada pincel */}
                 {cursorPos && (
@@ -654,14 +672,14 @@ export default function CanvasEditor({
                         }
                       })(),
                       background: (() => {
-                        const rgb = hexToRgb(currentColor);
+                        const rgb = hexToRgb(brushColor);
                         switch (currentTool) {
                           case "eraser":
                             return "repeating-conic-gradient(rgba(200,200,200,0.6) 0deg 45deg, rgba(150,150,150,0.3) 45deg 90deg)";
                           case "neon":
-                            return `radial-gradient(circle, ${currentColor}80, ${currentColor}40, ${currentColor}10)`;
+                            return `radial-gradient(circle, ${brushColor}80, ${brushColor}40, ${brushColor}10)`;
                           case "acuarela":
-                            return `radial-gradient(circle, ${currentColor}30 0%, ${currentColor}15 40%, ${currentColor}05 70%, transparent 100%)`;
+                            return `radial-gradient(circle, ${brushColor}30 0%, ${brushColor}15 40%, ${brushColor}05 70%, transparent 100%)`;
                           case "fuego":
                             return "radial-gradient(circle, #FF450060 0%, #FF8C0040 30%, #FFD70020 60%, transparent 100%)";
                           case "carboncillo":
@@ -673,16 +691,16 @@ export default function CanvasEditor({
                               255
                             )}, 0.4) 0%, rgba(50,50,50,0.2) 100%)`;
                           case "tiza":
-                            return `radial-gradient(circle, ${currentColor}50 0%, ${currentColor}20 60%, transparent 100%)`;
+                            return `radial-gradient(circle, ${brushColor}50 0%, ${brushColor}20 60%, transparent 100%)`;
                           case "marcador":
-                            return `linear-gradient(45deg, ${currentColor}70, ${currentColor}50)`;
+                            return `linear-gradient(45deg, ${brushColor}70, ${brushColor}50)`;
                           case "oleo":
-                            return `conic-gradient(${currentColor}60, ${currentColor}40, ${currentColor}60)`;
+                            return `conic-gradient(${brushColor}60, ${brushColor}40, ${brushColor}60)`;
                           case "pixel":
                             const pixelSize = Math.max(2, brushSize / 6);
-                            return `repeating-linear-gradient(0deg, ${currentColor}60 0px, ${currentColor}60 ${pixelSize}px, transparent ${pixelSize}px, transparent ${
+                            return `repeating-linear-gradient(0deg, ${brushColor}60 0px, ${brushColor}60 ${pixelSize}px, transparent ${pixelSize}px, transparent ${
                               pixelSize * 2
-                            }px), repeating-linear-gradient(90deg, ${currentColor}60 0px, ${currentColor}60 ${pixelSize}px, transparent ${pixelSize}px, transparent ${
+                            }px), repeating-linear-gradient(90deg, ${brushColor}60 0px, ${brushColor}60 ${pixelSize}px, transparent ${pixelSize}px, transparent ${
                               pixelSize * 2
                             }px)`;
                           case "puntos":
@@ -690,7 +708,7 @@ export default function CanvasEditor({
                           case "lineas":
                             return "transparent";
                           default:
-                            return `${currentColor}40`;
+                            return `${brushColor}40`;
                         }
                       })(),
                       border: (() => {
@@ -698,19 +716,19 @@ export default function CanvasEditor({
                           case "eraser":
                             return "2px dashed #888";
                           case "neon":
-                            return `2px solid ${currentColor}`;
+                            return `2px solid ${brushColor}`;
                           case "pixel":
-                            return `2px solid ${currentColor}`;
+                            return `2px solid ${brushColor}`;
                           case "marcador":
-                            return `3px solid ${currentColor}80`;
+                            return `3px solid ${brushColor}80`;
                           case "carboncillo":
-                            return `1px solid ${currentColor}60`;
+                            return `1px solid ${brushColor}60`;
                           case "tiza":
-                            return `1px dotted ${currentColor}`;
+                            return `1px dotted ${brushColor}`;
                           case "oleo":
-                            return `2px ridge ${currentColor}80`;
+                            return `2px ridge ${brushColor}80`;
                           default:
-                            return `1px solid ${currentColor}60`;
+                            return `1px solid ${brushColor}60`;
                         }
                       })(),
                       pointerEvents: "none",
@@ -732,9 +750,9 @@ export default function CanvasEditor({
                           case "neon":
                             return `0 0 ${
                               brushSize * 1.5
-                            }px ${currentColor}40, 0 0 ${
+                            }px ${brushColor}40, 0 0 ${
                               brushSize * 0.5
-                            }px ${currentColor}80`;
+                            }px ${brushColor}80`;
                           case "fuego":
                             return `0 0 ${brushSize}px #FF450040, 0 0 ${
                               brushSize * 2
@@ -742,9 +760,9 @@ export default function CanvasEditor({
                           case "oleo":
                             return `inset 0 0 ${
                               brushSize / 3
-                            }px ${currentColor}30`;
+                            }px ${brushColor}30`;
                           case "acuarela":
-                            return `0 0 ${brushSize}px ${currentColor}20`;
+                            return `0 0 ${brushSize}px ${brushColor}20`;
                           case "carboncillo":
                             return `0 0 ${brushSize / 2}px rgba(50,50,50,0.3)`;
                           default:
@@ -800,7 +818,7 @@ export default function CanvasEditor({
                                   width: "3px",
                                   height: "3px",
                                   borderRadius: "50%",
-                                  background: currentColor,
+                                  background: brushColor,
                                   opacity: 0.6,
                                 }}
                               />
@@ -816,7 +834,7 @@ export default function CanvasEditor({
                             width: "4px",
                             height: "4px",
                             borderRadius: "50%",
-                            background: currentColor,
+                            background: brushColor,
                           }}
                         />
                       </>
@@ -834,7 +852,7 @@ export default function CanvasEditor({
                                 left: "50%",
                                 width: `${brushSize * 0.8}px`,
                                 height: "1px",
-                                background: currentColor,
+                                background: brushColor,
                                 transform: `translate(-50%, -50%) rotate(${angle}rad)`,
                                 opacity: 0.5 - i * 0.1,
                               }}
@@ -852,7 +870,7 @@ export default function CanvasEditor({
                           left: "2px",
                           right: "2px",
                           bottom: "2px",
-                          background: `repeating-conic-gradient(${currentColor}60 0deg 90deg, transparent 90deg 180deg)`,
+                          background: `repeating-conic-gradient(${brushColor}60 0deg 90deg, transparent 90deg 180deg)`,
                           imageRendering: "pixelated",
                         }}
                       />
@@ -866,7 +884,7 @@ export default function CanvasEditor({
                           left: "20%",
                           right: "20%",
                           bottom: "20%",
-                          background: `radial-gradient(circle, ${currentColor}40, transparent)`,
+                          background: `radial-gradient(circle, ${brushColor}40, transparent)`,
                           borderRadius: "30%",
                         }}
                       />
@@ -881,7 +899,7 @@ export default function CanvasEditor({
                             left: "25%",
                             width: "50%",
                             height: "50%",
-                            background: currentColor,
+                            background: brushColor,
                             borderRadius: "20%",
                             opacity: 0.6,
                           }}
@@ -893,7 +911,7 @@ export default function CanvasEditor({
                             left: "15%",
                             width: "30%",
                             height: "30%",
-                            background: currentColor,
+                            background: brushColor,
                             borderRadius: "50%",
                             opacity: 0.4,
                           }}
@@ -909,7 +927,7 @@ export default function CanvasEditor({
                           left: "10%",
                           right: "10%",
                           bottom: "10%",
-                          background: `linear-gradient(135deg, ${currentColor}80, ${currentColor}40)`,
+                          background: `linear-gradient(135deg, ${brushColor}80, ${brushColor}40)`,
                           borderRadius: "10%",
                         }}
                       />
@@ -927,7 +945,7 @@ export default function CanvasEditor({
                               width: "2px",
                               height: "2px",
                               borderRadius: "50%",
-                              background: currentColor,
+                              background: brushColor,
                               opacity: 0.4 + Math.random() * 0.4,
                             }}
                           />
@@ -960,7 +978,7 @@ export default function CanvasEditor({
                             left: "25%",
                             width: "50%",
                             height: "50%",
-                            background: `radial-gradient(circle, ${currentColor}30, transparent)`,
+                            background: `radial-gradient(circle, ${brushColor}30, transparent)`,
                             borderRadius: "50%",
                           }}
                         />
@@ -971,7 +989,7 @@ export default function CanvasEditor({
                             left: "35%",
                             width: "30%",
                             height: "30%",
-                            background: `radial-gradient(circle, ${currentColor}20, transparent)`,
+                            background: `radial-gradient(circle, ${brushColor}20, transparent)`,
                             borderRadius: "50%",
                           }}
                         />

@@ -24,6 +24,7 @@ import useSWR from "swr";
 import { useUser } from "../../providers/UserProvider";
 import toast from "react-hot-toast";
 import { GalleryHorizontal as GalleryIcon } from "lucide-react";
+import { usePushNotifications } from "../components/PushNotificationsProvider";
 
 const fetcher = (url) => fetch(url).then((res) => res.json());
 
@@ -1072,6 +1073,15 @@ function PerfilContent() {
   const sessionGlow = useCardMouseGlow();
   const profileGlow = useCardMouseGlow();
 
+  const {
+    isSupported: pushSupported,
+    isSubscribed: pushSubscribed,
+    permission: pushPermission,
+    subscribe: enablePush,
+    unsubscribe: disablePush,
+    loading: pushLoading,
+  } = usePushNotifications();
+
   if (initialLoading) {
     return (
       <div className="relative min-h-screen flex items-center justify-center">
@@ -1226,6 +1236,21 @@ function PerfilContent() {
                         >
                           {emailVerified ? "Sí" : "No"}
                         </Badge>
+                      </div>
+                    </div>
+                    <div className="text-left mt-2">
+                      <Label>Notificaciones Push</Label>
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mt-1">
+                        <Switch
+                          checked={pushSubscribed}
+                          disabled={!pushSupported || pushLoading}
+                          onCheckedChange={checked => checked ? enablePush() : disablePush()}
+                        />
+                        <span className="text-xs text-muted-foreground">
+                          {pushLoading ? "Cargando..." : pushSubscribed ? "Activas" : "Inactivas"}
+                          {!pushSupported && " (No soportado en este navegador)"}
+                          {pushPermission === "denied" && " (Bloqueadas en el navegador)"}
+                        </span>
                       </div>
                     </div>
                     <div className="text-left mt-4">

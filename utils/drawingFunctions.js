@@ -173,6 +173,23 @@ export class ColorUtils {
   }
 
   /**
+   * Shades a color by a given percentage
+   * @param {string} hex - Base color in hex
+   * @param {number} percent - Percentage to shade (e.g., 10 for 10% lighter)
+   * @returns {string} - Shaded color in hex
+   */
+  static shadeColor(hex, percent) {
+    const num = parseInt(hex.slice(1), 16);
+    const amt = Math.round(2.55 * percent);
+    const R = (num >> 16) + amt;
+    const G = (num >> 8) & (0x00ff + amt);
+    const B = (num & 0x0000ff) + amt;
+    const newHex =
+      "#" + (0x10000 + R * 0x100 + G * 0x1 + B).toString(16).slice(1);
+    return newHex;
+  }
+
+  /**
    * Clears color caches to free memory
    */
   static clearCache() {
@@ -546,9 +563,18 @@ export class BrushEngine {
       // Get brush implementation
       const brushImpl = this.#getBrushImplementation(type);
       if (!brushImpl) {
-        console.warn(`Unknown brush type: ${type}, using default`);
+        console.warn(
+          `⚠️ Pincel no implementado: "${type}". Usando pincel básico por defecto.`
+        );
         this.#drawBasicBrush({ x, y, lastPoint, color, size });
         return true;
+      }
+
+      // Check if brush is using placeholder implementation
+      if (this.#isPlaceholderBrush(type)) {
+        console.warn(
+          `⚠️ Pincel "${type}" usa implementación placeholder. Considera implementar lógica específica.`
+        );
       }
 
       // Save context state
@@ -597,8 +623,8 @@ export class BrushEngine {
     const brushes = {
       // Basic brushes
       brush: this.#drawBasicBrush,
-      "brush-soft": this.#drawSoftBrush,
       eraser: this.#drawEraser,
+      pencil: this.#drawPencil,
 
       // Artistic brushes
       carboncillo: this.#drawCharcoal,
@@ -669,21 +695,138 @@ export class BrushEngine {
     return brushes[type] || null;
   }
 
+  /**
+   * Check if brush is using placeholder implementation
+   * @private
+   */
+  #isPlaceholderBrush(type) {
+    const placeholderBrushes = [
+      "splatter",
+      "spray",
+      "textured",
+      "sketch",
+      "fabric",
+      "fur",
+      "leaves",
+      "rain",
+      "snow",
+      "stars",
+      "hearts",
+      "flowers",
+      "bubbles",
+      "lightning",
+      "smoke",
+      "grass",
+      "wood",
+      "metal",
+      "glass",
+      "water",
+      "sand",
+      "stone",
+      "cloud",
+      "galaxy",
+      "plasma",
+      "electric",
+      "crystal",
+      "magic",
+      "rainbow",
+      "gradient",
+      "mosaic",
+      "kaleidoscope",
+      "mandala",
+      "celtic",
+      "tribal",
+      "geometric",
+      "organic",
+      "fractal",
+      "impressionist",
+      "pointillist",
+      "abstract",
+      "surreal",
+      "minimalist",
+      "vintage",
+      "grunge",
+      "digital",
+    ];
+    return placeholderBrushes.includes(type);
+  }
+
   // ===========================
   // CORE BRUSH IMPLEMENTATIONS
   // ===========================
 
   /**
-   * Basic brush implementation
+   * Pencil brush implementation (lápiz realista)
+   * @private
+   */
+  #drawPencil({ x, y, lastPoint, color, size }) {
+    this.#ctx.globalCompositeOperation = "source-over";
+    this.#ctx.lineCap = "round";
+    this.#ctx.lineJoin = "round";
+    this.#ctx.shadowBlur = 0; // Sin blur para lápiz definido
+
+    // Simula presión variable del lápiz
+    const pressure = 0.4 + Math.random() * 0.6;
+    const baseAlpha = 0.6 + pressure * 0.3; // Más opaco que smooth
+    this.#ctx.globalAlpha = baseAlpha;
+
+    // Trazo principal fino y definido
+    this.#ctx.strokeStyle = color;
+    this.#ctx.lineWidth = Math.max(0.8, size * 0.25); // Más definido
+
+    if (lastPoint) {
+      this.#ctx.beginPath();
+      this.#ctx.moveTo(lastPoint.x, lastPoint.y);
+      this.#ctx.lineTo(x, y);
+      this.#ctx.stroke();
+    }
+
+    // Textura granular compacta del grafito (sin dispersión)
+    const grainCount = Math.floor(size * 0.6);
+    for (let i = 0; i < grainCount; i++) {
+      const grainX = x + (Math.random() - 0.5) * size * 0.3; // Menos dispersión
+      const grainY = y + (Math.random() - 0.5) * size * 0.3;
+      const grainSize = Math.random() * 0.6; // Granos más pequeños
+      const grainAlpha = (0.2 + Math.random() * 0.3) * pressure; // Más opaco
+
+      this.#ctx.globalAlpha = grainAlpha;
+      this.#ctx.fillStyle = color;
+      this.#ctx.beginPath();
+      this.#ctx.arc(grainX, grainY, grainSize, 0, Math.PI * 2);
+      this.#ctx.fill();
+    }
+
+    // Efecto de desgaste de la punta (trazo secundario definido)
+    if (Math.random() < 0.4) {
+      this.#ctx.globalAlpha = 0.25 * pressure;
+      this.#ctx.lineWidth = Math.max(0.5, size * 0.12);
+      this.#ctx.strokeStyle = color;
+
+      if (lastPoint) {
+        const offsetX = (Math.random() - 0.5) * size * 0.25;
+        const offsetY = (Math.random() - 0.5) * size * 0.25;
+        this.#ctx.beginPath();
+        this.#ctx.moveTo(lastPoint.x + offsetX, lastPoint.y + offsetY);
+        this.#ctx.lineTo(x + offsetX, y + offsetY);
+        this.#ctx.stroke();
+      }
+    }
+  }
+
+  /**
+   * Basic brush implementation mejorada (línea sólida, presión simulada)
    * @private
    */
   #drawBasicBrush({ x, y, lastPoint, color, size }) {
     this.#ctx.globalCompositeOperation = "source-over";
     this.#ctx.strokeStyle = color;
-    this.#ctx.lineWidth = size;
     this.#ctx.lineCap = "round";
     this.#ctx.lineJoin = "round";
-
+    // Simula presión: leve variación de opacidad y grosor
+    const baseAlpha = 0.92 + Math.random() * 0.08;
+    this.#ctx.globalAlpha = baseAlpha;
+    const widthJitter = size * (0.97 + Math.random() * 0.06);
+    this.#ctx.lineWidth = widthJitter;
     if (lastPoint) {
       this.#ctx.beginPath();
       this.#ctx.moveTo(lastPoint.x, lastPoint.y);
@@ -698,61 +841,57 @@ export class BrushEngine {
   }
 
   /**
-   * Soft brush with glow effect
-   * @private
-   */
-  #drawSoftBrush({ x, y, lastPoint, color, size }) {
-    this.#ctx.globalCompositeOperation = "source-over";
-    this.#ctx.strokeStyle = color;
-    this.#ctx.lineWidth = size;
-    this.#ctx.lineCap = "round";
-    this.#ctx.lineJoin = "round";
-    this.#ctx.shadowColor = color;
-    this.#ctx.shadowBlur = size * 1.2;
-
-    if (lastPoint) {
-      this.#ctx.beginPath();
-      this.#ctx.moveTo(lastPoint.x, lastPoint.y);
-      this.#ctx.lineTo(x, y);
-      this.#ctx.stroke();
-    } else {
-      this.#ctx.beginPath();
-      this.#ctx.arc(x, y, size / 2, 0, Math.PI * 2);
-      this.#ctx.fillStyle = color;
-      this.#ctx.fill();
-    }
-  }
-
-  /**
-   * Eraser implementation
+   * Eraser mejorado: difuso, centro fuerte y borde suave
    * @private
    */
   #drawEraser({ x, y, lastPoint, size }) {
     this.#ctx.globalCompositeOperation = "destination-out";
-    this.#ctx.lineWidth = size;
     this.#ctx.lineCap = "round";
-
+    this.#ctx.shadowColor = "#000";
+    this.#ctx.shadowBlur = size * 0.7;
+    this.#ctx.globalAlpha = 0.7;
+    this.#ctx.lineWidth = size * 1.1;
+    // Trazo principal
     if (lastPoint) {
       this.#ctx.beginPath();
       this.#ctx.moveTo(lastPoint.x, lastPoint.y);
       this.#ctx.lineTo(x, y);
       this.#ctx.stroke();
     }
+    // Borrado difuso extra (borde atenuado)
+    this.#ctx.save();
+    const grad = this.#ctx.createRadialGradient(
+      x,
+      y,
+      size * 0.2,
+      x,
+      y,
+      size * 0.55
+    );
+    grad.addColorStop(0, "rgba(0,0,0,0.7)");
+    grad.addColorStop(1, "rgba(0,0,0,0)");
+    this.#ctx.globalAlpha = 0.25;
+    this.#ctx.globalCompositeOperation = "destination-out";
+    this.#ctx.beginPath();
+    this.#ctx.arc(x, y, size * 0.55, 0, Math.PI * 2);
+    this.#ctx.fillStyle = grad;
+    this.#ctx.fill();
+    this.#ctx.restore();
   }
 
   /**
-   * Charcoal brush with realistic texture
+   * Charcoal brush with realistic texture mejorado
    * @private
    */
   #drawCharcoal({ x, y, lastPoint, color, size }) {
     this.#ctx.globalCompositeOperation = "multiply";
 
-    // Multiple strokes for texture
-    for (let offset = 0; offset < 5; offset++) {
-      const offsetDist = offset * 0.5;
-      const alpha = 0.22 - offset * 0.04;
+    // Múltiples trazos con variación de presión y dirección
+    for (let offset = 0; offset < 6; offset++) {
+      const offsetDist = offset * 0.8;
+      const alpha = 0.25 - offset * 0.03;
       this.#ctx.strokeStyle = ColorUtils.hexToRgba(color, alpha);
-      this.#ctx.lineWidth = Math.max(1, size - offset);
+      this.#ctx.lineWidth = Math.max(1, size - offset * 1.5);
       this.#ctx.lineCap = "round";
 
       if (lastPoint) {
@@ -768,18 +907,176 @@ export class BrushEngine {
       }
     }
 
-    // Optimized granular texture
-    const particleCount = Math.floor(
-      size * PERFORMANCE.PARTICLE_DENSITY_FACTOR
-    );
+    // Textura granular realista del carboncillo
+    const particleCount = Math.floor(size * 0.8);
     for (let i = 0; i < particleCount; i++) {
-      const grainX = x + (Math.random() - 0.5) * size * 1.2;
-      const grainY = y + (Math.random() - 0.5) * size * 1.2;
-      this.#ctx.globalAlpha = 0.1 + Math.random() * 0.15;
+      const grainX = x + (Math.random() - 0.5) * size * 1.5;
+      const grainY = y + (Math.random() - 0.5) * size * 1.5;
+      this.#ctx.globalAlpha = 0.15 + Math.random() * 0.2;
       this.#ctx.fillStyle = color;
       this.#ctx.beginPath();
-      this.#ctx.arc(grainX, grainY, Math.random() * 1.2, 0, Math.PI * 2);
+      this.#ctx.arc(grainX, grainY, Math.random() * 1.5 + 0.5, 0, Math.PI * 2);
       this.#ctx.fill();
+    }
+
+    // Efecto de presión variable
+    if (Math.random() < 0.4) {
+      this.#ctx.globalAlpha = 0.3;
+      this.#ctx.strokeStyle = color;
+      this.#ctx.lineWidth = size * 0.3;
+      if (lastPoint) {
+        this.#ctx.beginPath();
+        this.#ctx.moveTo(lastPoint.x, lastPoint.y);
+        this.#ctx.lineTo(x, y);
+        this.#ctx.stroke();
+      }
+    }
+  }
+
+  /**
+   * Chalk brush mejorado (tiza realista)
+   * @private
+   */
+  #drawChalk({ x, y, lastPoint, color, size }) {
+    this.#ctx.globalCompositeOperation = "source-over";
+    this.#ctx.lineCap = "round";
+    this.#ctx.lineJoin = "round";
+
+    // Trazo principal seco de tiza
+    this.#ctx.strokeStyle = color;
+    this.#ctx.lineWidth = size * 0.9;
+    this.#ctx.globalAlpha = 0.7 + Math.random() * 0.2;
+
+    if (lastPoint) {
+      this.#ctx.beginPath();
+      this.#ctx.moveTo(lastPoint.x, lastPoint.y);
+      this.#ctx.lineTo(x, y);
+      this.#ctx.stroke();
+    }
+
+    // Efecto de polvo de tiza
+    const dustCount = Math.floor(size * 1.2);
+    for (let i = 0; i < dustCount; i++) {
+      const dustX = x + (Math.random() - 0.5) * size * 2;
+      const dustY = y + (Math.random() - 0.5) * size * 2;
+      const dustSize = Math.random() * 2 + 0.5;
+      const dustAlpha =
+        (0.1 + Math.random() * 0.15) * (0.5 + Math.random() * 0.5);
+
+      this.#ctx.globalAlpha = dustAlpha;
+      this.#ctx.fillStyle = color;
+      this.#ctx.beginPath();
+      this.#ctx.arc(dustX, dustY, dustSize, 0, Math.PI * 2);
+      this.#ctx.fill();
+    }
+
+    // Trazos secundarios para textura
+    if (Math.random() < 0.6) {
+      this.#ctx.globalAlpha = 0.3;
+      this.#ctx.lineWidth = size * 0.4;
+      if (lastPoint) {
+        const offsetX = (Math.random() - 0.5) * size * 0.8;
+        const offsetY = (Math.random() - 0.5) * size * 0.8;
+        this.#ctx.beginPath();
+        this.#ctx.moveTo(lastPoint.x + offsetX, lastPoint.y + offsetY);
+        this.#ctx.lineTo(x + offsetX, y + offsetY);
+        this.#ctx.stroke();
+      }
+    }
+  }
+
+  /**
+   * Marker brush mejorado (marcador realista)
+   * @private
+   */
+  #drawMarker({ x, y, lastPoint, color, size }) {
+    this.#ctx.globalCompositeOperation = "source-over";
+    this.#ctx.lineCap = "round";
+    this.#ctx.lineJoin = "round";
+
+    // Trazo principal fluido del marcador
+    this.#ctx.strokeStyle = color;
+    this.#ctx.lineWidth = size * 0.8;
+    this.#ctx.globalAlpha = 0.9 + Math.random() * 0.1;
+
+    if (lastPoint) {
+      this.#ctx.beginPath();
+      this.#ctx.moveTo(lastPoint.x, lastPoint.y);
+      this.#ctx.lineTo(x, y);
+      this.#ctx.stroke();
+    }
+
+    // Efecto de saturación alta (marcador intenso)
+    this.#ctx.globalCompositeOperation = "lighter";
+    this.#ctx.globalAlpha = 0.3;
+    this.#ctx.lineWidth = size * 0.6;
+    if (lastPoint) {
+      this.#ctx.beginPath();
+      this.#ctx.moveTo(lastPoint.x, lastPoint.y);
+      this.#ctx.lineTo(x, y);
+      this.#ctx.stroke();
+    }
+
+    // Borde definido del marcador
+    this.#ctx.globalCompositeOperation = "source-over";
+    this.#ctx.globalAlpha = 0.4;
+    this.#ctx.lineWidth = size * 0.3;
+    if (lastPoint) {
+      this.#ctx.beginPath();
+      this.#ctx.moveTo(lastPoint.x, lastPoint.y);
+      this.#ctx.lineTo(x, y);
+      this.#ctx.stroke();
+    }
+  }
+
+  /**
+   * Oil brush mejorado (óleo realista)
+   * @private
+   */
+  #drawOil({ x, y, lastPoint, color, size }) {
+    this.#ctx.globalCompositeOperation = "source-over";
+    this.#ctx.lineCap = "round";
+    this.#ctx.lineJoin = "round";
+
+    // Pinceladas gruesas de óleo
+    this.#ctx.strokeStyle = color;
+    this.#ctx.lineWidth = size * 1.2;
+    this.#ctx.globalAlpha = 0.8 + Math.random() * 0.2;
+
+    if (lastPoint) {
+      this.#ctx.beginPath();
+      this.#ctx.moveTo(lastPoint.x, lastPoint.y);
+      this.#ctx.lineTo(x, y);
+      this.#ctx.stroke();
+    }
+
+    // Textura de óleo con pinceladas
+    for (let i = 0; i < 3; i++) {
+      const offsetX = (Math.random() - 0.5) * size * 0.6;
+      const offsetY = (Math.random() - 0.5) * size * 0.6;
+      this.#ctx.globalAlpha = 0.3 + Math.random() * 0.2;
+      this.#ctx.lineWidth = size * (0.4 + Math.random() * 0.3);
+
+      if (lastPoint) {
+        this.#ctx.beginPath();
+        this.#ctx.moveTo(lastPoint.x + offsetX, lastPoint.y + offsetY);
+        this.#ctx.lineTo(x + offsetX, y + offsetY);
+        this.#ctx.stroke();
+      }
+    }
+
+    // Efecto de mezcla de colores
+    if (Math.random() < 0.3) {
+      const mixedColor = ColorUtils.shadeColor(color, Math.random() * 20 - 10);
+      this.#ctx.strokeStyle = mixedColor;
+      this.#ctx.globalAlpha = 0.4;
+      this.#ctx.lineWidth = size * 0.5;
+      if (lastPoint) {
+        this.#ctx.beginPath();
+        this.#ctx.moveTo(lastPoint.x, lastPoint.y);
+        this.#ctx.lineTo(x, y);
+        this.#ctx.stroke();
+      }
     }
   }
 
@@ -812,32 +1109,259 @@ export class BrushEngine {
 
   // Additional brush implementations with placeholder logic
   // (In a real implementation, each would have unique algorithms)
-  #drawChalk(params) {
-    this.#drawSoftBrush(params);
-  }
-  #drawMarker(params) {
-    this.#drawBasicBrush(params);
-  }
-  #drawOil(params) {
-    this.#drawBasicBrush(params);
-  }
   #drawGlow(params) {
-    this.#drawSoftBrush(params);
+    const { x, y, lastPoint, color, size } = params;
+    this.#ctx.globalCompositeOperation = "source-over";
+
+    // Múltiples capas de resplandor
+    const glowLayers = [
+      { blur: size * 3, alpha: 0.15, width: size * 1.5 },
+      { blur: size * 2, alpha: 0.25, width: size * 1.2 },
+      { blur: size * 1, alpha: 0.35, width: size * 0.9 },
+      { blur: size * 0.5, alpha: 0.45, width: size * 0.7 },
+    ];
+
+    glowLayers.forEach((layer) => {
+      this.#ctx.shadowColor = color;
+      this.#ctx.shadowBlur = layer.blur;
+      this.#ctx.globalAlpha = layer.alpha;
+      this.#ctx.strokeStyle = color;
+      this.#ctx.lineWidth = layer.width;
+      this.#ctx.lineCap = "round";
+      this.#ctx.lineJoin = "round";
+
+      if (lastPoint) {
+        this.#ctx.beginPath();
+        this.#ctx.moveTo(lastPoint.x, lastPoint.y);
+        this.#ctx.lineTo(x, y);
+        this.#ctx.stroke();
+      } else {
+        this.#ctx.beginPath();
+        this.#ctx.arc(x, y, layer.width / 2, 0, Math.PI * 2);
+        this.#ctx.fillStyle = color;
+        this.#ctx.fill();
+      }
+    });
   }
+
   #drawNeon(params) {
-    this.#drawGlow(params);
+    const { x, y, lastPoint, color, size } = params;
+    this.#ctx.globalCompositeOperation = "source-over";
+
+    // Borde exterior brillante
+    this.#ctx.shadowColor = color;
+    this.#ctx.shadowBlur = size * 2;
+    this.#ctx.globalAlpha = 0.8;
+    this.#ctx.strokeStyle = color;
+    this.#ctx.lineWidth = size * 1.3;
+    this.#ctx.lineCap = "round";
+    this.#ctx.lineJoin = "round";
+
+    if (lastPoint) {
+      this.#ctx.beginPath();
+      this.#ctx.moveTo(lastPoint.x, lastPoint.y);
+      this.#ctx.lineTo(x, y);
+      this.#ctx.stroke();
+    }
+
+    // Centro brillante
+    this.#ctx.shadowBlur = size * 0.5;
+    this.#ctx.globalAlpha = 1;
+    this.#ctx.lineWidth = size * 0.7;
+    this.#ctx.strokeStyle = "#ffffff";
+
+    if (lastPoint) {
+      this.#ctx.beginPath();
+      this.#ctx.moveTo(lastPoint.x, lastPoint.y);
+      this.#ctx.lineTo(x, y);
+      this.#ctx.stroke();
+    } else {
+      this.#ctx.beginPath();
+      this.#ctx.arc(x, y, size * 0.35, 0, Math.PI * 2);
+      this.#ctx.fillStyle = "#ffffff";
+      this.#ctx.fill();
+    }
+
+    // Punto central intenso
+    this.#ctx.shadowBlur = 0;
+    this.#ctx.globalAlpha = 0.9;
+    this.#ctx.beginPath();
+    this.#ctx.arc(x, y, size * 0.2, 0, Math.PI * 2);
+    this.#ctx.fillStyle = color;
+    this.#ctx.fill();
   }
-  #drawFire(params) {
-    this.#drawGlow(params);
+  #drawFire({ x, y, lastPoint, color, size }) {
+    this.#ctx.globalCompositeOperation = "lighter";
+
+    // Llamas principales con gradientes
+    const flameColors = ["#FF4500", "#FF8C00", "#FFD700", "#FFFF00"];
+    const flameCount = Math.floor(size / 3);
+
+    for (let i = 0; i < flameCount; i++) {
+      const flameX = x + (Math.random() - 0.5) * size * 0.8;
+      const flameY = y + (Math.random() - 0.5) * size * 0.8;
+      const flameSize = size * (0.3 + Math.random() * 0.4);
+      const flameColor =
+        flameColors[Math.floor(Math.random() * flameColors.length)];
+
+      // Gradiente radial para la llama
+      const gradient = this.#ctx.createRadialGradient(
+        flameX,
+        flameY,
+        0,
+        flameX,
+        flameY,
+        flameSize
+      );
+      gradient.addColorStop(0, flameColor);
+      gradient.addColorStop(0.7, ColorUtils.hexToRgba(flameColor, 0.6));
+      gradient.addColorStop(1, "transparent");
+
+      this.#ctx.fillStyle = gradient;
+      this.#ctx.globalAlpha = 0.8 + Math.random() * 0.2;
+      this.#ctx.beginPath();
+      this.#ctx.arc(flameX, flameY, flameSize, 0, Math.PI * 2);
+      this.#ctx.fill();
+    }
+
+    // Partículas de fuego
+    const particleCount = Math.floor(size * 0.8);
+    for (let i = 0; i < particleCount; i++) {
+      const particleX = x + (Math.random() - 0.5) * size * 1.5;
+      const particleY = y + (Math.random() - 0.5) * size * 1.5;
+      const particleSize = Math.random() * 3 + 1;
+      const particleColor =
+        flameColors[Math.floor(Math.random() * flameColors.length)];
+
+      this.#ctx.fillStyle = particleColor;
+      this.#ctx.globalAlpha = 0.6 + Math.random() * 0.4;
+      this.#ctx.beginPath();
+      this.#ctx.arc(particleX, particleY, particleSize, 0, Math.PI * 2);
+      this.#ctx.fill();
+    }
+
+    // Efecto de calor (glow)
+    this.#ctx.shadowColor = "#FF4500";
+    this.#ctx.shadowBlur = size * 1.5;
+    this.#ctx.globalAlpha = 0.3;
+    this.#ctx.fillStyle = "#FF4500";
+    this.#ctx.beginPath();
+    this.#ctx.arc(x, y, size * 0.8, 0, Math.PI * 2);
+    this.#ctx.fill();
+    this.#ctx.shadowBlur = 0;
   }
   #drawPixel(params) {
-    this.#drawBasicBrush(params);
+    this.#ctx.globalCompositeOperation = "source-over";
+    this.#ctx.imageSmoothingEnabled = false; // Desactivar anti-aliasing
+
+    const pixelSize = Math.max(2, Math.floor(size / 4));
+    const gridX = Math.floor(x / pixelSize) * pixelSize;
+    const gridY = Math.floor(y / pixelSize) * pixelSize;
+
+    // Píxel principal
+    this.#ctx.fillStyle = color;
+    this.#ctx.globalAlpha = 1;
+    this.#ctx.fillRect(gridX, gridY, pixelSize, pixelSize);
+
+    // Píxeles adyacentes para efecto de grosor
+    const adjacentPixels = Math.floor(size / pixelSize / 2);
+    for (let i = -adjacentPixels; i <= adjacentPixels; i++) {
+      for (let j = -adjacentPixels; j <= adjacentPixels; j++) {
+        if (Math.random() < 0.3) {
+          const px = gridX + i * pixelSize;
+          const py = gridY + j * pixelSize;
+          this.#ctx.globalAlpha = 0.7 + Math.random() * 0.3;
+          this.#ctx.fillRect(px, py, pixelSize, pixelSize);
+        }
+      }
+    }
+
+    this.#ctx.imageSmoothingEnabled = true; // Reactivar anti-aliasing
   }
   #drawDots(params) {
-    this.#drawBasicBrush(params);
+    this.#ctx.globalCompositeOperation = "source-over";
+
+    // Puntos principales con variación de tamaño
+    const dotCount = Math.floor(size * 1.5);
+    for (let i = 0; i < dotCount; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const radius = Math.random() * size * 0.8;
+      const dotX = x + Math.cos(angle) * radius;
+      const dotY = y + Math.sin(angle) * radius;
+      const dotSize = Math.max(1, size * (0.1 + Math.random() * 0.2));
+      const dotAlpha = 0.6 + Math.random() * 0.4;
+
+      this.#ctx.globalAlpha = dotAlpha;
+      this.#ctx.fillStyle = color;
+      this.#ctx.beginPath();
+      this.#ctx.arc(dotX, dotY, dotSize, 0, Math.PI * 2);
+      this.#ctx.fill();
+    }
+
+    // Puntos secundarios para densidad
+    if (Math.random() < 0.7) {
+      const extraDots = Math.floor(size * 0.8);
+      for (let i = 0; i < extraDots; i++) {
+        const dotX = x + (Math.random() - 0.5) * size * 1.2;
+        const dotY = y + (Math.random() - 0.5) * size * 1.2;
+        const dotSize = Math.max(0.5, size * (0.05 + Math.random() * 0.1));
+        this.#ctx.globalAlpha = 0.4 + Math.random() * 0.3;
+        this.#ctx.fillStyle = color;
+        this.#ctx.beginPath();
+        this.#ctx.arc(dotX, dotY, dotSize, 0, Math.PI * 2);
+        this.#ctx.fill();
+      }
+    }
   }
-  #drawLines(params) {
-    this.#drawBasicBrush(params);
+
+  /**
+   * Lines brush mejorado (grabado cruzado)
+   * @private
+   */
+  #drawLines({ x, y, lastPoint, color, size }) {
+    this.#ctx.globalCompositeOperation = "source-over";
+    this.#ctx.lineCap = "round";
+
+    // Líneas principales en múltiples direcciones
+    const lineDirections = [0, Math.PI / 4, Math.PI / 2, (3 * Math.PI) / 4];
+
+    lineDirections.forEach((angle, index) => {
+      this.#ctx.strokeStyle = color;
+      this.#ctx.lineWidth = Math.max(1, size * (0.3 - index * 0.05));
+      this.#ctx.globalAlpha = 0.6 + Math.random() * 0.3;
+
+      const length = size * 0.8;
+      const startX = x - (Math.cos(angle) * length) / 2;
+      const startY = y - (Math.sin(angle) * length) / 2;
+      const endX = x + (Math.cos(angle) * length) / 2;
+      const endY = y + (Math.sin(angle) * length) / 2;
+
+      this.#ctx.beginPath();
+      this.#ctx.moveTo(startX, startY);
+      this.#ctx.lineTo(endX, endY);
+      this.#ctx.stroke();
+    });
+
+    // Líneas adicionales aleatorias
+    if (Math.random() < 0.5) {
+      const extraLines = Math.floor(size / 3);
+      for (let i = 0; i < extraLines; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const length = size * (0.3 + Math.random() * 0.4);
+        const startX = x - (Math.cos(angle) * length) / 2;
+        const startY = y - (Math.sin(angle) * length) / 2;
+        const endX = x + (Math.cos(angle) * length) / 2;
+        const endY = y + (Math.sin(angle) * length) / 2;
+
+        this.#ctx.strokeStyle = color;
+        this.#ctx.lineWidth = Math.max(0.5, size * 0.15);
+        this.#ctx.globalAlpha = 0.3 + Math.random() * 0.3;
+        this.#ctx.beginPath();
+        this.#ctx.moveTo(startX, startY);
+        this.#ctx.lineTo(endX, endY);
+        this.#ctx.stroke();
+      }
+    }
   }
 
   // Extended brush placeholders (would implement unique algorithms in production)
@@ -884,7 +1408,7 @@ export class BrushEngine {
     this.#drawGlow(params);
   }
   #drawSmoke(params) {
-    this.#drawSoftBrush(params);
+    this.#drawBasicBrush(params);
   }
   #drawGrass(params) {
     this.#drawLines(params);
@@ -896,7 +1420,7 @@ export class BrushEngine {
     this.#drawBasicBrush(params);
   }
   #drawGlass(params) {
-    this.#drawSoftBrush(params);
+    this.#drawBasicBrush(params);
   }
   #drawWater(params) {
     this.#drawWatercolor(params);
@@ -908,7 +1432,7 @@ export class BrushEngine {
     this.#drawCharcoal(params);
   }
   #drawCloud(params) {
-    this.#drawSoftBrush(params);
+    this.#drawBasicBrush(params);
   }
   #drawGalaxy(params) {
     this.#drawGlow(params);
@@ -926,10 +1450,10 @@ export class BrushEngine {
     this.#drawGlow(params);
   }
   #drawRainbow(params) {
-    this.#drawSoftBrush(params);
+    this.#drawBasicBrush(params);
   }
   #drawGradient(params) {
-    this.#drawSoftBrush(params);
+    this.#drawBasicBrush(params);
   }
   #drawMosaic(params) {
     this.#drawPixel(params);
@@ -950,7 +1474,7 @@ export class BrushEngine {
     this.#drawPixel(params);
   }
   #drawOrganic(params) {
-    this.#drawSoftBrush(params);
+    this.#drawBasicBrush(params);
   }
   #drawFractal(params) {
     this.#drawBasicBrush(params);
@@ -962,10 +1486,10 @@ export class BrushEngine {
     this.#drawDots(params);
   }
   #drawAbstract(params) {
-    this.#drawSoftBrush(params);
+    this.#drawBasicBrush(params);
   }
   #drawSurreal(params) {
-    this.#drawSoftBrush(params);
+    this.#drawBasicBrush(params);
   }
   #drawMinimalist(params) {
     this.#drawBasicBrush(params);
@@ -1130,8 +1654,8 @@ export const drawStar = (
 export const BRUSH_TYPES = {
   // Basic brushes
   BRUSH: "brush",
-  BRUSH_SOFT: "brush-soft",
   ERASER: "eraser",
+  PENCIL: "pencil",
 
   // Artistic brushes
   CARBONCILLO: "carboncillo",
@@ -1202,13 +1726,8 @@ export const BRUSH_TYPES = {
 export const BRUSH_CONFIGS = [
   // Pinceles básicos
   { type: "brush", name: "Pincel", icon: "Brush", category: "basic" },
-  {
-    type: "brush-soft",
-    name: "Pincel Suave",
-    icon: "Brush",
-    category: "basic",
-  },
   { type: "eraser", name: "Borrador", icon: "Eraser", category: "basic" },
+  { type: "pencil", name: "Lápiz", icon: "Pencil", category: "basic" },
 
   // Pinceles artísticos
   {
@@ -1314,7 +1833,7 @@ export const BRUSH_CONFIGS = [
 export const BRUSH_CATEGORIES = {
   BASIC: {
     name: "Básicos",
-    brushes: ["brush", "brush-soft", "eraser"],
+    brushes: ["brush", "eraser", "pencil"],
   },
   ARTISTIC: {
     name: "Artísticos",

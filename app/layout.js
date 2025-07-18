@@ -1,10 +1,17 @@
-import { Geist, Geist_Mono, Inter, Playfair_Display, Monoton } from "next/font/google";
+import {
+  Geist,
+  Geist_Mono,
+  Inter,
+  Playfair_Display,
+  Monoton,
+} from "next/font/google";
 import "./globals.css";
 import ClientLayout from "../components/ClientLayout";
 import AppProviders from "../components/AppProviders";
 import SentryTracker from "../components/SentryTracker";
 import { Toaster } from "react-hot-toast";
 import toast from "react-hot-toast";
+import { PushNotificationsProvider } from "./components/PushNotificationsProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,7 +38,7 @@ const playfair = Playfair_Display({
 const monoton = Monoton({
   variable: "--font-monoton",
   subsets: ["latin"],
-  weight: "400"
+  weight: "400",
 });
 
 export const metadata = {
@@ -45,10 +52,12 @@ export default function RootLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${playfair.variable} ${monoton.variable} antialiased`}
       >
-        <AppProviders>
-          <SentryTracker />
-          <ClientLayout>{children}</ClientLayout>
-        </AppProviders>
+        <PushNotificationsProvider>
+          <AppProviders>
+            <SentryTracker />
+            <ClientLayout>{children}</ClientLayout>
+          </AppProviders>
+        </PushNotificationsProvider>
         <Toaster
           position="top-center"
           reverseOrder={true}
