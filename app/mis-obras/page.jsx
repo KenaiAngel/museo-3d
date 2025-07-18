@@ -2,11 +2,9 @@
 
 import { useSession } from "next-auth/react";
 import { motion } from "framer-motion";
-import { useAuth } from "../hooks/useAuth";
 import { useMurales } from "./hooks/useMurales";
 import { useUIState } from "./hooks/useUIState";
 import CanvasEditor from "./components/CanvasEditor";
-import CrearObraModal from "./components/CrearObraModal";
 import {
   AnimatedBackground,
   LoadingScreen,
@@ -117,16 +115,6 @@ function MuralesEliminadosAdmin() {
                   </td>
                   <td className="px-4 py-2 text-center">{murales.length}</td>
                   <td className="px-4 py-2 text-center">
-                    {console.log(
-                      "DEBUG userId:",
-                      userId,
-                      "settings:",
-                      settings,
-                      "notificaciones:",
-                      settings?.notificaciones,
-                      "email:",
-                      user?.email
-                    )}
                     <button
                       className={`px-4 py-2 rounded bg-blue-600 text-white font-semibold shadow transition disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed`}
                       disabled={
@@ -155,7 +143,6 @@ function MisMuralesEliminados({ fetchUserMurales }) {
   const [loadingId, setLoadingId] = useState(null);
   const [permanentDeleteId, setPermanentDeleteId] = useState(null);
   const router = useRouter();
-  const { fetchUserMurales: fetchMurales } = useMurales(); // Renombrado para evitar conflicto
   useEffect(() => {
     if (session?.user?.id) {
       fetch(`/api/murales?deleted=1&userId=${session.user.id}`)
@@ -260,9 +247,12 @@ function MisMuralesEliminados({ fetchUserMurales }) {
                 className="px-4 py-2 rounded bg-red-600 text-white font-bold hover:bg-red-700 transition"
                 onClick={async () => {
                   setLoadingId(permanentDeleteId);
-                  const res = await fetch(`/api/murales/${permanentDeleteId}`, {
-                    method: "DELETE",
-                  });
+                  const res = await fetch(
+                    `/api/murales/${permanentDeleteId}/delete`,
+                    {
+                      method: "DELETE",
+                    }
+                  );
                   if (res.ok) {
                     toast.success("Mural eliminado permanentemente");
                     setMurales(
@@ -287,7 +277,6 @@ function MisMuralesEliminados({ fetchUserMurales }) {
 
 export default function MisObras() {
   const { data: session, status } = useSession();
-  const { user, isAuthenticated } = useAuth();
   const { collection = [] } = useCollection();
   const router = useRouter();
 
@@ -299,7 +288,6 @@ export default function MisObras() {
     filters,
     setFilters,
     resetFilters,
-    handleCanvasSave,
     handleDeleteMural,
     addMural,
     getFilterOptions,
@@ -309,27 +297,15 @@ export default function MisObras() {
   // Hook para manejar el estado de la UI
   const {
     view,
-    showCanvasEditor,
-    editingMural,
     showFilters,
     showUploadModal,
     setView,
     setShowFilters,
-    openCanvasEditor,
-    closeCanvasEditor,
     closeUploadModal,
   } = useUIState();
 
-  // Manejar guardado desde canvas con el hook
-  const handleCanvasSaveWrapper = (savedMural) => {
-    handleCanvasSave(savedMural, editingMural);
-    closeCanvasEditor();
-  };
-
-  // Manejar edición de mural
-  const handleEditMural = (mural) => {
-    openCanvasEditor(mural);
-  };
+  // Redirigir a la página de creación de obra
+  const goToCrearObra = () => router.push("/mis-obras/crear");
 
   // Estrategia: 'Mis obras' = murales donde userId === session.user.id
   const propios = murales
@@ -384,9 +360,6 @@ export default function MisObras() {
     );
   }
 
-  // Redirigir a la página de creación de obra
-  const goToCrearObra = () => router.push("/mis-obras/crear");
-
   return (
     <div className="relative min-h-screen overflow-hidden">
       {/* Fondo animado */}
@@ -427,7 +400,6 @@ export default function MisObras() {
               <MuralGrid
                 murales={propiosFiltrados}
                 view={view}
-                onEditMural={handleEditMural}
                 onDeleteMural={handleDeleteMural}
               />
             </div>
@@ -452,7 +424,7 @@ export default function MisObras() {
               <MuralGrid
                 murales={favoritosFiltrados}
                 view={view}
-                onEditMural={() => {}}
+                onEditMural={null}
                 onDeleteMural={() => {}}
               />
             </div>
@@ -475,14 +447,6 @@ export default function MisObras() {
         isOpen={showUploadModal}
         onClose={closeUploadModal}
         onUploadSuccess={addMural}
-      />
-
-      {/* Canvas Editor */}
-      <CanvasEditor
-        isOpen={showCanvasEditor}
-        onClose={closeCanvasEditor}
-        onSave={handleCanvasSaveWrapper}
-        editingMural={editingMural}
       />
     </div>
   );
