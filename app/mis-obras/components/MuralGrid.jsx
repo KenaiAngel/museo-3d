@@ -7,18 +7,22 @@ import { Modal } from "../../../components/ui/Modal";
 const MuralGrid = ({ murales, view = "grid", onEditMural, onDeleteMural }) => {
   const [deleteId, setDeleteId] = useState(null);
   const [deleteTitle, setDeleteTitle] = useState("");
-  const handleRequestDelete = (id, titulo) => {
+  const [deleteImage, setDeleteImage] = useState("");
+  const handleRequestDelete = (id, titulo, url_imagen) => {
     setDeleteId(id);
     setDeleteTitle(titulo);
+    setDeleteImage(url_imagen);
   };
   const handleConfirmDelete = () => {
     if (deleteId) onDeleteMural(deleteId);
     setDeleteId(null);
     setDeleteTitle("");
+    setDeleteImage("");
   };
   const handleCancelDelete = () => {
     setDeleteId(null);
     setDeleteTitle("");
+    setDeleteImage("");
   };
   return (
     <>
@@ -35,7 +39,7 @@ const MuralGrid = ({ murales, view = "grid", onEditMural, onDeleteMural }) => {
             mural={mural}
             view={view}
             onEdit={onEditMural}
-            onDelete={() => handleRequestDelete(mural.id, mural.titulo)}
+            onDelete={() => handleRequestDelete(mural.id, mural.titulo, mural.url_imagen)}
           />
         ))}
       </div>
@@ -45,9 +49,12 @@ const MuralGrid = ({ murales, view = "grid", onEditMural, onDeleteMural }) => {
         title="¿Eliminar obra?"
         size="sm"
       >
-        <div className="mb-4">
-          ¿Estás seguro de que quieres eliminar la obra <b>{deleteTitle}</b>?
-          Esta acción no se puede deshacer.
+        <div className="mb-4 flex flex-col items-center gap-2">
+          <span>¿Estás seguro de que quieres eliminar la obra <b>{deleteTitle}</b>?</span>
+          {deleteImage && (
+            <img src={deleteImage} alt={deleteTitle} className="w-20 h-20 object-cover rounded shadow border" />
+          )}
+          <span className="text-xs text-muted-foreground">Esta acción no se puede deshacer.</span>
         </div>
         <div className="flex gap-4 justify-end">
           <button
