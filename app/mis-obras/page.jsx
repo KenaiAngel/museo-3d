@@ -79,6 +79,7 @@ function MisMuralesEliminados() {
   const { data: session } = useSession();
   const [murales, setMurales] = useState([]);
   const [loadingId, setLoadingId] = useState(null);
+  const [permanentDeleteId, setPermanentDeleteId] = useState(null);
   useEffect(() => {
     if (session?.user?.id) {
       fetch(`/api/murales?deleted=1&userId=${session.user.id}`)
@@ -91,35 +92,96 @@ function MisMuralesEliminados() {
   return (
     <section className="mt-12">
       <h2 className="text-2xl font-bold mb-4">Tus murales eliminados</h2>
-      <ul>
-        {murales.map((mural) => (
-          <li key={mural.id} className="flex items-center gap-4 mb-2">
-            <span>{mural.titulo}</span>
-            <span className="text-xs text-gray-500">
-              Eliminado: {new Date(mural.deletedAt).toLocaleString()}
-            </span>
-            <button
-              className="px-2 py-1 bg-green-600 text-white rounded disabled:opacity-50"
-              disabled={loadingId === mural.id}
-              onClick={async () => {
-                setLoadingId(mural.id);
-                const res = await fetch(`/api/murales/${mural.id}/restore`, {
-                  method: "POST",
-                });
-                if (res.ok) {
-                  toast.success("Mural restaurado");
-                  setMurales(murales.filter((m) => m.id !== mural.id));
-                } else {
-                  toast.error("Error al restaurar mural");
-                }
-                setLoadingId(null);
-              }}
-            >
-              {loadingId === mural.id ? "Restaurando..." : "Restaurar"}
-            </button>
-          </li>
-        ))}
-      </ul>
+      <div className="overflow-x-auto rounded-xl border border-border bg-white dark:bg-neutral-900 shadow">
+        <table className="min-w-full divide-y divide-gray-200 dark:divide-neutral-800">
+          <thead className="bg-gray-50 dark:bg-neutral-800">
+            <tr>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Imagen</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Título</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Eliminado</th>
+              <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Acciones</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white dark:bg-neutral-900 divide-y divide-gray-100 dark:divide-neutral-800">
+            {murales.map((mural) => (
+              <tr key={mural.id}>
+                <td className="px-4 py-2">
+                  <img src={mural.url_imagen} alt={mural.titulo} className="w-16 h-16 object-cover rounded shadow border" />
+                </td>
+                <td className="px-4 py-2 font-medium text-foreground">{mural.titulo}</td>
+                <td className="px-4 py-2 text-xs text-muted-foreground">{new Date(mural.deletedAt).toLocaleString()}</td>
+                <td className="px-4 py-2 text-center flex gap-2 justify-center items-center">
+                  <button
+                    className="px-3 py-1 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition disabled:opacity-50"
+                    disabled={loadingId === mural.id}
+                    onClick={async () => {
+                      setLoadingId(mural.id);
+                      const res = await fetch(`/api/murales/${mural.id}/restore`, {
+                        method: "POST",
+                      });
+                      if (res.ok) {
+                        toast.success("Mural restaurado");
+                        setMurales(murales.filter((m) => m.id !== mural.id));
+                      } else {
+                        toast.error("Error al restaurar mural");
+                      }
+                      setLoadingId(null);
+                    }}
+                  >
+                    {loadingId === mural.id ? "Restaurando..." : "Restaurar"}
+                  </button>
+                  <button
+                    className="px-3 py-1 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition"
+                    onClick={() => setPermanentDeleteId(mural.id)}
+                  >
+                    Eliminar permanente
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {/* Modal de confirmación para eliminar permanente */}
+      {permanentDeleteId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white dark:bg-neutral-900 border border-border rounded-2xl shadow-2xl p-8 flex flex-col items-center">
+            <h3 className="font-semibold mb-4 text-lg text-red-700 dark:text-red-300">
+              ¿Eliminar mural permanentemente?
+            </h3>
+            <p className="mb-6 text-gray-700 dark:text-gray-200">
+              Esta acción no se puede deshacer. ¿Seguro que quieres eliminar este mural de forma permanente?
+            </p>
+            <div className="flex gap-4">
+              <button
+                className="px-4 py-2 rounded bg-gray-200 dark:bg-neutral-800 text-gray-700 dark:text-gray-200 font-bold hover:bg-gray-300 dark:hover:bg-neutral-700 transition"
+                onClick={() => setPermanentDeleteId(null)}
+              >
+                Cancelar
+              </button>
+              <button
+                className="px-4 py-2 rounded bg-red-600 text-white font-bold hover:bg-red-700 transition"
+                onClick={async () => {
+                  setLoadingId(permanentDeleteId);
+                  const res = await fetch(`/api/murales/${permanentDeleteId}`, {
+                    method: "DELETE",
+                  });
+                  if (res.ok) {
+                    toast.success("Mural eliminado permanentemente");
+                    setMurales(murales.filter((m) => m.id !== permanentDeleteId));
+                  } else {
+                    toast.error("Error al eliminar permanentemente");
+                  }
+                  setLoadingId(null);
+                  setPermanentDeleteId(null);
+                }}
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
@@ -171,7 +233,7 @@ export default function MisObras() {
 
   // Estrategia: 'Mis obras' = murales donde userId === session.user.id
   const propios = murales
-    .filter((m) => session?.user?.id && m.userId === session.user.id)
+    .filter((m) => session?.user?.id && m.userId === session.user.id && !m.deletedAt)
     .map((m) => ({ ...m, editable: true, fromCollection: false }));
 
   // Colección: favoritos (no editables)

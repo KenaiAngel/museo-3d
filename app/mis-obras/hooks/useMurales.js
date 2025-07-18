@@ -44,6 +44,8 @@ export function useMurales() {
   // Filtrar murales
   const filteredMurales = murales
     .filter((mural) => {
+      // Excluir murales eliminados (soft delete)
+      if (mural.deletedAt) return false;
       // Solo mostrar obras del usuario actual
       if (session?.user?.id && mural.userId && mural.userId !== session.user.id)
         return false;

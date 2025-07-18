@@ -266,7 +266,12 @@ export default function MainMenu({ onSubirArchivo }) {
             <NavigationMenu className="align-middle">
               <NavigationMenuList className="text-sm font-medium relative items-center flex h-full">
                 {menuLinks.map((link) => {
-                  const isActive = pathname.startsWith(link.href);
+                  let isActive;
+                  if (link.href === "/") {
+                    isActive = pathname === "/";
+                  } else {
+                    isActive = pathname.startsWith(link.href);
+                  }
                   return (
                     <NavigationMenuItem key={link.href} className="relative">
                       <NavigationMenuLink asChild>
