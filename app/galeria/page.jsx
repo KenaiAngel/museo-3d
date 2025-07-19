@@ -1,6 +1,6 @@
 "use client";
-import { useState, useEffect } from "react";
-import { PageLoader } from "../../components/LoadingSpinner";
+import { useRef, useState, useEffect } from "react";
+import { PageLoader,SectionLoader } from "../../components/LoadingSpinner";
 import AnimatedBackground from "../../components/shared/AnimatedBackground";
 import { useGallery } from "../../providers/GalleryProvider";
 import useMuralFilters from "@/app/hooks/useMuralFilters";
@@ -15,7 +15,10 @@ import { normalizeTecnica } from "../../components/gallery/utils";
 import GalleryCarousel from "../../components/GalleryCarousel";
 import useSalas from "@/app/hooks/useSalas";
 import dynamic from "next/dynamic";
+//Para el Scroll Infinito
+import InfiniteScroll from 'react-infinite-scroll-component';
 const ARExperience = dynamic(() => import("../../components/ar/ARExperience"), { ssr: false });
+
 
 export default function GaleriaPage() {
   const {
@@ -24,6 +27,11 @@ export default function GaleriaPage() {
     fetchAllMurales,
     artworks: murales,
     loading,
+    //Fetch para el scroll infinito
+    muralesForScroll,
+    loadingPageMurales,
+    fetchPageMurales,
+    pageTotalRef,
     // Si tienes salas en el provider, agrégalas aquí
   } = useGallery();
   // Si las salas no están en el provider, puedes mantener un estado local o migrar la lógica después.
@@ -37,8 +45,8 @@ export default function GaleriaPage() {
   });
   const resetFilters = () => setFilters({ search: "", tecnica: "", year: "", sortBy: "newest" });
   const getFilterOptions = () => ({
-    tecnicas: [...new Set(allMurales.map((m) => normalizeTecnica(m.tecnica)).filter(Boolean))].sort(),
-    years: [...new Set(allMurales.map((m) => m.anio || m.year).filter(Boolean))].sort((a, b) => b - a),
+    tecnicas: [...new Set(muralesForScroll.map((m) => normalizeTecnica(m.tecnica)).filter(Boolean))].sort(),
+    years: [...new Set(muralesForScroll.map((m) => m.anio || m.year).filter(Boolean))].sort((a, b) => b - a),
   });
   // UI state para vista y filtros avanzados
   const { view, setView, showFilters, setShowFilters } = useUIState();
@@ -51,12 +59,12 @@ export default function GaleriaPage() {
 
   // Filtrar murales por sala seleccionada (si hay selección)
   const muralesFiltradosPorSala = selectedSalaId
-    ? allMurales.filter(
+    ? muralesForScroll.filter(
         (m) =>
           m.SalaMural &&
           m.SalaMural.some((sm) => sm.salaId === selectedSalaId)
       )
-    : allMurales;
+    : muralesForScroll;
 
   // Adaptar lógica de filtrado (usando useMuralFilters o lógica propia)
   const filteredMurales = useMuralFilters({
@@ -90,10 +98,10 @@ export default function GaleriaPage() {
 
   // Técnicas y años únicos para los selects
   const tecnicasUnicas = [
-    ...new Set(allMurales.map((m) => m.tecnica).filter(Boolean)),
+    ...new Set(muralesForScroll.map((m) => m.tecnica).filter(Boolean)),
   ].sort();
   const aniosUnicos = [
-    ...new Set(allMurales.map((m) => m.anio).filter(Boolean)),
+    ...new Set(muralesForScroll.map((m) => m.anio).filter(Boolean)),
   ].sort((a, b) => b - a);
 
   // Estado para mostrar el modal AR
@@ -103,25 +111,26 @@ export default function GaleriaPage() {
   const handleARClick = (mural) => {
     setArMural(mural);
   };
-
-  // Cargar todos los murales al montar la galería (para el carrusel)
-  useEffect(() => {
-    fetchAllMurales();
-    // eslint-disable-next-line
-  }, []);
-
-  // Cargar todos los murales cuando la vista sea 'list'
-  useEffect(() => {
-    if (view === "list") {
-      fetchAllMurales();
-    }
-    // eslint-disable-next-line
-  }, [view]);
-
   // Estado para el modal de zoom
   const [zoomMural, setZoomMural] = useState(null);
 
-  if (loading || loadingAllMurales) return <PageLoader text="Cargando galería..." />;
+  //Cargar de pagina en pagina los murales segun se hace scroll
+  const [page, setPage] = useState(1);
+  const carruselRef = useRef();
+  useEffect(() => {
+      fetchPageMurales(page);  
+      if(page===1) carruselRef.current = muralesForScroll;
+  
+  }, [page]);
+  
+  //Manejo del scroll para mantenerlo en el lugar ultimo antes de hacer fetching
+  const previousScrollY = window.scrollY;
+  
+  useEffect(() => {
+    window.scrollTo({ top: previousScrollY });
+  }, [muralesForScroll]);
+
+  if (loading || loadingAllMurales  && page ===1 ) return <PageLoader text="Cargando galería..." />;
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-purple-50 to-blue-100 p-4">
@@ -138,19 +147,19 @@ export default function GaleriaPage() {
         </div>
 
         {/* Carrusel destacado */}
-        {allMurales.length > 0 && (
+        {carruselRef.current && (
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-foreground mb-6 text-center">
               Obras Destacadas
             </h2>
             <GalleryCarousel
-              items={allMurales.slice(0, 10)}
+              items={muralesForScroll.slice(0, 10)}
               title="Galería de Obras"
             />
           </div>
         )}
 
-        {/* Sección de selección de salas */}
+        {/* Sección de selección de salas 
         {salas && salas.length > 0 && (
           <div className="mb-4 flex flex-wrap gap-2 items-center">
             <span className="font-semibold text-muted-foreground">Filtrar por sala:</span>
@@ -171,8 +180,9 @@ export default function GaleriaPage() {
             ))}
           </div>
         )}
+        */}
 
-        {/* Header de filtros y tabs */}
+        {/* Header de filtros y tabs 
         <div className="mb-4">
           <FilterControls
             filters={filters}
@@ -186,8 +196,9 @@ export default function GaleriaPage() {
             resultsCount={filteredMurales.length}
           />
         </div>
+        */}
 
-        {/* Vista principal: siempre mostrar murales filtrados */}
+        {/* Vista principal: siempre mostrar murales filtrados 
         {filteredMurales.length > 0 ? (
           <MuralesList
             murales={filteredMurales}
@@ -208,6 +219,28 @@ export default function GaleriaPage() {
             </p>
           </div>
         )}
+        */}
+        <InfiniteScroll 
+          dataLength={muralesForScroll.length}
+          next={() => setPage((prev) => prev + 1)}
+          hasMore={!(page > pageTotalRef.current)}
+          pullDownToRefreshThreshold={100}
+          loader={<SectionLoader/>}
+          endMessage={
+              <p style={{ textAlign: 'center' }}>
+              <b>¡Has llegado al final!</b>
+              </p>
+          }
+          >
+          <MuralesList
+              murales={muralesForScroll}
+              onMuralClick={setZoomMural}
+              onLike={handleLike}
+              likedMurales={likedMurales}
+              view={view}
+              onARClick={handleARClick}
+        />
+        </InfiniteScroll>
 
         {/* Modal de zoom */}
         {zoomMural && (

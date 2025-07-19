@@ -13,6 +13,7 @@ export async function GET(req) {
     const anio = searchParams.get("anio");
     const deleted = searchParams.get("deleted");
     const userId = searchParams.get("userId");
+    const page = parseInt(searchParams.get("page"),10);
 
     // Construir filtros dinámicamente
     const where = {};
@@ -29,6 +30,23 @@ export async function GET(req) {
           salaId: Number(salaId),
         },
       };
+    }
+    //Consulta el total de elementos dentro de la base de datos
+    const total = await prisma.mural.count({ where });
+    // En caso de existir PAGE hacer uso de take and skip para la busqueda por paginas
+    let skip;
+    let take;
+    let infoPaginacion;
+    
+    if(page) {
+      take = 10;
+      skip = (page - 1) * take;
+      infoPaginacion = {
+        total, 
+        'currentPage': page, 
+        'totalPages': Math.ceil(total/take),
+        'itemsPerPage' : take,
+      }
     }
 
     const murales = await prisma.mural.findMany({
@@ -68,6 +86,9 @@ export async function GET(req) {
         },
       },
       orderBy: [{ anio: "desc" }, { titulo: "asc" }],
+      // Si existe paginacion, buscar en base a skip and take 
+      ...{skip},
+      ...{take}
     });
 
     // Agregar estadísticas
@@ -112,6 +133,7 @@ export async function GET(req) {
           anio: anio || null,
           deleted: deleted || null,
           userId: userId || null,
+          paginationInfo: infoPaginacion || null,
         },
       }),
       {
