@@ -76,13 +76,12 @@ function TypewriterText({
       }}
     >
       {displayedText}
-      {!isComplete && (
-        <motion.span
-          animate={{ opacity: [0, 1, 0] }}
-          transition={{ duration: 0.8, repeat: Infinity }}
-          className="inline-block w-0.5 h-7 bg-primary ml-1 align-middle"
-        />
-      )}
+      <motion.span
+        animate={{ opacity: !isComplete ? [0, 1, 0] : 0 }}
+        transition={{ duration: 0.8, repeat: Infinity }}
+        className="inline-block w-0.5 h-7 bg-primary ml-1 align-middle"
+        style={{ visibility: !isComplete ? "visible" : "hidden" }}
+      />
     </span>
   );
 }
@@ -201,19 +200,20 @@ export default function MainMenu({ onSubirArchivo }) {
             : "bg-white/95 dark:bg-gray-900/95 backdrop-blur-md"
         } text-gray-900 dark:text-white transition-all duration-300`}
       >
-        <div className="max-w-screen-xl mx-auto flex items-center justify-between px-4 py-2 md:py-4 min-h-[56px] md:min-h-[64px]">
+        <div className="max-w-screen-xl mx-auto flex items-center justify-between px-4 py-2 md:py-4 h-[88px] md:h-[96px]">
           {/* Logo a la izquierda siempre */}
           <div
             className="flex items-center flex-shrink-0"
-            style={{ minWidth: 80 }}
+            style={{ minWidth: 120, height: 88, width: "auto" }}
           >
             <Link
               href="/"
-              className="flex flex-col items-center lg:items-start justify-center navbar-link"
+              className="flex flex-col items-center justify-center navbar-link"
               style={{
-                width: 80,
-                minWidth: 80,
-                maxWidth: 80,
+                width: "auto",
+                minWidth: 120,
+                maxWidth: "none",
+                height: 88,
                 overflow: "visible",
               }}
             >
@@ -227,42 +227,59 @@ export default function MainMenu({ onSubirArchivo }) {
                 alt="Logo"
                 className="h-10 md:h-14 w-auto flex-shrink-0 hidden dark:block mx-auto"
               />
-              {/* Título solo visible en lg+ */}
+              {/* Título visible en móvil y desktop */}
               <span
                 aria-hidden="true"
-                className="hidden lg:block"
+                className="block text-center"
                 style={{
                   opacity: 0,
                   display: "block",
                   fontFamily: "var(--font-monoton), cursive",
-                  fontSize: "1.875rem",
+                  fontSize: "1rem",
                   fontWeight: 400,
                   letterSpacing: "0.04em",
                   whiteSpace: "nowrap",
                   width: "100%",
                   minWidth: 0,
                   maxWidth: "100%",
-                  height: "auto",
+                  height: "22px",
                 }}
               >
-                Mural ARPA
+                MURAL ARPA
               </span>
-              <TypewriterText
-                text="Mural ARPA"
-                speed={120}
-                delay={300}
-                repeat={true}
-                repeatDelay={5000}
-                className="block w-full hidden lg:block"
+              <div
+                className="block w-full text-center"
                 style={{
                   width: "100%",
                   minWidth: 0,
                   maxWidth: "100%",
                   whiteSpace: "nowrap",
                   textAlign: "center",
-                  marginTop: "-48px",
+                  marginTop: "-1rem",
+                  fontSize: "1rem",
+                  height: "22px",
+                  overflow: "hidden",
                 }}
-              />
+              >
+                <TypewriterText
+                  text="MURAL ARPA"
+                  speed={120}
+                  delay={300}
+                  repeat={true}
+                  repeatDelay={5000}
+                  className="block w-full text-center"
+                  style={{
+                    width: "100%",
+                    minWidth: 0,
+                    maxWidth: "100%",
+                    whiteSpace: "nowrap",
+                    textAlign: "center",
+                    fontSize: "1rem",
+                    height: "22px",
+                    lineHeight: "22px",
+                  }}
+                />
+              </div>
             </Link>
           </div>
           {/* Links centrados en md+ */}
@@ -321,9 +338,76 @@ export default function MainMenu({ onSubirArchivo }) {
               </NavigationMenuList>
             </NavigationMenu>
           </div>
-          {/* ThemeSwitch siempre visible a la derecha */}
-          <div className="flex items-center flex-shrink-0 ml-auto">
-            <ThemeSwitch />
+          {/* ThemeSwitch y botón hamburguesa a la derecha */}
+          <div className="flex items-center flex-shrink-0 ml-auto gap-3">
+            {/* Botón hamburguesa solo en mobile */}
+            {isMobile && (
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className={`md:hidden p-3 rounded-lg transition-all duration-300 relative overflow-hidden hamburger-button ${
+                  mobileMenuOpen ? "hamburger-special-open" : ""
+                } ${isAuthenticated ? "max-[1100px]:order-2" : ""}`}
+                aria-label={mobileMenuOpen ? "Cerrar menú" : "Abrir menú"}
+              >
+                <div className="w-6 h-6 relative flex flex-col justify-center items-center">
+                  {/* Línea superior */}{" "}
+                  <div
+                    className={`hamburger-line-top absolute w-6 h-px bg-current transition-all duration-500 ease-out ${
+                      mobileMenuOpen
+                        ? "rotate-45 translate-y-0"
+                        : "-translate-y-1.5"
+                    }`}
+                  />
+                  {/* Línea media con efecto especial de desplazamiento a la derecha */}{" "}
+                  <div
+                    className={`hamburger-line-middle absolute h-px bg-current ${
+                      mobileMenuOpen ? "w-0 opacity-0" : "w-6 opacity-100"
+                    }`}
+                    style={{
+                      transformOrigin: "left center",
+                      transition: mobileMenuOpen
+                        ? "transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), width 0.4s ease-out 0.1s, opacity 0.3s ease-out 0.2s"
+                        : "transform 0.3s ease-out, width 0.3s ease-out, opacity 0.2s ease-out",
+                      transform: mobileMenuOpen
+                        ? "translateX(12px) scaleX(0.2)"
+                        : "translateX(0) scaleX(1)",
+                    }}
+                  />
+                  {/* Línea inferior */}{" "}
+                  <div
+                    className={`hamburger-line-bottom absolute w-6 h-px bg-current transition-all duration-500 ease-out ${
+                      mobileMenuOpen
+                        ? "-rotate-45 translate-y-0"
+                        : "translate-y-1.5"
+                    }`}
+                  />
+                </div>
+
+                {/* SVG para el efecto de borde que se completa alrededor del margen */}
+                <svg
+                  className="absolute inset-0 w-full h-full pointer-events-none"
+                  viewBox="0 0 48 48"
+                >
+                  <rect
+                    x="2"
+                    y="2"
+                    width="44"
+                    height="44"
+                    rx="8"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    className="transition-all duration-1000 ease-out"
+                    style={{
+                      strokeDasharray: "176",
+                      strokeDashoffset: mobileMenuOpen ? "0" : "176",
+                      opacity: mobileMenuOpen ? "0.7" : "0",
+                      transitionDelay: mobileMenuOpen ? "0.4s" : "0s",
+                    }}
+                  />
+                </svg>
+              </button>
+            )}
             {/* Usuario solo en md+ */}
             {!isMobile &&
               (status === "loading" ? (
@@ -334,10 +418,10 @@ export default function MainMenu({ onSubirArchivo }) {
                   </span>
                 </div>
               ) : isAuthenticated ? (
-                <div>
+                <div className="relative max-w-[200px]">
                   <NavigationMenu>
                     <NavigationMenuList>
-                      <NavigationMenuItem>
+                      <NavigationMenuItem className="relative">
                         <NavigationMenuTrigger className="flex items-center gap-2 hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-all">
                           <img
                             src={
@@ -514,75 +598,8 @@ export default function MainMenu({ onSubirArchivo }) {
                   <User className="w-6 h-6" />
                 </button>
               ))}
+            <ThemeSwitch />
           </div>
-          {/* Botón hamburguesa solo en mobile */}
-          {isMobile && (
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className={`md:hidden p-3 rounded-lg transition-all duration-300 relative overflow-hidden hamburger-button ${
-                mobileMenuOpen ? "hamburger-special-open" : ""
-              } ${isAuthenticated ? "max-[1100px]:order-2" : ""}`}
-              aria-label={mobileMenuOpen ? "Cerrar menú" : "Abrir menú"}
-            >
-              <div className="w-6 h-6 relative flex flex-col justify-center items-center">
-                {/* Línea superior */}{" "}
-                <div
-                  className={`hamburger-line-top absolute w-6 h-px bg-current transition-all duration-500 ease-out ${
-                    mobileMenuOpen
-                      ? "rotate-45 translate-y-0"
-                      : "-translate-y-1.5"
-                  }`}
-                />
-                {/* Línea media con efecto especial de desplazamiento a la derecha */}{" "}
-                <div
-                  className={`hamburger-line-middle absolute h-px bg-current ${
-                    mobileMenuOpen ? "w-0 opacity-0" : "w-6 opacity-100"
-                  }`}
-                  style={{
-                    transformOrigin: "left center",
-                    transition: mobileMenuOpen
-                      ? "transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), width 0.4s ease-out 0.1s, opacity 0.3s ease-out 0.2s"
-                      : "transform 0.3s ease-out, width 0.3s ease-out, opacity 0.2s ease-out",
-                    transform: mobileMenuOpen
-                      ? "translateX(12px) scaleX(0.2)"
-                      : "translateX(0) scaleX(1)",
-                  }}
-                />
-                {/* Línea inferior */}{" "}
-                <div
-                  className={`hamburger-line-bottom absolute w-6 h-px bg-current transition-all duration-500 ease-out ${
-                    mobileMenuOpen
-                      ? "-rotate-45 translate-y-0"
-                      : "translate-y-1.5"
-                  }`}
-                />
-              </div>
-
-              {/* SVG para el efecto de borde que se completa alrededor del margen */}
-              <svg
-                className="absolute inset-0 w-full h-full pointer-events-none"
-                viewBox="0 0 48 48"
-              >
-                <rect
-                  x="2"
-                  y="2"
-                  width="44"
-                  height="44"
-                  rx="8"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  className="transition-all duration-1000 ease-out"
-                  style={{
-                    strokeDasharray: "176",
-                    strokeDashoffset: mobileMenuOpen ? "0" : "176",
-                    opacity: mobileMenuOpen ? "0.7" : "0",
-                    transitionDelay: mobileMenuOpen ? "0.4s" : "0s",
-                  }}
-                />
-              </svg>
-            </button>
-          )}
         </div>
       </motion.nav>
 
@@ -594,7 +611,7 @@ export default function MainMenu({ onSubirArchivo }) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-40 flex items-center justify-center min-h-screen md:hidden bg-black/50 backdrop-blur-sm pt-[56px]"
+            className="fixed inset-0 z-40 flex items-start justify-start min-h-screen md:hidden bg-black/50 backdrop-blur-sm pt-[88px] px-4"
             aria-hidden="true"
             onClick={(e) => {
               if (e.target === e.currentTarget) setMobileMenuOpen(false);
@@ -605,7 +622,7 @@ export default function MainMenu({ onSubirArchivo }) {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.2 }}
-              className="w-[95vw] max-w-xs rounded-xl bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border border-gray-200 dark:border-gray-700 shadow-2xl p-2 z-50 mt-[40px]"
+              className="w-full max-w-xs rounded-xl bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border border-gray-200 dark:border-gray-700 shadow-2xl p-2 z-50 mt-2 ml-4"
               data-mobile-menu
               onClick={(e) => e.stopPropagation()}
             >
