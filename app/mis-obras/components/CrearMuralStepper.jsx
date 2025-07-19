@@ -290,6 +290,16 @@ export default function CrearMuralStepper() {
               ...existingData, // Restaurar datos del localStorage
               url_imagen: compressedImage,
             };
+
+            // Verificar que los datos se preservaron correctamente
+            console.log("🔍 Verificación de preservación de datos:", {
+              tituloAntes: m.titulo,
+              tituloDespues: updatedMural.titulo,
+              tecnicaAntes: m.tecnica,
+              tecnicaDespues: updatedMural.tecnica,
+              existingDataTitulo: existingData.titulo,
+              existingDataTecnica: existingData.tecnica,
+            });
             console.log("🎨 Mural actualizado con imagen:", {
               titulo: updatedMural.titulo,
               tecnica: updatedMural.tecnica,
@@ -350,6 +360,31 @@ export default function CrearMuralStepper() {
         mural.autor ||
         mural.artistId ||
         (mural.colaboradores && mural.colaboradores.length > 0);
+
+      // Verificar si ya hay datos guardados para evitar sobrescribir con datos vacíos
+      const existingData = localStorage.getItem("muralDraftData");
+      let existingMural = {};
+      if (existingData) {
+        try {
+          existingMural = JSON.parse(existingData);
+        } catch (error) {
+          console.error("❌ Error parsing existing mural data:", error);
+        }
+      }
+
+      // Evitar sobrescribir datos existentes con datos vacíos
+      const isOverwritingWithEmptyData =
+        !hasSignificantData &&
+        existingMural.titulo &&
+        !mural.titulo &&
+        step === 0;
+
+      if (isOverwritingWithEmptyData) {
+        console.log(
+          "🚫 Evitando sobrescribir datos existentes con datos vacíos"
+        );
+        return;
+      }
 
       // Crear una copia del mural sin la imagen para no exceder el límite de localStorage
       const muralWithoutImage = {
@@ -845,6 +880,28 @@ export default function CrearMuralStepper() {
           className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600 transition-colors"
         >
           🧹 Limpiar localStorage
+        </button>
+        <button
+          onClick={() => {
+            const savedData = localStorage.getItem("muralDraftData");
+            if (savedData) {
+              try {
+                const parsedData = JSON.parse(savedData);
+                setMural(parsedData);
+                console.log(
+                  "🔄 Datos restaurados desde localStorage:",
+                  parsedData
+                );
+              } catch (error) {
+                console.error("❌ Error restaurando datos:", error);
+              }
+            } else {
+              console.log("📭 No hay datos guardados en localStorage");
+            }
+          }}
+          className="px-4 py-2 bg-green-500 text-white rounded-lg text-sm hover:bg-green-600 transition-colors"
+        >
+          🔄 Restaurar Datos
         </button>
       </div>
 

@@ -134,6 +134,7 @@ export default function ARExperience({
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.xr.enabled = true;
     renderer.setClearColor(0x000000, 0); // fondo transparente para AR
+    renderer.autoClear = false; // Importante para AR - no limpiar automáticamente
     mountRef.current.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
@@ -198,11 +199,19 @@ export default function ARExperience({
       // Solo renderiza si el canvas sigue en el DOM
       if (!mountRef.current || !renderer.domElement.parentNode) return;
       requestAnimationFrame(animate);
+
+      // Solo actualizar controles si NO estamos en AR
       if (controls && !renderer.xr.isPresenting) {
         controls.update();
       }
-      // Verificar que scene y camera existen antes de renderizar
-      if (sceneRef.current && cameraRef.current && rendererRef.current) {
+
+      // Solo renderizar si NO estamos en AR (el AR tiene su propio loop)
+      if (
+        !renderer.xr.isPresenting &&
+        sceneRef.current &&
+        cameraRef.current &&
+        rendererRef.current
+      ) {
         try {
           renderer.render(sceneRef.current, cameraRef.current);
           frameCount++;
@@ -529,6 +538,11 @@ export default function ARExperience({
         level: "info",
         data: arData,
       });
+
+      // Log específico para debuggear la cámara AR
+      console.log("🎯 AR iniciado - Cámara en vivo activada");
+      console.log("📱 Modelo posicionado para colocación manual");
+      console.log("👆 Mueve el teléfono para colocar el modelo donde quieras");
     }
     function handleSessionEnd() {
       setIsAR(false);
@@ -559,6 +573,8 @@ export default function ARExperience({
         // Asegurar que todos los componentes existen
         if (sceneRef.current && cameraRef.current && rendererRef.current) {
           try {
+            // En AR, no necesitamos limpiar el buffer manualmente
+            // El navegador maneja la cámara en vivo automáticamente
             renderer.render(sceneRef.current, cameraRef.current);
             arFrameCount++;
             if (arFrameCount % 30 === 0) {
@@ -661,6 +677,30 @@ export default function ARExperience({
           derecho para mover. <br />
           Usa los botones para cambiar ambiente. <br />
           {onClose && "Pulsa ← Volver para salir."}
+        </div>
+      )}
+
+      {/* Instrucciones para AR en móvil */}
+      {isAR && window.innerWidth <= 768 && (
+        <div
+          style={{
+            position: "absolute",
+            top: 20,
+            left: "50%",
+            transform: "translateX(-50%)",
+            background: "rgba(0,0,0,0.8)",
+            color: "#fff",
+            padding: "12px 20px",
+            borderRadius: "10px",
+            fontSize: "14px",
+            zIndex: 9999,
+            maxWidth: "90vw",
+            textAlign: "center",
+            pointerEvents: "none",
+          }}
+        >
+          📱 <strong>Mueve el teléfono</strong> para colocar el modelo donde
+          quieras
         </div>
       )}
 
