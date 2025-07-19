@@ -1,5 +1,5 @@
 "use client";
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { createContext,useRef ,useContext, useState, useCallback } from "react";
 import * as Sentry from "@sentry/nextjs";
 
 const GalleryContext = createContext();
@@ -17,8 +17,10 @@ export const GalleryProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [allMurales, setAllMurales] = useState([]);
+  
   const [loadingAllMurales, setLoadingAllMurales] = useState(false);
   const [allMuralesLoaded, setAllMuralesLoaded] = useState(false);
+
 
   const loadArtworksForRoom = useCallback(async (roomId) => {
     setLoading(true);
@@ -106,6 +108,36 @@ export const GalleryProvider = ({ children }) => {
       setLoadingAllMurales(false);
     }
   }, [allMuralesLoaded]);
+
+  const [muralesForScroll, setMuralesForScroll] = useState([]);
+  const [pageLoaded, setPageLoaded] = useState(false);
+  const [loadingPageMurales, setLoadingPageMurales] = useState(false);
+  const pageRef = useRef(0);
+  const pageTotalRef = useRef(1);
+
+  const fetchPageMurales = useCallback(async (page = 1) =>{
+    if (pageRef.current === page ) return;
+    if (page > pageTotalRef.current) return;
+    setLoadingPageMurales(true);
+    setError(null);
+    try{
+      pageRef.current = page;
+      const response = await fetch(`/api/murales/?page=${page}`);
+      const data = await response.json();
+      pageTotalRef.current = data.filtros.paginationInfo.totalPages;
+      console.log("Si entre",data,pageTotalRef);
+      setMuralesForScroll(prev=>[...prev,...data.murales]);
+      setPageLoaded(true);
+      
+    } catch (err) {
+      console.error(`Error loading ${page} from murales:`, err);
+      setError(err.message);
+      setMuralesForScroll([]);
+    } finally {
+      setLoadingPageMurales(false);
+    }
+  }, []);
+
 
   const getGalleryStats = useCallback(() => {
     if (artworks.length === 0) {
@@ -197,6 +229,12 @@ export const GalleryProvider = ({ children }) => {
     allMurales,
     loadingAllMurales,
     fetchAllMurales,
+    //INFINITE SCROLL en galeria general
+    muralesForScroll,
+    loadingPageMurales,
+    fetchPageMurales,
+    setMuralesForScroll,
+    pageTotalRef,
   };
 
   return (
