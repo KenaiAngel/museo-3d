@@ -140,6 +140,8 @@ export async function POST(req) {
     let data;
     let file;
 
+    console.log("📥 API recibiendo datos con Content-Type:", contentType);
+
     if (contentType.includes("application/json")) {
       data = await req.json();
     } else if (contentType.includes("multipart/form-data")) {
@@ -155,6 +157,29 @@ export async function POST(req) {
         }
       );
     }
+
+    console.log("📋 Datos recibidos en la API:", {
+      titulo: data.titulo,
+      tecnica: data.tecnica,
+      anio: data.anio,
+      descripcion: data.descripcion,
+      autor: data.autor,
+      artistId: data.artistId,
+      userId: data.userId,
+      url_imagen: data.url_imagen,
+      modelo3dUrl: data.modelo3dUrl,
+      dimensiones: data.dimensiones,
+      latitud: data.latitud,
+      longitud: data.longitud,
+      ubicacion: data.ubicacion,
+      salaId: data.salaId,
+      estado: data.estado,
+      publica: data.publica,
+      destacada: data.destacada,
+      orden: data.orden,
+      tags: data.tags,
+      colaboradores: data.colaboradores,
+    });
 
     let url_imagen = data.url_imagen || data.imagenUrl;
 
@@ -252,8 +277,41 @@ export async function POST(req) {
         artistId:
           data.artistId && data.artistId.trim() !== "" ? data.artistId : null,
         userId: data.userId || null,
+        // Campos faltantes
+        dimensiones: data.dimensiones || null,
+        salaId: data.salaId ? Number(data.salaId) : null,
+        estado: data.estado || null,
+        publica: data.publica ? data.publica === "true" : true,
+        destacada: data.destacada ? data.destacada === "true" : false,
+        orden: data.orden ? Number(data.orden) : 0,
+        tags: data.tags ? JSON.parse(data.tags) : null,
       },
     });
+
+    // Crear relaciones de colaboradores si existen
+    if (data.colaboradores) {
+      try {
+        const colaboradores = JSON.parse(data.colaboradores);
+        if (Array.isArray(colaboradores) && colaboradores.length > 0) {
+          const colaboradoresData = colaboradores.map((colaboradorId) => ({
+            muralId: mural.id,
+            userId: colaboradorId,
+          }));
+
+          await prisma.muralColaborador.createMany({
+            data: colaboradoresData,
+            skipDuplicates: true,
+          });
+
+          console.log(
+            `✅ ${colaboradoresData.length} colaboradores agregados al mural ${mural.id}`
+          );
+        }
+      } catch (error) {
+        console.error("❌ Error creando colaboradores:", error);
+        // No fallar la creación del mural por error en colaboradores
+      }
+    }
 
     // Notificar a los suscriptores por email (ya existente)
     try {

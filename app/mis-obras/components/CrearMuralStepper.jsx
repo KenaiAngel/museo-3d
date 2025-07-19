@@ -11,7 +11,7 @@ import {
   MapPin,
   Eye,
   Users,
-  Image,
+  Image as ImageIcon,
 } from "lucide-react";
 import MuralImageStep from "./MuralImageStep";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -29,13 +29,19 @@ import { useState as useLocalState } from "react";
 import { Icon } from "leaflet";
 import { Brush } from "lucide-react";
 import ReactSelect from "react-select";
+import {
+  generateMuralGLB,
+  generateMuralGLBFallback,
+} from "../../../utils/generateMuralGLB";
+import { uploadModelToCloudinary } from "../../../utils/uploadToCloudinary";
+import { validateGLB, diagnoseModel } from "../../../utils/validateGLB";
 
 const STEPS = [
   { label: "Datos básicos", subtitle: "Información principal", icon: <User /> },
   {
     label: "Imágenes y medios",
     subtitle: "Sube o crea tu imagen",
-    icon: <Image />,
+    icon: <ImageIcon />,
   },
   {
     label: "Ubicación y sala",
@@ -123,6 +129,8 @@ export default function CrearMuralStepper() {
   const [artistList, setArtistList] = useState([]);
   const [apiError, setApiError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
+  const [generatingModel, setGeneratingModel] = useState(false);
+  const [modelGenerationStep, setModelGenerationStep] = useState("");
 
   React.useEffect(() => {
     if (mural.anio === undefined) {
@@ -200,22 +208,34 @@ export default function CrearMuralStepper() {
   // Verificar si hay imagen del canvas al cargar el componente
   useEffect(() => {
     const savedCanvasImage = localStorage.getItem("canvasImage");
-    if (savedCanvasImage && !canvasImageLoaded.current) {
-      // Si hay imagen del canvas, asegurar que estamos en el paso 1 y cargarla
-      if (step !== 1) {
-        setStep(1);
-      }
+    console.log("🔍 Verificando imagen del canvas:", {
+      hasImage: !!savedCanvasImage,
+      canvasImageLoaded: canvasImageLoaded.current,
+      currentStep: step,
+    });
 
+    if (savedCanvasImage && !canvasImageLoaded.current) {
+      console.log("📸 Cargando imagen del canvas...");
       // Comprimir la imagen si es muy grande
-      compressImage(savedCanvasImage).then((compressedImage) => {
-        setMural((m) => ({ ...m, url_imagen: compressedImage }));
-      });
+      compressImage(savedCanvasImage)
+        .then((compressedImage) => {
+          console.log("✅ Imagen comprimida, actualizando estado");
+          setMural((m) => ({ ...m, url_imagen: compressedImage }));
+          // Solo cambiar al paso 1 si no estamos ya en un paso más avanzado
+          if (step < 1) {
+            console.log("🔄 Cambiando al paso 1");
+            setStep(1);
+          }
+        })
+        .catch((error) => {
+          console.error("❌ Error comprimiendo imagen:", error);
+        });
 
       // Limpiar localStorage después de cargar
       localStorage.removeItem("canvasImage");
       canvasImageLoaded.current = true;
     }
-  }, [step]);
+  }, []); // Solo ejecutar al montar el componente
 
   // Guardar estado del mural (sin imagen) y paso actual en localStorage
   useEffect(() => {
@@ -228,7 +248,116 @@ export default function CrearMuralStepper() {
       localStorage.setItem("muralDraftData", JSON.stringify(muralWithoutImage));
       localStorage.setItem("muralStep", step.toString());
     }
-  }, [mural, step, isCreating]);
+  }, [
+    mural.titulo,
+    mural.descripcion,
+    mural.tecnica,
+    mural.anio,
+    mural.dimensiones,
+    mural.latitud,
+    mural.longitud,
+    mural.ubicacion,
+    mural.salaId,
+    mural.estado,
+    mural.publica,
+    mural.destacada,
+    mural.orden,
+    mural.tags,
+    mural.autor,
+    mural.artistId,
+    mural.colaboradores,
+    step,
+    isCreating,
+  ]);
+
+  // Función para generar modelo 3D con fallbacks
+  const generateAndValidateModel = async (imageUrl, title = "mural") => {
+    setGeneratingModel(true);
+    console.log("🚀 Iniciando generación de modelo 3D para:", title);
+
+    let glbBlob = null;
+    let generationMethod = "";
+
+    try {
+      // Intentar primero con la imagen real
+      setModelGenerationStep("Generando modelo 3D con imagen...");
+      console.log("📸 Intentando generar modelo con imagen:", imageUrl);
+      glbBlob = await generateMuralGLB(imageUrl);
+      generationMethod = "imagen_real";
+
+      // Validar el modelo generado
+      setModelGenerationStep("Validando modelo generado...");
+      const validation = await validateGLB(glbBlob);
+      if (!validation.isValid) {
+        throw new Error(`Modelo inválido: ${validation.error}`);
+      }
+
+      console.log("✅ Modelo generado exitosamente con imagen real");
+    } catch (error) {
+      console.warn(
+        "⚠️ Error con imagen real, intentando fallback:",
+        error.message
+      );
+
+      try {
+        // Fallback: generar con textura programática
+        setModelGenerationStep("Generando modelo alternativo...");
+        const fallbackColor = "#4A90E2"; // Azul atractivo
+        const fallbackText = title.substring(0, 10).toUpperCase() || "OBRA";
+
+        console.log("🎨 Generando modelo fallback con:", {
+          color: fallbackColor,
+          text: fallbackText,
+        });
+        glbBlob = await generateMuralGLBFallback(fallbackColor, fallbackText);
+        generationMethod = "fallback";
+
+        // Validar el modelo fallback
+        setModelGenerationStep("Validando modelo alternativo...");
+        const validation = await validateGLB(glbBlob);
+        if (!validation.isValid) {
+          throw new Error(`Modelo fallback inválido: ${validation.error}`);
+        }
+
+        console.log("✅ Modelo fallback generado exitosamente");
+      } catch (fallbackError) {
+        console.error(
+          "❌ Error en fallback, intentando modelo simple:",
+          fallbackError.message
+        );
+
+        // Último recurso: modelo simple
+        setModelGenerationStep("Generando modelo básico...");
+        const { generateSimpleGLB } = await import(
+          "../../../utils/generateSimpleGLB"
+        );
+        glbBlob = await generateSimpleGLB(true);
+        generationMethod = "simple";
+
+        setModelGenerationStep("Validando modelo básico...");
+        const validation = await validateGLB(glbBlob);
+        if (!validation.isValid) {
+          throw new Error(`Modelo simple inválido: ${validation.error}`);
+        }
+
+        console.log("✅ Modelo simple generado como último recurso");
+      }
+    }
+
+    // Diagnóstico del modelo final
+    setModelGenerationStep("Analizando calidad del modelo...");
+    const diagnostic = await diagnoseModel(glbBlob);
+    console.log("📊 Diagnóstico del modelo:", diagnostic);
+
+    setGeneratingModel(false);
+    setModelGenerationStep("");
+
+    return {
+      blob: glbBlob,
+      method: generationMethod,
+      diagnostic,
+    };
+  };
 
   // Función para crear el mural
   const handleCreateMural = async () => {
@@ -264,6 +393,8 @@ export default function CrearMuralStepper() {
     try {
       // Convertir dataURL a blob si es necesario
       let imgFile;
+      let url_imagen = null;
+
       if (mural.url_imagen.startsWith("data:")) {
         const res = await fetch(mural.url_imagen);
         const blob = await res.blob();
@@ -275,19 +406,125 @@ export default function CrearMuralStepper() {
         imgFile = mural.url_imagen;
       }
 
-      // Crear FormData
+      // Subir imagen primero para obtener la URL
+      const formDataImage = new FormData();
+      formDataImage.append("imagen", imgFile);
+
+      console.log("📤 Subiendo imagen...");
+      const resImg = await fetch("/api/upload", {
+        method: "POST",
+        body: formDataImage,
+      });
+
+      if (!resImg.ok) {
+        throw new Error("Error al subir la imagen");
+      }
+
+      const dataImg = await resImg.json();
+      url_imagen = dataImg.url;
+      console.log("✅ Imagen subida:", url_imagen);
+
+      // Generar y subir modelo 3D
+      let modelo3dUrl = null;
+      let modelInfo = null;
+
+      if (url_imagen) {
+        try {
+          console.log("🏗️ Iniciando proceso de generación de modelo 3D...");
+
+          // Usar la función mejorada para generar el modelo
+          const modelResult = await generateAndValidateModel(
+            url_imagen,
+            mural.titulo
+          );
+
+          // Preparar nombre del archivo
+          let safeFileName = `${mural.titulo || "mural"}`;
+          if (!safeFileName.toLowerCase().endsWith(".glb")) {
+            safeFileName += ".glb";
+          }
+
+          // Subir a Cloudinary
+          setModelGenerationStep("Subiendo modelo a la nube...");
+          console.log("☁️ Subiendo modelo a Cloudinary...");
+          modelo3dUrl = await uploadModelToCloudinary(
+            modelResult.blob,
+            safeFileName
+          );
+
+          modelInfo = {
+            method: modelResult.method,
+            size: Math.round(modelResult.blob.size / 1024), // KB
+            diagnostic: modelResult.diagnostic,
+          };
+
+          console.log("✅ Modelo 3D procesado exitosamente:", {
+            url: modelo3dUrl,
+            method: modelResult.method,
+            size: `${modelInfo.size} KB`,
+          });
+        } catch (err) {
+          console.error("❌ Error completo en generación de modelo 3D:", err);
+          // Continuar sin modelo 3D
+          modelo3dUrl = null;
+        } finally {
+          setGeneratingModel(false);
+          setModelGenerationStep("");
+        }
+      } else {
+        console.log("ℹ️ No hay imagen, saltando generación de modelo 3D");
+      }
+
+      // Crear FormData para el mural
       const formData = new FormData();
       formData.append("titulo", mural.titulo);
       formData.append("tecnica", mural.tecnica);
-      formData.append("anio", mural.anio.toString()); // Cambiar 'year' por 'anio'
+      formData.append("anio", mural.anio.toString());
       formData.append("descripcion", mural.descripcion || "");
       formData.append("autor", mural.autor || "");
-      // Solo enviar artistId si es válido (no vacío y no null)
       if (mural.artistId && mural.artistId.trim() !== "") {
         formData.append("artistId", mural.artistId);
       }
       formData.append("userId", mural.userId || session?.user?.id || "");
-      formData.append("imagen", imgFile);
+      formData.append("url_imagen", url_imagen);
+      if (modelo3dUrl) {
+        formData.append("modelo3dUrl", modelo3dUrl);
+      }
+
+      // Campos faltantes
+      if (mural.dimensiones) {
+        formData.append("dimensiones", mural.dimensiones);
+      }
+      if (mural.latitud) {
+        formData.append("latitud", mural.latitud.toString());
+      }
+      if (mural.longitud) {
+        formData.append("longitud", mural.longitud.toString());
+      }
+      if (mural.ubicacion) {
+        formData.append("ubicacion", mural.ubicacion);
+      }
+      if (mural.salaId) {
+        formData.append("salaId", mural.salaId.toString());
+      }
+      if (mural.estado) {
+        formData.append("estado", mural.estado);
+      }
+      if (mural.publica !== undefined) {
+        formData.append("publica", mural.publica.toString());
+      }
+      if (mural.destacada !== undefined) {
+        formData.append("destacada", mural.destacada.toString());
+      }
+      if (mural.orden !== undefined) {
+        formData.append("orden", mural.orden.toString());
+      }
+      if (mural.tags && mural.tags.length > 0) {
+        formData.append("tags", JSON.stringify(mural.tags));
+      }
+      if (mural.colaboradores && mural.colaboradores.length > 0) {
+        formData.append("colaboradores", JSON.stringify(mural.colaboradores));
+      }
 
       // Debug: mostrar qué datos se están enviando
       console.log("📤 Enviando datos a la API:", {
@@ -301,7 +538,19 @@ export default function CrearMuralStepper() {
             ? mural.artistId
             : "No enviado",
         userId: mural.userId || session?.user?.id,
-        imagen: imgFile ? `${imgFile.name} (${imgFile.size} bytes)` : "No file",
+        url_imagen: url_imagen,
+        modelo3dUrl: modelo3dUrl || "No generado",
+        dimensiones: mural.dimensiones || "No especificadas",
+        latitud: mural.latitud || "No especificada",
+        longitud: mural.longitud || "No especificada",
+        ubicacion: mural.ubicacion || "No especificada",
+        salaId: mural.salaId || "No especificada",
+        estado: mural.estado || "No especificado",
+        publica: mural.publica,
+        destacada: mural.destacada,
+        orden: mural.orden,
+        tags: mural.tags || [],
+        colaboradores: mural.colaboradores || [],
         artistListLength: artistList.length,
         availableArtistIds: artistList.map((a) => a.id),
       });
@@ -717,9 +966,17 @@ export default function CrearMuralStepper() {
                 <p className="text-green-700 dark:text-green-300 mb-4">
                   {successMessage}
                 </p>
-                <p className="text-sm text-green-600 dark:text-green-400">
+                <p className="text-sm text-green-600 dark:text-green-400 mb-4">
                   Redirigiendo a tus obras...
                 </p>
+                <div className="bg-green-100 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded-lg p-3">
+                  <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-sm">
+                      Modelo 3D generado y listo para AR
+                    </span>
+                  </div>
+                </div>
               </div>
             ) : apiError ? (
               <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6">
@@ -747,88 +1004,106 @@ export default function CrearMuralStepper() {
                   >
                     Reintentar
                   </Button>
-                  <Button
-                    onClick={() => setApiError(null)}
-                    variant="outline"
-                  >
+                  <Button onClick={() => setApiError(null)} variant="outline">
                     Cancelar
                   </Button>
                 </div>
               </div>
             ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Vista previa de la imagen */}
-              <div className="flex-shrink-0 flex flex-col items-center">
-                {mural.url_imagen ? (
-                  <img
-                    src={mural.url_imagen}
-                    alt="preview"
-                    className="w-[320px] h-[320px] object-contain rounded-2xl border-4 border-indigo-400 shadow-lg bg-white"
-                  />
-                ) : (
-                  <div className="w-[320px] h-[320px] flex items-center justify-center rounded-2xl border-4 border-dashed border-gray-300 bg-gray-50 dark:bg-neutral-800 text-gray-400 text-lg">
-                    Sin imagen
-                  </div>
-                )}
-              </div>
-              {/* Datos del mural */}
-              <div className="flex-1 max-w-md w-full flex flex-col justify-center items-center h-full">
-                <div className="w-full max-w-xs mx-auto flex flex-col justify-center">
-                  <h3 className="text-2xl font-bold mb-4 text-foreground text-center">
-                    Datos de la obra
-                  </h3>
-                  <div className="space-y-3 text-base w-full">
-                    <div className="flex gap-2 justify-start">
-                      <span className="font-semibold w-28 text-right">
-                        Título:
-                      </span>{" "}
-                      <span className="truncate text-left">{mural.titulo}</span>
-                    </div>
-                    <div className="flex gap-2 justify-start">
-                      <span className="font-semibold w-28 text-right">
-                        Técnica:
-                      </span>{" "}
-                      <span className="text-left">{mural.tecnica}</span>
-                    </div>
-                    <div className="flex gap-2 justify-start">
-                      <span className="font-semibold w-28 text-right">
-                        Año:
-                      </span>{" "}
-                      <span className="text-left">{mural.anio}</span>
-                    </div>
-                    <div className="flex gap-2 justify-start">
-                      <span className="font-semibold w-28 text-right">
-                        Ubicación:
-                      </span>{" "}
-                      <span className="text-left">
-                        {mural.ubicacion || (
-                          <span className="italic text-gray-400">
-                            No especificada
-                          </span>
-                        )}
-                      </span>
-                    </div>
-                    {mural.descripcion && (
-                      <div className="flex gap-2 items-start justify-start">
-                        <span className="font-semibold w-28 text-right">
-                          Descripción:
-                        </span>{" "}
-                        <span className="whitespace-pre-line text-left">
-                          {mural.descripcion}
-                        </span>
+              <div className="flex flex-col gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  <div className="flex-shrink-0 flex flex-col items-center">
+                    {mural.url_imagen ? (
+                      <img
+                        src={mural.url_imagen}
+                        alt="preview"
+                        className="w-[320px] h-[320px] object-contain rounded-2xl border-4 border-indigo-400 shadow-lg bg-white"
+                      />
+                    ) : (
+                      <div className="w-[320px] h-[320px] flex items-center justify-center rounded-2xl border-4 border-dashed border-gray-300 bg-gray-50 dark:bg-neutral-800 text-gray-400 text-lg">
+                        Sin imagen
                       </div>
                     )}
                   </div>
+                  <div className="flex-1 max-w-md w-full flex flex-col justify-center items-center h-full">
+                    <div className="w-full max-w-xs mx-auto flex flex-col justify-center">
+                      <h3 className="text-2xl font-bold mb-4 text-foreground text-center">
+                        Datos de la obra
+                      </h3>
+                      <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                        <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
+                          <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                          <span className="text-sm font-medium">
+                            Se generará automáticamente un modelo 3D para AR
+                          </span>
+                        </div>
+                      </div>
+                      <div className="space-y-3 text-base w-full">
+                        <div className="flex gap-2 justify-start">
+                          <span className="font-semibold w-28 text-right">
+                            Título:
+                          </span>{" "}
+                          <span className="truncate text-left">
+                            {mural.titulo}
+                          </span>
+                        </div>
+                        <div className="flex gap-2 justify-start">
+                          <span className="font-semibold w-28 text-right">
+                            Técnica:
+                          </span>{" "}
+                          <span className="text-left">{mural.tecnica}</span>
+                        </div>
+                        <div className="flex gap-2 justify-start">
+                          <span className="font-semibold w-28 text-right">
+                            Año:
+                          </span>{" "}
+                          <span className="text-left">{mural.anio}</span>
+                        </div>
+                        <div className="flex gap-2 justify-start">
+                          <span className="font-semibold w-28 text-right">
+                            Ubicación:
+                          </span>{" "}
+                          <span className="text-left">
+                            {mural.ubicacion || (
+                              <span className="italic text-gray-400">
+                                No especificada
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                        {mural.descripcion && (
+                          <div className="flex gap-2 items-start justify-start">
+                            <span className="font-semibold w-28 text-right">
+                              Descripción:
+                            </span>{" "}
+                            <span className="whitespace-pre-line text-left">
+                              {mural.descripcion}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
+                <Button
+                  className="mt-4"
+                  onClick={handleCreateMural}
+                  disabled={isCreating || generatingModel}
+                >
+                  {isCreating ? (
+                    generatingModel ? (
+                      <div className="flex items-center gap-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        {modelGenerationStep || "Generando modelo 3D..."}
+                      </div>
+                    ) : (
+                      "Creando obra..."
+                    )
+                  ) : (
+                    "Crear obra"
+                  )}
+                </Button>
               </div>
-            </div>
-            <Button
-              className="mt-4"
-              onClick={handleCreateMural}
-              disabled={isCreating}
-            >
-              {isCreating ? "Creando obra..." : "Crear obra"}
-            </Button>
             )}
           </div>
         )}
