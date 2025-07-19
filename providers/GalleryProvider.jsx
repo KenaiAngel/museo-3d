@@ -34,28 +34,40 @@ export const GalleryProvider = ({ children }) => {
       const data = await response.json();
 
       // Transformar los datos del nuevo esquema
-      const transformedArtworks = data.murales.map((mural) => ({
-        id: mural.id,
-        title: mural.titulo,
-        artist: mural.artista,
-        technique: mural.tecnica,
-        year: mural.anio,
-        description: mural.descripcion,
-        imageUrl: mural.imagenUrl,
-        imageUrlWebp: mural.imagenUrlWebp,
-        location: mural.ubicacion,
-        dimensions: mural.dimensiones,
-        state: mural.estado,
-        latitude: mural.latitud,
-        longitude: mural.longitud,
-        createdAt: mural.createdAt,
-        updatedAt: mural.updatedAt,
-        // Campos adicionales para compatibilidad
-        url_imagen: mural.imagenUrl,
-        nombre: mural.titulo,
-        autor: mural.artista,
-        medidas: mural.dimensiones,
-      }));
+      const transformedArtworks = data.murales.map((mural) => {
+        console.log("Room mural autor data:", {
+          muralId: mural.id,
+          titulo: mural.titulo,
+          autor: mural.autor,
+          artistId: mural.artistId,
+          artistName: mural.artist?.user?.name,
+          artistUser: mural.artist?.user,
+        });
+
+        return {
+          id: mural.id,
+          title: mural.titulo,
+          artist: mural.artista,
+          technique: mural.tecnica,
+          year: mural.anio,
+          description: mural.descripcion,
+          imageUrl: mural.imagenUrl,
+          imageUrlWebp: mural.imagenUrlWebp,
+          location: mural.ubicacion,
+          dimensions: mural.dimensiones,
+          state: mural.estado,
+          latitude: mural.latitud,
+          longitude: mural.longitud,
+          createdAt: mural.createdAt,
+          updatedAt: mural.updatedAt,
+          // Campos adicionales para compatibilidad
+          url_imagen: mural.imagenUrl,
+          nombre: mural.titulo,
+          autor:
+            mural.autor || mural.artist?.user?.name || "Artista desconocido",
+          medidas: mural.dimensiones,
+        };
+      });
 
       setArtworks(transformedArtworks);
 
@@ -88,24 +100,47 @@ export const GalleryProvider = ({ children }) => {
   }, []);
 
   // Cargar todos los murales (para galería general, filtros, carrusel, etc.)
-  const fetchAllMurales = useCallback(async (force = false) => {
-    if (allMuralesLoaded && !force) return;
-    setLoadingAllMurales(true);
-    setError(null);
-    try {
-      const response = await fetch("/api/murales");
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const data = await response.json();
-      setAllMurales(data.murales || []);
-      setAllMuralesLoaded(true);
-    } catch (err) {
-      console.error("Error loading all murales:", err);
-      setError(err.message);
-      setAllMurales([]);
-    } finally {
-      setLoadingAllMurales(false);
-    }
-  }, [allMuralesLoaded]);
+  const fetchAllMurales = useCallback(
+    async (force = false) => {
+      if (allMuralesLoaded && !force) return;
+      setLoadingAllMurales(true);
+      setError(null);
+      try {
+        const response = await fetch("/api/murales");
+        if (!response.ok)
+          throw new Error(`HTTP error! status: ${response.status}`);
+        const data = await response.json();
+
+        // Procesar los murales para incluir el nombre del artista
+        const processedMurales = (data.murales || []).map((mural) => {
+          console.log("Mural autor data:", {
+            muralId: mural.id,
+            titulo: mural.titulo,
+            autor: mural.autor,
+            artistId: mural.artistId,
+            artistName: mural.artist?.user?.name,
+            artistUser: mural.artist?.user,
+          });
+
+          return {
+            ...mural,
+            autor:
+              mural.autor || mural.artist?.user?.name || "Artista desconocido",
+          };
+        });
+
+        setAllMurales(processedMurales);
+        setAllMuralesLoaded(true);
+      } catch (err) {
+        console.error("Error loading all murales:", err);
+        setError(err.message);
+        setAllMurales([]);
+      } finally {
+        setLoadingAllMurales(false);
+      }
+    },
+    [allMuralesLoaded]
+  );
 
   const getGalleryStats = useCallback(() => {
     if (artworks.length === 0) {

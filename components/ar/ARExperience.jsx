@@ -36,6 +36,10 @@ export default function ARExperience({
   useEffect(() => {
     console.log("🔍 Verificando soporte WebXR...");
     console.log("navigator.xr:", !!navigator.xr);
+    console.log("WebGL disponible:", !!window.WebGLRenderingContext);
+    console.log("Es móvil:", window.innerWidth <= 768);
+    console.log("User agent:", navigator.userAgent);
+
     if (navigator.xr) {
       console.log(
         "navigator.xr.isSessionSupported('immersive-ar'):",
@@ -65,12 +69,16 @@ export default function ARExperience({
     }
 
     // Renderer
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    const renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      alpha: true, // Importante para AR - permite transparencia
+      preserveDrawingBuffer: true, // Necesario para AR
+    });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Limitar pixel ratio para móvil
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.xr.enabled = true;
-    renderer.setClearColor(0x000000); // fondo negro para AR
+    renderer.setClearColor(0x000000, 0); // fondo transparente para AR
     mountRef.current.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
@@ -212,7 +220,7 @@ export default function ARExperience({
         const size = box.getSize(new THREE.Vector3());
         model.position.sub(center);
         const maxDim = Math.max(size.x, size.y, size.z);
-        const scale = 2 / maxDim;
+        const scale = 0.5 / maxDim; // Escala más pequeña para AR
         model.scale.setScalar(scale);
         model.position.set(0, 0, 0);
         // Restaurar materiales originales si se solicita
@@ -232,8 +240,8 @@ export default function ARExperience({
         const controls = controlsRef.current;
         const fov = camera.fov * (Math.PI / 180);
         let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2));
-        cameraZ *= 5; // mucho más lejos
-        camera.position.set(center.x, center.y, cameraZ + center.z + 2);
+        cameraZ *= 2; // Más cerca para mejor visualización
+        camera.position.set(center.x, center.y, cameraZ + center.z + 1);
         camera.lookAt(center);
         controls.target.copy(center);
         controls.update();
@@ -370,11 +378,11 @@ export default function ARExperience({
         originalScale.current = model.scale.clone();
       }
       // Centrar modelo en el origen y escalar apropiadamente para AR
-      model.position.set(0, 0, -0.5); // 0.5 metros frente a la cámara (más cerca)
+      model.position.set(0, 0, -0.3); // 0.3 metros frente a la cámara (más cerca)
       const box = new THREE.Box3().setFromObject(model);
       const size = box.getSize(new THREE.Vector3());
       const maxDim = Math.max(size.x, size.y, size.z);
-      const arScale = 0.5 / maxDim; // tamaño de 0.5 metros máximo (más pequeño)
+      const arScale = 0.3 / maxDim; // tamaño de 0.3 metros máximo (más pequeño)
       model.scale.setScalar(arScale);
       controls.enabled = false;
       console.log(
@@ -383,7 +391,9 @@ export default function ARExperience({
         "posición:",
         model.position,
         "tamaño máximo:",
-        maxDim
+        maxDim,
+        "es móvil:",
+        window.innerWidth <= 768
       );
     }
     function handleSessionEnd() {
@@ -402,10 +412,20 @@ export default function ARExperience({
     let arFrameCount = 0;
     renderer.setAnimationLoop((time, frame) => {
       if (renderer.xr.isPresenting) {
-        renderer.render(scene, camera);
-        arFrameCount++;
-        if (arFrameCount % 30 === 0) {
-          console.log("🎯 AR frame:", arFrameCount, "time:", time);
+        // Asegurar que la escena y cámara existen
+        if (scene && camera) {
+          renderer.render(scene, camera);
+          arFrameCount++;
+          if (arFrameCount % 30 === 0) {
+            console.log(
+              "🎯 AR frame:",
+              arFrameCount,
+              "time:",
+              time,
+              "model visible:",
+              !!modelRef.current
+            );
+          }
         }
       }
     });
@@ -492,45 +512,6 @@ export default function ARExperience({
         </div>
       )}
 
-      {/* Botón de Debug */}
-      <button
-        onClick={() => {
-          console.log("🔍 Estado actual:", {
-            sceneReady,
-            modelLoaded,
-            isAR,
-            modelUrl,
-            renderer: !!rendererRef.current,
-            scene: !!sceneRef.current,
-            camera: !!cameraRef.current,
-            model: !!modelRef.current,
-            webXR: !!navigator.xr,
-          });
-          if (modelRef.current) {
-            console.log("📦 Modelo actual:", {
-              position: modelRef.current.position,
-              scale: modelRef.current.scale,
-              visible: modelRef.current.visible,
-              children: modelRef.current.children.length,
-            });
-          }
-        }}
-        style={{
-          position: "absolute",
-          top: window.innerWidth <= 768 ? 20 : 20,
-          left: window.innerWidth <= 768 ? 20 : 20,
-          background: "rgba(255,0,0,0.8)",
-          color: "#fff",
-          border: "none",
-          padding: window.innerWidth <= 768 ? "6px 8px" : "8px 12px",
-          borderRadius: "6px",
-          fontSize: window.innerWidth <= 768 ? "10px" : "12px",
-          zIndex: 9999,
-          cursor: "pointer",
-        }}
-      >
-        🔍 Debug
-      </button>
       <div
         ref={mountRef}
         style={{

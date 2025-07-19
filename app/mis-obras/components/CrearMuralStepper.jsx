@@ -165,31 +165,46 @@ export default function CrearMuralStepper() {
     const savedData = localStorage.getItem("muralDraftData");
     const savedStep = localStorage.getItem("muralStep");
 
+    console.log("📂 Cargando datos guardados:", {
+      hasSavedData: !!savedData,
+      hasSavedStep: !!savedStep,
+      sessionUserId: session?.user?.id,
+    });
+
     if (savedData) {
       try {
         const parsed = JSON.parse(savedData);
-        setMural((prev) => ({
-          ...prev,
-          ...parsed,
-          // Mantener la imagen actual si existe (no sobrescribir con null)
-          url_imagen: prev.url_imagen || parsed.url_imagen,
-        }));
+        console.log("📋 Datos parseados:", parsed);
+
+        setMural((prev) => {
+          const newMural = {
+            ...prev,
+            ...parsed,
+            // Mantener la imagen actual si existe (no sobrescribir con null)
+            url_imagen: prev.url_imagen || parsed.url_imagen,
+            // Asegurar que userId se mantenga si ya está establecido
+            userId: session?.user?.id || prev.userId || parsed.userId,
+          };
+          console.log("🔄 Estado del mural actualizado:", newMural);
+          return newMural;
+        });
       } catch (error) {
-        console.error("Error parsing saved mural data:", error);
+        console.error("❌ Error parsing saved mural data:", error);
       }
     }
 
     if (savedStep) {
       setStep(parseInt(savedStep));
     }
-  }, []);
+  }, [session?.user?.id]); // Depender de session.user.id para recargar cuando esté disponible
 
-  // Establecer userId cuando la sesión esté disponible
+  // Establecer userId cuando la sesión esté disponible (solo si no está ya establecido)
   useEffect(() => {
-    if (session?.user?.id) {
+    if (session?.user?.id && !mural.userId) {
+      console.log("👤 Estableciendo userId:", session.user.id);
       setMural((prev) => ({ ...prev, userId: session.user.id }));
     }
-  }, [session]);
+  }, [session, mural.userId]);
 
   // Cargar lista de artistas
   useEffect(() => {
@@ -212,6 +227,7 @@ export default function CrearMuralStepper() {
       hasImage: !!savedCanvasImage,
       canvasImageLoaded: canvasImageLoaded.current,
       currentStep: step,
+      hasMuralData: !!mural.titulo, // Verificar si ya hay datos del mural
     });
 
     if (savedCanvasImage && !canvasImageLoaded.current) {
@@ -220,7 +236,16 @@ export default function CrearMuralStepper() {
       compressImage(savedCanvasImage)
         .then((compressedImage) => {
           console.log("✅ Imagen comprimida, actualizando estado");
-          setMural((m) => ({ ...m, url_imagen: compressedImage }));
+          setMural((m) => {
+            const updatedMural = { ...m, url_imagen: compressedImage };
+            console.log("🎨 Mural actualizado con imagen:", {
+              titulo: updatedMural.titulo,
+              tecnica: updatedMural.tecnica,
+              anio: updatedMural.anio,
+              hasImage: !!updatedMural.url_imagen,
+            });
+            return updatedMural;
+          });
           // Solo cambiar al paso 1 si no estamos ya en un paso más avanzado
           if (step < 1) {
             console.log("🔄 Cambiando al paso 1");
@@ -235,7 +260,7 @@ export default function CrearMuralStepper() {
       localStorage.removeItem("canvasImage");
       canvasImageLoaded.current = true;
     }
-  }, []); // Solo ejecutar al montar el componente
+  }, [step, mural.titulo]); // Depender del step y titulo para verificar estado
 
   // Guardar estado del mural (sin imagen) y paso actual en localStorage
   useEffect(() => {
@@ -361,23 +386,32 @@ export default function CrearMuralStepper() {
 
   // Función para crear el mural
   const handleCreateMural = async () => {
+    console.log("🔍 Validando datos antes de crear mural:", {
+      titulo: mural.titulo,
+      tecnica: mural.tecnica,
+      anio: mural.anio,
+      userId: mural.userId,
+      sessionUserId: session?.user?.id,
+      hasImage: !!mural.url_imagen,
+    });
+
     if (!mural.url_imagen) {
       alert("Debes seleccionar o crear una imagen");
       return;
     }
 
-    if (!mural.titulo.trim()) {
-      alert("El título es requerido");
+    if (!mural.titulo || !mural.titulo.trim()) {
+      alert("El título es requerido. Por favor, completa el paso 1.");
       return;
     }
 
-    if (!mural.tecnica.trim()) {
-      alert("La técnica es requerida");
+    if (!mural.tecnica || !mural.tecnica.trim()) {
+      alert("La técnica es requerida. Por favor, completa el paso 1.");
       return;
     }
 
     if (!mural.anio) {
-      alert("El año es requerido");
+      alert("El año es requerido. Por favor, completa el paso 1.");
       return;
     }
 
@@ -1109,6 +1143,24 @@ export default function CrearMuralStepper() {
         )}
         {/* Navegación */}
         <div className="flex gap-2 justify-end mt-8">
+          {/* Botón de debug temporal */}
+          <Button
+            variant="ghost"
+            onClick={() => {
+              console.log("🔍 Estado actual del mural:", mural);
+              console.log("📂 localStorage:", {
+                muralDraftData: localStorage.getItem("muralDraftData"),
+                muralStep: localStorage.getItem("muralStep"),
+                canvasImage: !!localStorage.getItem("canvasImage"),
+              });
+              alert(
+                `Estado del mural:\nTítulo: ${mural.titulo || "Vacío"}\nTécnica: ${mural.tecnica || "Vacío"}\nAño: ${mural.anio || "Vacío"}\nImagen: ${mural.url_imagen ? "Sí" : "No"}`
+              );
+            }}
+            className="text-blue-600 hover:text-blue-700"
+          >
+            Debug Estado
+          </Button>
           <Button
             variant="ghost"
             onClick={() => {
@@ -1465,6 +1517,7 @@ function LocationPicker({ mural, setMural }) {
 // Componente para autores, artista y colaboradores con selects
 function AutoresColaboradoresStep({ mural, setMural, artistList }) {
   const usuarios = useUsuarios();
+
   // Opciones para react-select
   const userOptions = usuarios.map((u) => ({
     value: u.id,
@@ -1488,92 +1541,66 @@ function AutoresColaboradoresStep({ mural, setMural, artistList }) {
     (mural.colaboradores || []).includes(opt.value)
   );
 
+  // Función para manejar cambios en autor (texto libre)
+  const handleAutorChange = (opt) => {
+    setMural((m) => ({
+      ...m,
+      autor: opt ? opt.value : "",
+      // Limpiar artistId si se selecciona un autor
+      artistId: opt ? "" : m.artistId,
+    }));
+  };
+
+  // Función para manejar cambios en artista (referencia)
+  const handleArtistChange = (opt) => {
+    setMural((m) => ({
+      ...m,
+      artistId: opt ? opt.value : "",
+      // Limpiar autor si se selecciona un artista
+      autor: opt ? "" : m.autor,
+    }));
+  };
+
   return (
     <div className="flex flex-col gap-6 mb-8">
       <div>
-        <label
-          htmlFor="autor"
-          className="block mb-2 text-base font-semibold text-gray-700 dark:text-gray-200"
-        >
-          Autor principal
+        <label className="block mb-2 text-base font-semibold text-gray-700 dark:text-gray-200">
+          Autor principal (texto libre)
         </label>
-        <ReactSelect
-          inputId="autor"
-          classNamePrefix="react-select"
-          options={userOptions}
-          value={autorOption}
-          onChange={(opt) =>
-            setMural((m) => ({ ...m, autor: opt ? opt.value : "" }))
-          }
-          placeholder="Selecciona un usuario"
-          isClearable
-          menuPortalTarget={
-            typeof window !== "undefined" ? document.body : null
-          }
-          menuPosition="fixed"
-          styles={
-            isDarkMode()
-              ? {
-                  menuPortal: (base) => ({ ...base, zIndex: 9999 }),
-                  control: (base, state) => ({
-                    ...base,
-                    backgroundColor: "#18181b",
-                    borderColor: state.isFocused ? "#6366f1" : "#27272a",
-                    color: "#fff",
-                    boxShadow: state.isFocused
-                      ? "0 0 0 1.5px #6366f1"
-                      : undefined,
-                  }),
-                  menu: (base) => ({
-                    ...base,
-                    backgroundColor: "#222",
-                    color: "#fff",
-                  }),
-                  option: (base, state) => ({
-                    ...base,
-                    backgroundColor: state.isSelected
-                      ? "#6366f1"
-                      : state.isFocused
-                        ? "#3730a3"
-                        : "#222",
-                    color: state.isSelected ? "#fff" : "#fff",
-                  }),
-                  multiValue: (base) => ({
-                    ...base,
-                    backgroundColor: "#6366f1",
-                    color: "#fff",
-                  }),
-                  multiValueLabel: (base) => ({ ...base, color: "#fff" }),
-                  multiValueRemove: (base) => ({
-                    ...base,
-                    color: "#fff",
-                    ":hover": { backgroundColor: "#3730a3", color: "#fff" },
-                  }),
-                  placeholder: (base) => ({ ...base, color: "#a1a1aa" }),
-                  singleValue: (base) => ({ ...base, color: "#fff" }),
-                  input: (base) => ({ ...base, color: "#fff" }),
-                }
-              : { menuPortal: (base) => ({ ...base, zIndex: 9999 }) }
-          }
+        <input
+          type="text"
+          placeholder="Escribe el nombre del autor"
+          value={mural.autor || ""}
+          onChange={(e) => {
+            setMural((m) => ({
+              ...m,
+              autor: e.target.value,
+              artistId: "", // Limpiar artista si se escribe autor
+            }));
+          }}
+          className="input-stepper"
+          disabled={!!mural.artistId}
         />
+        {mural.artistId && (
+          <p className="text-sm text-orange-600 mt-1">
+            ⚠️ Desactiva el artista para poder escribir el autor
+          </p>
+        )}
       </div>
+
       <div>
-        <label
-          htmlFor="artistId"
-          className="block mb-2 text-base font-semibold text-gray-700 dark:text-gray-200"
-        >
-          Artista
+        <label className="block mb-2 text-base font-semibold text-gray-700 dark:text-gray-200">
+          Artista (opcional - excluye autor)
         </label>
         <ReactSelect
           inputId="artistId"
           classNamePrefix="react-select"
           options={artistOptions}
           value={artistaOption}
-          onChange={(opt) =>
-            setMural((m) => ({ ...m, artistId: opt ? opt.value : "" }))
-          }
-          placeholder="Selecciona un artista"
+          onChange={handleArtistChange}
+          placeholder="Selecciona un artista (excluye autor)"
           isClearable
+          isDisabled={!!mural.autor}
           menuPortalTarget={
             typeof window !== "undefined" ? document.body : null
           }
@@ -1623,7 +1650,13 @@ function AutoresColaboradoresStep({ mural, setMural, artistList }) {
               : { menuPortal: (base) => ({ ...base, zIndex: 9999 }) }
           }
         />
+        {mural.autor && (
+          <p className="text-sm text-orange-600 mt-1">
+            ⚠️ Desactiva el autor para poder seleccionar un artista
+          </p>
+        )}
       </div>
+
       <div>
         <label
           htmlFor="colaboradores"

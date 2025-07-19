@@ -39,7 +39,7 @@ export default function MuseoPage() {
             "/assets/artworks/cuadro1.webp",
           color: getColorBySalaId(sala.id),
           cantidadMurales: sala._count.murales,
-          propietario: sala.creador?.name || "Museo",
+          propietario: sala.creador?.name || sala.creador?.id || "Museo",
           murales:
             sala.murales.map((salaMural) => salaMural.mural).filter(Boolean) ||
             [],
