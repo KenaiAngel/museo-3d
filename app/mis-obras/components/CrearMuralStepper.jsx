@@ -177,16 +177,47 @@ export default function CrearMuralStepper() {
         console.log("📋 Datos parseados:", parsed);
 
         setMural((prev) => {
-          const newMural = {
-            ...prev,
-            ...parsed,
-            // Mantener la imagen actual si existe (no sobrescribir con null)
-            url_imagen: prev.url_imagen || parsed.url_imagen,
-            // Asegurar que userId se mantenga si ya está establecido
-            userId: session?.user?.id || prev.userId || parsed.userId,
-          };
-          console.log("🔄 Estado del mural actualizado:", newMural);
-          return newMural;
+          // Solo cargar datos si no tenemos datos ya cargados o si el userId coincide
+          const shouldLoadData =
+            !prev.titulo ||
+            !prev.descripcion ||
+            !prev.tecnica ||
+            parsed.userId === session?.user?.id;
+
+          // Verificar si los datos parseados tienen contenido significativo
+          const hasParsedData =
+            parsed.titulo ||
+            parsed.descripcion ||
+            parsed.tecnica ||
+            parsed.anio !== 2025 ||
+            parsed.dimensiones ||
+            parsed.latitud ||
+            parsed.longitud ||
+            parsed.ubicacion ||
+            parsed.salaId ||
+            parsed.estado ||
+            parsed.autor ||
+            parsed.artistId ||
+            (parsed.colaboradores && parsed.colaboradores.length > 0);
+
+          if (shouldLoadData && hasParsedData) {
+            const newMural = {
+              ...prev,
+              ...parsed,
+              // Mantener la imagen actual si existe (no sobrescribir con null)
+              url_imagen: prev.url_imagen || parsed.url_imagen,
+              // Asegurar que userId se mantenga si ya está establecido
+              userId: session?.user?.id || prev.userId || parsed.userId,
+            };
+            console.log("🔄 Estado del mural actualizado:", newMural);
+            return newMural;
+          } else {
+            console.log(
+              "⏭️ Saltando carga de datos - datos insuficientes o ya tenemos datos válidos",
+              { shouldLoadData, hasParsedData }
+            );
+            return prev;
+          }
         });
       } catch (error) {
         console.error("❌ Error parsing saved mural data:", error);
@@ -232,18 +263,57 @@ export default function CrearMuralStepper() {
 
     if (savedCanvasImage && !canvasImageLoaded.current) {
       console.log("📸 Cargando imagen del canvas...");
+
+      // Verificar si ya tenemos datos del mural antes de cargar la imagen
+      const currentMuralData = localStorage.getItem("muralDraftData");
+      let existingData = {};
+      if (currentMuralData) {
+        try {
+          existingData = JSON.parse(currentMuralData);
+          console.log("📋 Datos existentes antes de cargar imagen:", {
+            titulo: existingData.titulo,
+            tecnica: existingData.tecnica,
+          });
+        } catch (error) {
+          console.error("❌ Error parsing existing data:", error);
+        }
+      }
+
       // Comprimir la imagen si es muy grande
       compressImage(savedCanvasImage)
         .then((compressedImage) => {
           console.log("✅ Imagen comprimida, actualizando estado");
           setMural((m) => {
-            const updatedMural = { ...m, url_imagen: compressedImage };
+            // Preservar todos los datos existentes del mural, incluyendo los del localStorage
+            const updatedMural = {
+              ...m,
+              ...existingData, // Restaurar datos del localStorage
+              url_imagen: compressedImage,
+            };
             console.log("🎨 Mural actualizado con imagen:", {
               titulo: updatedMural.titulo,
               tecnica: updatedMural.tecnica,
               anio: updatedMural.anio,
               hasImage: !!updatedMural.url_imagen,
+              userId: updatedMural.userId,
             });
+
+            // Forzar un guardado inmediato para preservar los datos
+            setTimeout(() => {
+              const muralWithoutImage = {
+                ...updatedMural,
+                url_imagen: null, // No guardar la imagen en localStorage
+              };
+              localStorage.setItem(
+                "muralDraftData",
+                JSON.stringify(muralWithoutImage)
+              );
+              console.log("💾 Guardado inmediato después de cargar imagen:", {
+                titulo: muralWithoutImage.titulo,
+                tecnica: muralWithoutImage.tecnica,
+              });
+            }, 100);
+
             return updatedMural;
           });
           // Solo cambiar al paso 1 si no estamos ya en un paso más avanzado
@@ -260,18 +330,47 @@ export default function CrearMuralStepper() {
       localStorage.removeItem("canvasImage");
       canvasImageLoaded.current = true;
     }
-  }, [step, mural.titulo]); // Depender del step y titulo para verificar estado
+  }, [step]); // Solo depender del step, no del titulo para evitar loops
 
   // Guardar estado del mural (sin imagen) y paso actual en localStorage
   useEffect(() => {
     if (!isCreating) {
+      // Solo guardar si hay datos significativos o si es un cambio real
+      const hasSignificantData =
+        mural.titulo ||
+        mural.descripcion ||
+        mural.tecnica ||
+        mural.anio !== 2025 || // Si no es el año por defecto
+        mural.dimensiones ||
+        mural.latitud ||
+        mural.longitud ||
+        mural.ubicacion ||
+        mural.salaId ||
+        mural.estado ||
+        mural.autor ||
+        mural.artistId ||
+        (mural.colaboradores && mural.colaboradores.length > 0);
+
       // Crear una copia del mural sin la imagen para no exceder el límite de localStorage
       const muralWithoutImage = {
         ...mural,
         url_imagen: null, // No guardar la imagen en localStorage
       };
-      localStorage.setItem("muralDraftData", JSON.stringify(muralWithoutImage));
-      localStorage.setItem("muralStep", step.toString());
+
+      // Solo guardar si hay datos significativos o si es un paso avanzado
+      if (hasSignificantData || step > 0) {
+        console.log("💾 Guardando estado en localStorage:", {
+          hasSignificantData,
+          step,
+          titulo: mural.titulo,
+          tecnica: mural.tecnica,
+        });
+        localStorage.setItem(
+          "muralDraftData",
+          JSON.stringify(muralWithoutImage)
+        );
+        localStorage.setItem("muralStep", step.toString());
+      }
     }
   }, [
     mural.titulo,
@@ -717,6 +816,38 @@ export default function CrearMuralStepper() {
           if (i < step) setStep(i);
         }}
       />
+
+      {/* Botón de debug temporal */}
+      <div className="flex justify-center mb-4 gap-2">
+        <button
+          onClick={() => {
+            console.log("🔍 Estado actual del mural:", mural);
+            console.log("📂 localStorage:", {
+              muralDraftData: localStorage.getItem("muralDraftData"),
+              muralStep: localStorage.getItem("muralStep"),
+              canvasImage: localStorage.getItem("canvasImage"),
+            });
+            console.log("👤 Session:", session);
+            console.log("🎯 Step actual:", step);
+          }}
+          className="px-4 py-2 bg-gray-500 text-white rounded-lg text-sm hover:bg-gray-600 transition-colors"
+        >
+          🔍 Debug Estado
+        </button>
+        <button
+          onClick={() => {
+            localStorage.removeItem("muralDraftData");
+            localStorage.removeItem("muralStep");
+            localStorage.removeItem("canvasImage");
+            console.log("🧹 localStorage limpiado");
+            window.location.reload();
+          }}
+          className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600 transition-colors"
+        >
+          🧹 Limpiar localStorage
+        </button>
+      </div>
+
       {/* Separador visual */}
       <div className="w-full flex items-center justify-center mb-10">
         <div className="w-full h-[2px] bg-gradient-to-r from-indigo-200 via-indigo-400 to-indigo-200 dark:from-indigo-900 dark:via-indigo-700 dark:to-indigo-900 rounded-full shadow-md" />

@@ -4,6 +4,7 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { ARButton } from "three/examples/jsm/webxr/ARButton.js";
+import * as Sentry from "@sentry/nextjs";
 
 export default function ARExperience({
   modelUrl,
@@ -11,6 +12,18 @@ export default function ARExperience({
   showCloseButton,
   restoreMaterials,
 }) {
+  // Log inicial del componente
+  Sentry.addBreadcrumb({
+    message: "ARExperience montado",
+    category: "ar",
+    level: "info",
+    data: {
+      modelUrl,
+      restoreMaterials,
+      showCloseButton: !!showCloseButton,
+      timestamp: new Date().toISOString(),
+    },
+  });
   const mountRef = useRef();
   const sceneRef = useRef();
   const rendererRef = useRef();
@@ -35,10 +48,25 @@ export default function ARExperience({
   // Verificar soporte WebXR al inicio
   useEffect(() => {
     console.log("🔍 Verificando soporte WebXR...");
-    console.log("navigator.xr:", !!navigator.xr);
-    console.log("WebGL disponible:", !!window.WebGLRenderingContext);
-    console.log("Es móvil:", window.innerWidth <= 768);
-    console.log("User agent:", navigator.userAgent);
+
+    const webXRData = {
+      navigatorXR: !!navigator.xr,
+      webGL: !!window.WebGLRenderingContext,
+      isMobile: window.innerWidth <= 768,
+      userAgent: navigator.userAgent,
+      screenSize: `${window.innerWidth}x${window.innerHeight}`,
+      devicePixelRatio: window.devicePixelRatio,
+    };
+
+    console.log("WebXR data:", webXRData);
+
+    // Log a Sentry
+    Sentry.addBreadcrumb({
+      message: "Verificando soporte WebXR",
+      category: "ar",
+      level: "info",
+      data: webXRData,
+    });
 
     if (navigator.xr) {
       console.log(
@@ -49,12 +77,28 @@ export default function ARExperience({
         .isSessionSupported("immersive-ar")
         .then((supported) => {
           console.log("✅ AR soportado:", supported);
+          Sentry.addBreadcrumb({
+            message: "AR soportado",
+            category: "ar",
+            level: "info",
+            data: { supported },
+          });
         })
         .catch((error) => {
           console.error("❌ Error verificando AR:", error);
+          Sentry.captureException(error, {
+            tags: { component: "ARExperience", action: "check_webxr_support" },
+            extra: { webXRData },
+          });
         });
     } else {
       console.error("❌ WebXR no disponible en este navegador");
+      Sentry.addBreadcrumb({
+        message: "WebXR no disponible",
+        category: "ar",
+        level: "warning",
+        data: webXRData,
+      });
     }
   }, []);
 
@@ -62,6 +106,17 @@ export default function ARExperience({
   useEffect(() => {
     if (!mountRef.current) return;
     console.log("🚀 Iniciando ARExperience...");
+
+    Sentry.addBreadcrumb({
+      message: "Iniciando ARExperience",
+      category: "ar",
+      level: "info",
+      data: {
+        modelUrl,
+        restoreMaterials,
+        showCloseButton: !!showCloseButton,
+      },
+    });
 
     // Elimina cualquier canvas previo
     while (mountRef.current.firstChild) {
@@ -82,11 +137,20 @@ export default function ARExperience({
     mountRef.current.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
-    console.log("✅ Renderer configurado:", {
+    const rendererConfig = {
       width: window.innerWidth,
       height: window.innerHeight,
       pixelRatio: window.devicePixelRatio,
       xrEnabled: renderer.xr.enabled,
+    };
+
+    console.log("✅ Renderer configurado:", rendererConfig);
+
+    Sentry.addBreadcrumb({
+      message: "Renderer configurado",
+      category: "ar",
+      level: "info",
+      data: rendererConfig,
     });
 
     // Scene
@@ -137,16 +201,27 @@ export default function ARExperience({
       if (controls && !renderer.xr.isPresenting) {
         controls.update();
       }
-      renderer.render(scene, camera);
-      frameCount++;
-      if (frameCount % 60 === 0) {
-        // Log cada 60 frames (1 segundo a 60fps)
-        console.log(
-          "🔄 Render frame:",
-          frameCount,
-          "AR presenting:",
-          renderer.xr.isPresenting
-        );
+      // Verificar que scene y camera existen antes de renderizar
+      if (sceneRef.current && cameraRef.current && rendererRef.current) {
+        try {
+          renderer.render(sceneRef.current, cameraRef.current);
+          frameCount++;
+          if (frameCount % 60 === 0) {
+            // Log cada 60 frames (1 segundo a 60fps)
+            console.log(
+              "🔄 Render frame:",
+              frameCount,
+              "AR presenting:",
+              renderer.xr.isPresenting
+            );
+          }
+        } catch (error) {
+          console.error("Error en render loop principal:", error);
+          Sentry.captureException(error, {
+            tags: { component: "ARExperience", action: "main_render_loop" },
+            extra: { frameCount, isAR: renderer.xr.isPresenting },
+          });
+        }
       }
     }
     animate();
@@ -209,7 +284,23 @@ export default function ARExperience({
       modelRef.current = null;
     }
     setModelLoaded(false);
-    if (!modelUrl) return;
+    if (!modelUrl) {
+      Sentry.addBreadcrumb({
+        message: "No hay URL de modelo",
+        category: "ar",
+        level: "warning",
+        data: { modelUrl },
+      });
+      return;
+    }
+
+    Sentry.addBreadcrumb({
+      message: "Cargando modelo 3D",
+      category: "ar",
+      level: "info",
+      data: { modelUrl },
+    });
+
     const loader = new GLTFLoader();
     loader.load(
       modelUrl,
@@ -252,11 +343,30 @@ export default function ARExperience({
           sceneRef.current.children
         );
         console.log("Cámara:", camera.position, "Centro modelo:", center);
+
+        Sentry.addBreadcrumb({
+          message: "Modelo 3D cargado exitosamente",
+          category: "ar",
+          level: "info",
+          data: {
+            modelUrl,
+            modelScale: scale,
+            modelPosition: model.position,
+            cameraPosition: camera.position,
+            sceneChildrenCount: sceneRef.current.children.length,
+          },
+        });
       },
       undefined,
       (error) => {
         setModelLoaded(false);
         console.error("❌ Error cargando modelo 3D:", modelUrl, error);
+
+        Sentry.captureException(error, {
+          tags: { component: "ARExperience", action: "load_model" },
+          extra: { modelUrl },
+          level: "error",
+        });
       }
     );
   }, [modelUrl, sceneReady, restoreMaterials]);
@@ -365,11 +475,19 @@ export default function ARExperience({
 
   // Efecto para detectar entrada/salida de AR y ajustar modelo y controles
   useEffect(() => {
-    if (!rendererRef.current || !modelRef.current || !controlsRef.current)
+    if (
+      !rendererRef.current ||
+      !modelRef.current ||
+      !controlsRef.current ||
+      !sceneRef.current ||
+      !cameraRef.current
+    )
       return;
     const renderer = rendererRef.current;
     const model = modelRef.current;
     const controls = controlsRef.current;
+    const scene = sceneRef.current;
+    const camera = cameraRef.current;
 
     function handleSessionStart() {
       setIsAR(true);
@@ -385,6 +503,15 @@ export default function ARExperience({
       const arScale = 0.3 / maxDim; // tamaño de 0.3 metros máximo (más pequeño)
       model.scale.setScalar(arScale);
       controls.enabled = false;
+
+      const arData = {
+        arScale,
+        modelPosition: model.position,
+        maxDim,
+        isMobile: window.innerWidth <= 768,
+        originalScale: originalScale.current,
+      };
+
       console.log(
         "AR iniciado - Modelo escalado a:",
         arScale,
@@ -395,6 +522,13 @@ export default function ARExperience({
         "es móvil:",
         window.innerWidth <= 768
       );
+
+      Sentry.addBreadcrumb({
+        message: "Sesión AR iniciada",
+        category: "ar",
+        level: "info",
+        data: arData,
+      });
     }
     function handleSessionEnd() {
       setIsAR(false);
@@ -404,6 +538,16 @@ export default function ARExperience({
       }
       controls.enabled = true;
       console.log("AR finalizado - Escala restaurada");
+
+      Sentry.addBreadcrumb({
+        message: "Sesión AR finalizada",
+        category: "ar",
+        level: "info",
+        data: {
+          restoredScale: originalScale.current,
+          isMobile: window.innerWidth <= 768,
+        },
+      });
     }
     renderer.xr.addEventListener("sessionstart", handleSessionStart);
     renderer.xr.addEventListener("sessionend", handleSessionEnd);
@@ -412,19 +556,27 @@ export default function ARExperience({
     let arFrameCount = 0;
     renderer.setAnimationLoop((time, frame) => {
       if (renderer.xr.isPresenting) {
-        // Asegurar que la escena y cámara existen
-        if (scene && camera) {
-          renderer.render(scene, camera);
-          arFrameCount++;
-          if (arFrameCount % 30 === 0) {
-            console.log(
-              "🎯 AR frame:",
-              arFrameCount,
-              "time:",
-              time,
-              "model visible:",
-              !!modelRef.current
-            );
+        // Asegurar que todos los componentes existen
+        if (sceneRef.current && cameraRef.current && rendererRef.current) {
+          try {
+            renderer.render(sceneRef.current, cameraRef.current);
+            arFrameCount++;
+            if (arFrameCount % 30 === 0) {
+              console.log(
+                "🎯 AR frame:",
+                arFrameCount,
+                "time:",
+                time,
+                "model visible:",
+                !!modelRef.current
+              );
+            }
+          } catch (error) {
+            console.error("Error en AR render loop:", error);
+            Sentry.captureException(error, {
+              tags: { component: "ARExperience", action: "ar_render_loop" },
+              extra: { arFrameCount, time },
+            });
           }
         }
       }
