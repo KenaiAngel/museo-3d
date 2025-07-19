@@ -1,9 +1,7 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../../../lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../../lib/auth.js";
 import { verifyAuth } from "../../../lib/verifyToken.js";
-
-const prisma = new PrismaClient();
 
 // Función helper para obtener usuario autenticado
 async function getAuthenticatedUser(req) {

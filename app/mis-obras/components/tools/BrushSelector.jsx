@@ -20,6 +20,7 @@ export default function BrushSelector({
           background: "#222",
           color: "#fff",
           boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
+          cursor: "pointer",
         }}
         onClick={onOpenModal}
         aria-label="Seleccionar pincel"

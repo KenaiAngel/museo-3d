@@ -32,26 +32,59 @@ export default function ARExperience({
 
   const environments = ["/images/image360.jpg", "/images/image3602.jpg"];
 
+  // Verificar soporte WebXR al inicio
+  useEffect(() => {
+    console.log("🔍 Verificando soporte WebXR...");
+    console.log("navigator.xr:", !!navigator.xr);
+    if (navigator.xr) {
+      console.log(
+        "navigator.xr.isSessionSupported('immersive-ar'):",
+        navigator.xr.isSessionSupported
+      );
+      navigator.xr
+        .isSessionSupported("immersive-ar")
+        .then((supported) => {
+          console.log("✅ AR soportado:", supported);
+        })
+        .catch((error) => {
+          console.error("❌ Error verificando AR:", error);
+        });
+    } else {
+      console.error("❌ WebXR no disponible en este navegador");
+    }
+  }, []);
+
   // Inicializa Three.js solo una vez
   useEffect(() => {
     if (!mountRef.current) return;
+    console.log("🚀 Iniciando ARExperience...");
+
     // Elimina cualquier canvas previo
     while (mountRef.current.firstChild) {
       mountRef.current.removeChild(mountRef.current.firstChild);
     }
+
     // Renderer
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
-    renderer.xr.enabled = false;
-    renderer.setClearColor(0x00ff00); // fondo verde para depuración
+    renderer.xr.enabled = true;
+    renderer.setClearColor(0x000000); // fondo negro para AR
     mountRef.current.appendChild(renderer.domElement);
     rendererRef.current = renderer;
+
+    console.log("✅ Renderer configurado:", {
+      width: window.innerWidth,
+      height: window.innerHeight,
+      pixelRatio: window.devicePixelRatio,
+      xrEnabled: renderer.xr.enabled,
+    });
 
     // Scene
     const scene = new THREE.Scene();
     sceneRef.current = scene;
+    console.log("✅ Escena creada");
 
     // Camera
     const camera = new THREE.PerspectiveCamera(
@@ -62,6 +95,11 @@ export default function ARExperience({
     );
     camera.position.set(0, 1.6, 3);
     cameraRef.current = camera;
+    console.log("✅ Cámara configurada:", {
+      position: camera.position,
+      fov: camera.fov,
+      aspect: camera.aspect,
+    });
 
     // Controls
     const controls = new OrbitControls(camera, renderer.domElement);
@@ -82,21 +120,41 @@ export default function ARExperience({
 
     // Render loop
     let stop = false;
+    let frameCount = 0;
     function animate() {
       if (stop) return;
       // Solo renderiza si el canvas sigue en el DOM
       if (!mountRef.current || !renderer.domElement.parentNode) return;
       requestAnimationFrame(animate);
-      controls.update();
+      if (controls && !renderer.xr.isPresenting) {
+        controls.update();
+      }
       renderer.render(scene, camera);
+      frameCount++;
+      if (frameCount % 60 === 0) {
+        // Log cada 60 frames (1 segundo a 60fps)
+        console.log(
+          "🔄 Render frame:",
+          frameCount,
+          "AR presenting:",
+          renderer.xr.isPresenting
+        );
+      }
     }
     animate();
+    console.log("✅ Render loop iniciado");
 
     // Resize
     const handleResize = () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
+
+      // Forzar re-render del componente para ajustar UI móvil
+      if (mountRef.current) {
+        const event = new Event("resize");
+        window.dispatchEvent(event);
+      }
     };
     window.addEventListener("resize", handleResize);
 
@@ -202,15 +260,16 @@ export default function ARExperience({
       arButton = ARButton.createButton(rendererRef.current);
       // Personaliza el botón
       arButton.style.position = "fixed";
-      arButton.style.bottom = "32px";
-      arButton.style.right = "32px";
-      arButton.style.padding = "14px 28px";
+      arButton.style.bottom = window.innerWidth <= 768 ? "20px" : "32px";
+      arButton.style.right = window.innerWidth <= 768 ? "20px" : "32px";
+      arButton.style.padding =
+        window.innerWidth <= 768 ? "12px 20px" : "14px 28px";
       arButton.style.background =
         "linear-gradient(135deg, #667eea 0%, #764ba2 100%)";
       arButton.style.color = "#fff";
       arButton.style.border = "none";
       arButton.style.borderRadius = "12px";
-      arButton.style.fontSize = "18px";
+      arButton.style.fontSize = window.innerWidth <= 768 ? "16px" : "18px";
       arButton.style.fontWeight = "bold";
       arButton.style.boxShadow = "0 4px 24px rgba(0,0,0,0.18)";
       arButton.style.zIndex = "3200";
@@ -310,14 +369,22 @@ export default function ARExperience({
       if (!originalScale.current) {
         originalScale.current = model.scale.clone();
       }
-      // Centrar modelo en el origen y escalar pequeño
-      model.position.set(0, 0, 0);
+      // Centrar modelo en el origen y escalar apropiadamente para AR
+      model.position.set(0, 0, -0.5); // 0.5 metros frente a la cámara (más cerca)
       const box = new THREE.Box3().setFromObject(model);
       const size = box.getSize(new THREE.Vector3());
       const maxDim = Math.max(size.x, size.y, size.z);
-      const arScale = 0.5 / maxDim; // tamaño máximo 0.5 unidades
+      const arScale = 0.5 / maxDim; // tamaño de 0.5 metros máximo (más pequeño)
       model.scale.setScalar(arScale);
       controls.enabled = false;
+      console.log(
+        "AR iniciado - Modelo escalado a:",
+        arScale,
+        "posición:",
+        model.position,
+        "tamaño máximo:",
+        maxDim
+      );
     }
     function handleSessionEnd() {
       setIsAR(false);
@@ -326,13 +393,28 @@ export default function ARExperience({
         model.scale.copy(originalScale.current);
       }
       controls.enabled = true;
+      console.log("AR finalizado - Escala restaurada");
     }
     renderer.xr.addEventListener("sessionstart", handleSessionStart);
     renderer.xr.addEventListener("sessionend", handleSessionEnd);
+
+    // Render loop específico para AR
+    let arFrameCount = 0;
+    renderer.setAnimationLoop((time, frame) => {
+      if (renderer.xr.isPresenting) {
+        renderer.render(scene, camera);
+        arFrameCount++;
+        if (arFrameCount % 30 === 0) {
+          console.log("🎯 AR frame:", arFrameCount, "time:", time);
+        }
+      }
+    });
+
     // Limpieza
     return () => {
       renderer.xr.removeEventListener("sessionstart", handleSessionStart);
       renderer.xr.removeEventListener("sessionend", handleSessionEnd);
+      renderer.setAnimationLoop(null);
     };
   }, [modelLoaded, sceneReady]);
 
@@ -384,29 +466,71 @@ export default function ARExperience({
         zIndex: 3000,
       }}
     >
-      {/* Instrucciones flotantes arriba */}
-      <div
+      {/* Instrucciones solo en desktop */}
+      {window.innerWidth > 768 && (
+        <div
+          style={{
+            position: "absolute",
+            top: 20,
+            left: "50%",
+            transform: "translateX(-50%)",
+            background: "rgba(0,0,0,0.7)",
+            color: "#fff",
+            padding: "12px 24px",
+            borderRadius: "10px",
+            fontSize: "15px",
+            zIndex: 9999,
+            maxWidth: "90vw",
+            textAlign: "center",
+            pointerEvents: "none",
+          }}
+        >
+          <strong>Controles:</strong> Arrastra para rotar, rueda para zoom, clic
+          derecho para mover. <br />
+          Usa los botones para cambiar ambiente. <br />
+          {onClose && "Pulsa ← Volver para salir."}
+        </div>
+      )}
+
+      {/* Botón de Debug */}
+      <button
+        onClick={() => {
+          console.log("🔍 Estado actual:", {
+            sceneReady,
+            modelLoaded,
+            isAR,
+            modelUrl,
+            renderer: !!rendererRef.current,
+            scene: !!sceneRef.current,
+            camera: !!cameraRef.current,
+            model: !!modelRef.current,
+            webXR: !!navigator.xr,
+          });
+          if (modelRef.current) {
+            console.log("📦 Modelo actual:", {
+              position: modelRef.current.position,
+              scale: modelRef.current.scale,
+              visible: modelRef.current.visible,
+              children: modelRef.current.children.length,
+            });
+          }
+        }}
         style={{
           position: "absolute",
-          top: 20,
-          left: "50%",
-          transform: "translateX(-50%)",
-          background: "rgba(0,0,0,0.7)",
+          top: window.innerWidth <= 768 ? 20 : 20,
+          left: window.innerWidth <= 768 ? 20 : 20,
+          background: "rgba(255,0,0,0.8)",
           color: "#fff",
-          padding: "12px 24px",
-          borderRadius: "10px",
-          fontSize: "15px",
+          border: "none",
+          padding: window.innerWidth <= 768 ? "6px 8px" : "8px 12px",
+          borderRadius: "6px",
+          fontSize: window.innerWidth <= 768 ? "10px" : "12px",
           zIndex: 9999,
-          maxWidth: "90vw",
-          textAlign: "center",
-          pointerEvents: "none",
+          cursor: "pointer",
         }}
       >
-        <strong>Controles:</strong> Arrastra para rotar, rueda para zoom, clic
-        derecho para mover. <br />
-        Usa los botones para cambiar ambiente. <br />
-        {onClose && "Pulsa ← Volver para salir."}
-      </div>
+        🔍 Debug
+      </button>
       <div
         ref={mountRef}
         style={{
@@ -422,24 +546,32 @@ export default function ARExperience({
       <section
         style={{
           position: "absolute",
-          top: 140,
+          top: window.innerWidth <= 768 ? 20 : 140,
           right: 20,
           zIndex: 9999,
           background: "rgba(0,0,0,0.7)",
           border: "2px solid #fff",
           borderRadius: 16,
-          padding: "14px 24px",
+          padding: window.innerWidth <= 768 ? "8px 16px" : "14px 24px",
           display: "flex",
           alignItems: "center",
-          gap: 18,
+          gap: window.innerWidth <= 768 ? 12 : 18,
           boxShadow: "0 4px 24px rgba(0,0,0,0.18)",
-          minWidth: 180,
+          minWidth: window.innerWidth <= 768 ? 140 : 180,
         }}
         aria-label="Selector de ambiente"
       >
         {environments.length < 2 ? (
-          <span style={{ color: "#fff", fontWeight: 600 }}>
-            Solo hay un ambiente disponible
+          <span
+            style={{
+              color: "#fff",
+              fontWeight: 600,
+              fontSize: window.innerWidth <= 768 ? "11px" : "14px",
+            }}
+          >
+            {window.innerWidth <= 768
+              ? "1 ambiente"
+              : "Solo hay un ambiente disponible"}
           </span>
         ) : (
           environments.map((env, idx) => (
@@ -453,13 +585,13 @@ export default function ARExperience({
                 fontWeight: 600,
                 color: "#fff",
                 userSelect: "none",
-                fontSize: 15,
+                fontSize: window.innerWidth <= 768 ? 12 : 15,
                 background:
                   currentEnvironment === idx
                     ? "rgba(255,255,255,0.12)"
                     : "transparent",
                 borderRadius: 8,
-                padding: "2px 6px",
+                padding: window.innerWidth <= 768 ? "1px 4px" : "2px 6px",
                 transition: "background 0.2s",
               }}
             >
@@ -470,9 +602,9 @@ export default function ARExperience({
                 onChange={() => changeEnvironment(idx)}
                 style={{
                   accentColor: currentEnvironment === idx ? "#667eea" : "#fff",
-                  width: 16,
-                  height: 16,
-                  marginRight: 4,
+                  width: window.innerWidth <= 768 ? 12 : 16,
+                  height: window.innerWidth <= 768 ? 12 : 16,
+                  marginRight: window.innerWidth <= 768 ? 2 : 4,
                   borderRadius: "50%",
                   border: "2px solid #fff",
                   background:

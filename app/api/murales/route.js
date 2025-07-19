@@ -1,9 +1,7 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../../../lib/prisma";
 import cloudinary from "../../../utils/cloudinary";
 import { sendEmail } from "@/lib/sendEmail";
 import { sendPushNotification } from "@/utils/sendPushNotification";
-
-const prisma = new PrismaClient();
 
 // GET - Obtener todos los murales
 export async function GET(req) {
@@ -201,9 +199,14 @@ export async function POST(req) {
       );
     }
     // Validar que no exista un mural con el mismo título
-    const existing = await prisma.mural.findFirst({
-      where: { titulo: data.titulo },
-    });
+    const existing = await prisma.mural
+      .findFirst({
+        where: { titulo: data.titulo },
+      })
+      .catch((error) => {
+        console.error("Error verificando mural existente:", error);
+        return null;
+      });
     if (existing) {
       return new Response(
         JSON.stringify({
@@ -212,6 +215,26 @@ export async function POST(req) {
         }),
         { status: 409, headers: { "Content-Type": "application/json" } }
       );
+    }
+
+    // Validar que el artistId existe si se proporciona
+    if (data.artistId && data.artistId.trim() !== "") {
+      const artistExists = await prisma.artist
+        .findUnique({
+          where: { id: data.artistId },
+        })
+        .catch((error) => {
+          console.error("Error verificando artista:", error);
+          return null;
+        });
+      if (!artistExists) {
+        return new Response(
+          JSON.stringify({
+            error: "El artista seleccionado no existe en la base de datos.",
+          }),
+          { status: 400, headers: { "Content-Type": "application/json" } }
+        );
+      }
     }
 
     const mural = await prisma.mural.create({
@@ -226,7 +249,8 @@ export async function POST(req) {
         latitud: data.latitud ? parseFloat(data.latitud) : null,
         longitud: data.longitud ? parseFloat(data.longitud) : null,
         anio: data.anio ? Number(data.anio) : null,
-        artistId: data.artistId || null,
+        artistId:
+          data.artistId && data.artistId.trim() !== "" ? data.artistId : null,
         userId: data.userId || null,
       },
     });
@@ -278,9 +302,45 @@ export async function POST(req) {
     });
   } catch (error) {
     console.error("Error al crear mural:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+
+    // Manejar errores específicos de base de datos
+    if (error.message.includes("connection pool timeout")) {
+      return new Response(
+        JSON.stringify({
+          error:
+            "Error de conexión con la base de datos. Intenta de nuevo en unos momentos.",
+          details: "Connection pool timeout",
+        }),
+        {
+          status: 503,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    if (error.message.includes("Invalid `prisma.mural.findFirst()`")) {
+      return new Response(
+        JSON.stringify({
+          error:
+            "Error de validación en la base de datos. Verifica los datos enviados.",
+          details: error.message,
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    return new Response(
+      JSON.stringify({
+        error: "Error interno del servidor al crear mural",
+        details: error.message,
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
   }
 }

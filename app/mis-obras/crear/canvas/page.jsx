@@ -3,7 +3,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, Save, Download } from "lucide-react";
-import CanvasEditor from "../../components/CanvasEditor";
+import CanvasEditorPage from "../../components/CanvasEditorPage";
 import { AnimatedBackground } from "../../../../components/shared";
 import ProtectedRoute from "../../../../components/ProtectedRoute";
 import { Button } from "@/components/ui/button";
@@ -24,7 +24,6 @@ export default function CanvasPage() {
   });
 
   const [canvasImage, setCanvasImage] = useState(null);
-  const [isEditorOpen, setIsEditorOpen] = useState(true);
 
   // Cargar datos desde localStorage si no están en URL
   useEffect(() => {
@@ -58,16 +57,8 @@ export default function CanvasPage() {
     // Guardar la imagen del canvas en localStorage
     localStorage.setItem("canvasImage", canvasImage);
 
-    // Navegar a la página de confirmación con todos los datos
-    const params = new URLSearchParams({
-      titulo: muralData.titulo,
-      tecnica: muralData.tecnica,
-      year: muralData.year?.toString() || "",
-      descripcion: muralData.descripcion || "",
-      canvasImage: "true", // Indicar que viene del canvas
-    });
-
-    router.push(`/mis-obras/crear/confirmar?${params.toString()}`);
+    // Regresar al stepper en el paso 1 (imágenes)
+    router.push("/mis-obras/crear");
   };
 
   const handleBack = () => {
@@ -112,6 +103,8 @@ export default function CanvasPage() {
                 </h1>
                 <p className="text-sm text-muted-foreground">
                   {muralData.titulo ? `"${muralData.titulo}"` : "Sin título"}
+                  {muralData.tecnica && ` • ${muralData.tecnica}`}
+                  {muralData.year && ` • ${muralData.year}`}
                 </p>
               </div>
             </div>
@@ -151,10 +144,8 @@ export default function CanvasPage() {
             transition={{ duration: 0.5 }}
             className="max-w-7xl mx-auto"
           >
-            <div className="bg-white/90 dark:bg-neutral-900/90 rounded-2xl shadow-xl border border-border overflow-hidden">
-              <CanvasEditor
-                isOpen={isEditorOpen}
-                onClose={() => setIsEditorOpen(false)}
+            <div className="bg-white/90 dark:bg-neutral-900/90 rounded-2xl shadow-xl border border-border overflow-hidden p-6">
+              <CanvasEditorPage
                 onSave={handleCanvasSave}
                 editingMural={muralData}
               />

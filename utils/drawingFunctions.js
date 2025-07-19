@@ -625,27 +625,66 @@ export class BrushEngine {
       brush: this.#drawBasicBrush,
       eraser: this.#drawEraser,
       pencil: this.#drawPencil,
+      shadow: this.#drawShadow,
 
       // Artistic brushes
+      pen: this.#drawPen,
+      pen2: this.#drawPen2,
+      thick: this.#drawThick,
+      sliced: this.#drawSliced,
+      multi: this.#drawMulti,
+      multi_opacity: this.#drawMultiOpacity,
       carboncillo: this.#drawCharcoal,
       acuarela: this.#drawWatercolor,
       tiza: this.#drawChalk,
       marcador: this.#drawMarker,
       oleo: this.#drawOil,
+      pixel: this.#drawPixel,
+      neon: this.#drawNeon,
+      puntos: this.#drawDots,
+      lineas: this.#drawLines,
+      fuego: this.#drawFire,
+      beads: this.#drawBeads,
+      wiggle: this.#drawWiggle,
+
+      // Stamp brushes
+      stamp_circle: this.#drawStampCircle,
+      stamp_star: this.#drawStampStar,
+
+      // Pattern brushes
+      pattern_dots: this.#drawPatternDots,
+      pattern_lines: this.#drawPatternLines,
+      pattern_rainbow: this.#drawPatternRainbow,
+      pattern_image: this.#drawPatternImage,
+
+      // Spray brushes
+      aerosol: this.#drawAerosol,
+      spray: this.#drawSpray,
+      spray_time: this.#drawSprayTime,
+      spray_speed: this.#drawSpraySpeed,
+
+      // Sketch/Harmony brushes
+      sketchy: this.#drawSketchy,
+      neighbor: this.#drawNeighbor,
+      fur_neighbor: this.#drawFurNeighbor,
+
+      // Special brushes
+      rainbow_dynamic: this.#drawRainbowDynamic,
+      confetti: this.#drawConfetti,
+      shooting_star: this.#drawShootingStar,
+      glitch: this.#drawGlitch,
+      heart_spray: this.#drawHeartSpray,
+      lightning: this.#drawLightning,
+      bubble: this.#drawBubble,
+      ribbon: this.#drawRibbon,
+      fire_realistic: this.#drawFireRealistic,
+      particles: this.#drawParticles,
 
       // Effect brushes
       glow: this.#drawGlow,
-      neon: this.#drawNeon,
-      fuego: this.#drawFire,
 
-      // Pattern brushes
-      pixel: this.#drawPixel,
-      puntos: this.#drawDots,
-      lineas: this.#drawLines,
-
-      // Extended brushes (46 total)
+      // Extended brushes (compatibilidad)
       splatter: this.#drawSplatter,
-      spray: this.#drawSpray,
       textured: this.#drawTextured,
       sketch: this.#drawSketch,
       fabric: this.#drawFabric,
@@ -657,7 +696,6 @@ export class BrushEngine {
       hearts: this.#drawHearts,
       flowers: this.#drawFlowers,
       bubbles: this.#drawBubbles,
-      lightning: this.#drawLightning,
       smoke: this.#drawSmoke,
       grass: this.#drawGrass,
       wood: this.#drawWood,
@@ -1250,7 +1288,7 @@ export class BrushEngine {
     this.#ctx.fill();
     this.#ctx.shadowBlur = 0;
   }
-  #drawPixel(params) {
+  #drawPixel({ x, y, color, size }) {
     this.#ctx.globalCompositeOperation = "source-over";
     this.#ctx.imageSmoothingEnabled = false; // Desactivar anti-aliasing
 
@@ -1278,7 +1316,7 @@ export class BrushEngine {
 
     this.#ctx.imageSmoothingEnabled = true; // Reactivar anti-aliasing
   }
-  #drawDots(params) {
+  #drawDots({ x, y, color, size }) {
     this.#ctx.globalCompositeOperation = "source-over";
 
     // Puntos principales con variación de tamaño
@@ -1365,143 +1403,749 @@ export class BrushEngine {
   }
 
   // Extended brush placeholders (would implement unique algorithms in production)
-  #drawSplatter(params) {
-    this.#drawDots(params);
+  #drawSplatter({ x, y, color, size }) {
+    this.#drawDots({ x, y, color, size });
   }
-  #drawSpray(params) {
-    this.#drawDots(params);
+  #drawSpray({ x, y, color, size }) {
+    this.#drawDots({ x, y, color, size });
   }
-  #drawTextured(params) {
-    this.#drawCharcoal(params);
+  #drawTextured({ x, y, color, size }) {
+    this.#drawCharcoal({ x, y, color, size });
   }
-  #drawSketch(params) {
-    this.#drawLines(params);
+  #drawSketch({ x, y, color, size }) {
+    this.#drawLines({ x, y, color, size });
   }
-  #drawFabric(params) {
-    this.#drawTextured(params);
+  #drawFabric({ x, y, color, size }) {
+    this.#drawTextured({ x, y, color, size });
   }
-  #drawFur(params) {
-    this.#drawLines(params);
+  #drawFur({ x, y, color, size }) {
+    this.#drawLines({ x, y, color, size });
   }
-  #drawLeaves(params) {
-    this.#drawBasicBrush(params);
+  #drawLeaves({ x, y, color, size }) {
+    this.#drawBasicBrush({ x, y, color, size });
   }
-  #drawRain(params) {
-    this.#drawLines(params);
+  #drawRain({ x, y, color, size }) {
+    this.#drawLines({ x, y, color, size });
   }
-  #drawSnow(params) {
-    this.#drawDots(params);
+  #drawSnow({ x, y, color, size }) {
+    this.#drawDots({ x, y, color, size });
   }
-  #drawStars(params) {
-    this.#drawBasicBrush(params);
+  #drawStars({ x, y, color, size }) {
+    this.#drawBasicBrush({ x, y, color, size });
   }
-  #drawHearts(params) {
-    this.#drawBasicBrush(params);
+  #drawHearts({ x, y, color, size }) {
+    this.#drawBasicBrush({ x, y, color, size });
   }
-  #drawFlowers(params) {
-    this.#drawBasicBrush(params);
+  #drawFlowers({ x, y, color, size }) {
+    this.#drawBasicBrush({ x, y, color, size });
   }
-  #drawBubbles(params) {
-    this.#drawDots(params);
+  #drawBubbles({ x, y, color, size }) {
+    this.#drawDots({ x, y, color, size });
   }
-  #drawLightning(params) {
-    this.#drawGlow(params);
+  #drawLightning({ x, y, lastPoint, color, size }) {
+    // Rayo zig-zag
+    if (lastPoint) {
+      const x1 = lastPoint.x;
+      const y1 = lastPoint.y;
+      const x2 = x;
+      const y2 = y;
+      const steps = 8;
+      this.#ctx.save();
+      this.#ctx.globalCompositeOperation = "lighter";
+      for (let j = 0; j < 2; j++) {
+        this.#ctx.beginPath();
+        this.#ctx.moveTo(x1, y1);
+        for (let i = 1; i < steps; i++) {
+          const t = i / steps;
+          const nx = x1 + (x2 - x1) * t + (Math.random() - 0.5) * 12;
+          const ny = y1 + (y2 - y1) * t + (Math.random() - 0.5) * 12;
+          this.#ctx.lineTo(nx, ny);
+        }
+        this.#ctx.lineTo(x2, y2);
+        this.#ctx.strokeStyle = j === 0 ? "#fff" : "yellow";
+        this.#ctx.lineWidth = j === 0 ? size * 1.2 : size * 0.7;
+        this.#ctx.shadowColor = "yellow";
+        this.#ctx.shadowBlur = 8;
+        this.#ctx.globalAlpha = j === 0 ? 0.7 : 0.5;
+        this.#ctx.stroke();
+      }
+      this.#ctx.restore();
+    }
   }
-  #drawSmoke(params) {
-    this.#drawBasicBrush(params);
+  #drawSmoke({ x, y, color, size }) {
+    this.#drawBasicBrush({ x, y, color, size });
   }
-  #drawGrass(params) {
-    this.#drawLines(params);
+  #drawGrass({ x, y, color, size }) {
+    this.#drawLines({ x, y, color, size });
   }
-  #drawWood(params) {
-    this.#drawLines(params);
+  #drawWood({ x, y, color, size }) {
+    this.#drawLines({ x, y, color, size });
   }
-  #drawMetal(params) {
-    this.#drawBasicBrush(params);
+  #drawMetal({ x, y, color, size }) {
+    this.#drawBasicBrush({ x, y, color, size });
   }
-  #drawGlass(params) {
-    this.#drawBasicBrush(params);
+  #drawGlass({ x, y, color, size }) {
+    this.#drawBasicBrush({ x, y, color, size });
   }
-  #drawWater(params) {
-    this.#drawWatercolor(params);
+  #drawWater({ x, y, color, size }) {
+    this.#drawWatercolor({ x, y, color, size });
   }
-  #drawSand(params) {
-    this.#drawDots(params);
+  #drawSand({ x, y, color, size }) {
+    this.#drawDots({ x, y, color, size });
   }
-  #drawStone(params) {
-    this.#drawCharcoal(params);
+  #drawStone({ x, y, color, size }) {
+    this.#drawCharcoal({ x, y, color, size });
   }
-  #drawCloud(params) {
-    this.#drawBasicBrush(params);
+  #drawCloud({ x, y, color, size }) {
+    this.#drawBasicBrush({ x, y, color, size });
   }
-  #drawGalaxy(params) {
-    this.#drawGlow(params);
+  #drawGalaxy({ x, y, color, size }) {
+    this.#drawGlow({ x, y, color, size });
   }
-  #drawPlasma(params) {
-    this.#drawGlow(params);
+  #drawPlasma({ x, y, color, size }) {
+    this.#drawGlow({ x, y, color, size });
   }
-  #drawElectric(params) {
-    this.#drawNeon(params);
+  #drawElectric({ x, y, color, size }) {
+    this.#drawNeon({ x, y, color, size });
   }
-  #drawCrystal(params) {
-    this.#drawPixel(params);
+  #drawCrystal({ x, y, color, size }) {
+    this.#drawPixel({ x, y, color, size });
   }
-  #drawMagic(params) {
-    this.#drawGlow(params);
+  #drawMagic({ x, y, color, size }) {
+    this.#drawGlow({ x, y, color, size });
   }
-  #drawRainbow(params) {
-    this.#drawBasicBrush(params);
+  #drawRainbow({ x, y, color, size }) {
+    this.#drawBasicBrush({ x, y, color, size });
   }
-  #drawGradient(params) {
-    this.#drawBasicBrush(params);
+  #drawGradient({ x, y, color, size }) {
+    this.#drawBasicBrush({ x, y, color, size });
   }
-  #drawMosaic(params) {
-    this.#drawPixel(params);
+  #drawMosaic({ x, y, color, size }) {
+    this.#drawPixel({ x, y, color, size });
   }
-  #drawKaleidoscope(params) {
-    this.#drawBasicBrush(params);
+  #drawKaleidoscope({ x, y, color, size }) {
+    this.#drawBasicBrush({ x, y, color, size });
   }
-  #drawMandala(params) {
-    this.#drawBasicBrush(params);
+  #drawMandala({ x, y, color, size }) {
+    this.#drawBasicBrush({ x, y, color, size });
   }
-  #drawCeltic(params) {
-    this.#drawLines(params);
+  #drawCeltic({ x, y, color, size }) {
+    this.#drawLines({ x, y, color, size });
   }
-  #drawTribal(params) {
-    this.#drawLines(params);
+  #drawTribal({ x, y, color, size }) {
+    this.#drawLines({ x, y, color, size });
   }
-  #drawGeometric(params) {
-    this.#drawPixel(params);
+  #drawGeometric({ x, y, color, size }) {
+    this.#drawPixel({ x, y, color, size });
   }
-  #drawOrganic(params) {
-    this.#drawBasicBrush(params);
+  #drawOrganic({ x, y, color, size }) {
+    this.#drawBasicBrush({ x, y, color, size });
   }
-  #drawFractal(params) {
-    this.#drawBasicBrush(params);
+  #drawFractal({ x, y, color, size }) {
+    this.#drawBasicBrush({ x, y, color, size });
   }
-  #drawImpressionist(params) {
-    this.#drawDots(params);
+  #drawImpressionist({ x, y, color, size }) {
+    this.#drawDots({ x, y, color, size });
   }
-  #drawPointillist(params) {
-    this.#drawDots(params);
+  #drawPointillist({ x, y, color, size }) {
+    this.#drawDots({ x, y, color, size });
   }
-  #drawAbstract(params) {
-    this.#drawBasicBrush(params);
+  #drawAbstract({ x, y, color, size }) {
+    this.#drawBasicBrush({ x, y, color, size });
   }
-  #drawSurreal(params) {
-    this.#drawBasicBrush(params);
+  #drawSurreal({ x, y, color, size }) {
+    this.#drawBasicBrush({ x, y, color, size });
   }
-  #drawMinimalist(params) {
-    this.#drawBasicBrush(params);
+  #drawMinimalist({ x, y, color, size }) {
+    this.#drawBasicBrush({ x, y, color, size });
   }
-  #drawVintage(params) {
-    this.#drawCharcoal(params);
+  #drawVintage({ x, y, color, size }) {
+    this.#drawCharcoal({ x, y, color, size });
   }
-  #drawGrunge(params) {
-    this.#drawCharcoal(params);
+  #drawGrunge({ x, y, color, size }) {
+    this.#drawCharcoal({ x, y, color, size });
   }
-  #drawDigital(params) {
-    this.#drawPixel(params);
+  #drawDigital({ x, y, color, size }) {
+    this.#drawPixel({ x, y, color, size });
+  }
+
+  // ===========================
+  // NEW BRUSH IMPLEMENTATIONS
+  // ===========================
+
+  // Basic brushes
+  #drawShadow({ x, y, lastPoint, color, size }) {
+    this.#ctx.globalCompositeOperation = "lighter";
+    this.#ctx.strokeStyle = color;
+    this.#ctx.lineWidth = size;
+    this.#ctx.lineCap = "round";
+    this.#ctx.lineJoin = "round";
+    this.#ctx.shadowColor = color;
+    this.#ctx.shadowBlur = size * 2.5;
+    this.#ctx.globalAlpha = 0.85;
+
+    if (lastPoint) {
+      this.#ctx.beginPath();
+      this.#ctx.moveTo(lastPoint.x, lastPoint.y);
+      this.#ctx.lineTo(x, y);
+      this.#ctx.stroke();
+    }
+
+    this.#ctx.shadowBlur = 0;
+    this.#ctx.globalAlpha = 1;
+    this.#ctx.globalCompositeOperation = "source-over";
+  }
+
+  // Artistic brushes
+  #drawPen({ x, y, lastPoint, color, size }) {
+    this.#ctx.globalCompositeOperation = "source-over";
+    this.#ctx.strokeStyle = color;
+    this.#ctx.lineWidth = size * (0.7 + Math.random() * 0.6);
+    this.#ctx.lineCap = "round";
+    this.#ctx.globalAlpha = 1;
+
+    if (lastPoint) {
+      this.#ctx.beginPath();
+      this.#ctx.moveTo(lastPoint.x, lastPoint.y);
+      this.#ctx.lineTo(x, y);
+      this.#ctx.stroke();
+    }
+  }
+
+  #drawPen2({ x, y, lastPoint, color, size }) {
+    this.#ctx.globalCompositeOperation = "source-over";
+    this.#ctx.strokeStyle = color;
+    this.#ctx.lineWidth = size * 0.7;
+    this.#ctx.lineCap = "round";
+    this.#ctx.globalAlpha = 1;
+
+    if (lastPoint) {
+      for (let i = 0; i < 3; i++) {
+        const offsetX = (Math.random() - 0.5) * size * 0.7;
+        const offsetY = (Math.random() - 0.5) * size * 0.7;
+        this.#ctx.beginPath();
+        this.#ctx.moveTo(lastPoint.x + offsetX, lastPoint.y + offsetY);
+        this.#ctx.lineTo(x + offsetX, y + offsetY);
+        this.#ctx.stroke();
+      }
+    }
+  }
+
+  #drawThick({ x, y, lastPoint, color, size }) {
+    this.#ctx.globalCompositeOperation = "source-over";
+    this.#ctx.lineCap = "round";
+    this.#ctx.lineJoin = "round";
+    this.#ctx.strokeStyle = color;
+    this.#ctx.lineWidth = Math.max(2, size * 0.8);
+    this.#ctx.globalAlpha = 0.7;
+
+    if (lastPoint) {
+      this.#ctx.beginPath();
+      this.#ctx.moveTo(lastPoint.x, lastPoint.y);
+      this.#ctx.lineTo(x, y);
+      this.#ctx.stroke();
+    }
+  }
+
+  #drawSliced({ x, y, lastPoint, color, size }) {
+    this.#ctx.globalCompositeOperation = "source-over";
+    this.#ctx.lineCap = "butt";
+    this.#ctx.lineJoin = "miter";
+    this.#ctx.strokeStyle = color;
+    this.#ctx.lineWidth = Math.max(1, size * 0.4);
+    this.#ctx.globalAlpha = 0.8;
+
+    if (lastPoint) {
+      this.#ctx.beginPath();
+      this.#ctx.moveTo(lastPoint.x, lastPoint.y);
+      this.#ctx.lineTo(x, y);
+      this.#ctx.stroke();
+    }
+  }
+
+  #drawMulti({ x, y, lastPoint, color, size }) {
+    this.#ctx.globalCompositeOperation = "source-over";
+    this.#ctx.strokeStyle = color;
+    this.#ctx.lineCap = "round";
+    const numLines = 7;
+
+    if (lastPoint) {
+      for (let i = 0; i < numLines; i++) {
+        // Offset aleatorio para cada línea
+        const offsetX = (Math.random() - 0.5) * size * 1.5;
+        const offsetY = (Math.random() - 0.5) * size * 1.5;
+        this.#ctx.globalAlpha = 0.18 + Math.random() * 0.32;
+        this.#ctx.lineWidth = size * (0.25 + Math.random() * 0.25);
+        // Variar longitud (simula líneas más cortas/largas)
+        const t1 = Math.random() * 0.2;
+        const t2 = 0.8 + Math.random() * 0.2;
+        this.#ctx.beginPath();
+        this.#ctx.moveTo(
+          lastPoint.x + offsetX * (1 - t1),
+          lastPoint.y + offsetY * (1 - t1)
+        );
+        this.#ctx.lineTo(x + offsetX * (1 - t2), y + offsetY * (1 - t2));
+        this.#ctx.stroke();
+      }
+      // Líneas cruzadas (diagonales)
+      for (let i = 0; i < 3; i++) {
+        const angle = Math.PI / 4 + ((Math.random() - 0.5) * Math.PI) / 2;
+        const length = size * (2 + Math.random() * 2);
+        this.#ctx.globalAlpha = 0.12 + Math.random() * 0.18;
+        this.#ctx.lineWidth = size * (0.18 + Math.random() * 0.18);
+        this.#ctx.beginPath();
+        const midX = (lastPoint.x + x) / 2;
+        const midY = (lastPoint.y + y) / 2;
+        this.#ctx.moveTo(
+          midX - (Math.cos(angle) * length) / 2,
+          midY - (Math.sin(angle) * length) / 2
+        );
+        this.#ctx.lineTo(
+          midX + (Math.cos(angle) * length) / 2,
+          midY + (Math.sin(angle) * length) / 2
+        );
+        this.#ctx.stroke();
+      }
+    }
+    this.#ctx.globalAlpha = 1;
+  }
+
+  #drawMultiOpacity({ x, y, lastPoint, color, size }) {
+    this.#ctx.globalCompositeOperation = "source-over";
+    this.#ctx.strokeStyle = color;
+    this.#ctx.lineCap = "round";
+    this.#ctx.lineJoin = "round";
+    const numLines = 5;
+
+    if (lastPoint) {
+      for (let i = 0; i < numLines; i++) {
+        const offsetX = (Math.random() - 0.5) * size * 1.1;
+        const offsetY = (Math.random() - 0.5) * size * 1.1;
+        this.#ctx.globalAlpha = 1 - i * 0.18 - Math.random() * 0.12;
+        this.#ctx.lineWidth = size * (0.7 - i * 0.12 + Math.random() * 0.08);
+        // Variar longitud de la línea
+        const t1 = Math.random() * 0.15;
+        const t2 = 0.85 + Math.random() * 0.15;
+        this.#ctx.beginPath();
+        this.#ctx.moveTo(
+          lastPoint.x + offsetX * (1 - t1),
+          lastPoint.y + offsetY * (1 - t1)
+        );
+        this.#ctx.lineTo(x + offsetX * (1 - t2), y + offsetY * (1 - t2));
+        this.#ctx.stroke();
+      }
+    }
+    this.#ctx.globalAlpha = 1;
+  }
+
+  #drawBeads({ x, y, lastPoint, color, size }) {
+    if (lastPoint) {
+      const x1 = lastPoint.x;
+      const y1 = lastPoint.y;
+      const x2 = x;
+      const y2 = y;
+      const midX = (x1 + x2) / 2;
+      const midY = (y1 + y2) / 2;
+      const distance = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+      const beadSize = Math.max(2, distance * 0.3);
+
+      this.#ctx.fillStyle = color;
+      this.#ctx.globalAlpha = 0.8;
+      this.#ctx.beginPath();
+      this.#ctx.arc(midX, midY, beadSize, 0, Math.PI * 2);
+      this.#ctx.fill();
+      this.#ctx.globalAlpha = 1;
+    }
+  }
+
+  #drawWiggle({ x, y, lastPoint, color, size }) {
+    this.#ctx.globalCompositeOperation = "source-over";
+    this.#ctx.lineCap = "round";
+    this.#ctx.lineJoin = "round";
+    this.#ctx.strokeStyle = color;
+    this.#ctx.lineWidth = Math.max(1, size * 0.3);
+    this.#ctx.globalAlpha = 0.8;
+
+    if (lastPoint) {
+      const points = 10;
+      this.#ctx.beginPath();
+      this.#ctx.moveTo(lastPoint.x, lastPoint.y);
+
+      for (let i = 1; i <= points; i++) {
+        const t = i / points;
+        const wiggleX =
+          lastPoint.x + (x - lastPoint.x) * t + Math.sin(t * Math.PI * 3) * 3;
+        const wiggleY =
+          lastPoint.y + (y - lastPoint.y) * t + Math.cos(t * Math.PI * 2) * 2;
+        this.#ctx.lineTo(wiggleX, wiggleY);
+      }
+
+      this.#ctx.stroke();
+    }
+  }
+
+  // Stamp brushes
+  #drawStampCircle({ x, y, color, size }) {
+    this.#ctx.globalCompositeOperation = "source-over";
+    this.#ctx.fillStyle = color;
+    this.#ctx.globalAlpha = 0.8;
+    this.#ctx.beginPath();
+    this.#ctx.arc(x, y, size * 0.5, 0, Math.PI * 2);
+    this.#ctx.fill();
+  }
+
+  #drawStampStar({ x, y, color, size }) {
+    this.#ctx.globalCompositeOperation = "source-over";
+    this.#ctx.fillStyle = color;
+    this.#ctx.globalAlpha = 0.8;
+
+    const points = 5;
+    const outerRadius = size * 0.4;
+    const innerRadius = size * 0.2;
+
+    this.#ctx.beginPath();
+    this.#ctx.moveTo(x, y - outerRadius);
+
+    for (let i = 0; i < points * 2; i++) {
+      const angle = (Math.PI / points) * i;
+      const r = i % 2 === 0 ? outerRadius : innerRadius;
+      this.#ctx.lineTo(x + Math.sin(angle) * r, y - Math.cos(angle) * r);
+    }
+
+    this.#ctx.closePath();
+    this.#ctx.fill();
+  }
+
+  // Pattern brushes
+  #drawPatternDots({ x, y, color, size }) {
+    this.#drawDots({ x, y, color, size });
+  }
+
+  #drawPatternLines({ x, y, color, size }) {
+    this.#drawLines({ x, y, color, size });
+  }
+
+  #drawPatternRainbow({ x, y, color, size }) {
+    const colors = [
+      "#FF0000",
+      "#FF7F00",
+      "#FFFF00",
+      "#00FF00",
+      "#0000FF",
+      "#4B0082",
+      "#9400D3",
+    ];
+    const colorIndex = Math.floor(Math.random() * colors.length);
+    this.#drawBasicBrush({ x, y, color: colors[colorIndex], size });
+  }
+
+  #drawPatternImage({ x, y, color, size }) {
+    this.#drawBasicBrush({ x, y, color, size });
+  }
+
+  // Spray brushes
+  #drawAerosol({ x, y, color, size }) {
+    this.#drawSpray({ x, y, color, size });
+  }
+
+  #drawSprayTime({ x, y, color, size }) {
+    this.#drawSpray({ x, y, color, size });
+  }
+
+  #drawSpraySpeed({ x, y, color, size }) {
+    this.#drawSpray({ x, y, color, size });
+  }
+
+  // Sketch/Harmony brushes
+  #drawSketchy({ x, y, lastPoint, color, size }) {
+    this.#ctx.globalCompositeOperation = "source-over";
+    this.#ctx.lineCap = "round";
+    this.#ctx.lineJoin = "round";
+    this.#ctx.strokeStyle = color;
+    this.#ctx.lineWidth = Math.max(0.5, size * 0.2);
+    this.#ctx.globalAlpha = 0.6;
+
+    if (lastPoint) {
+      const segments = 3;
+      for (let i = 0; i < segments; i++) {
+        const t1 = i / segments;
+        const t2 = (i + 1) / segments;
+        const x1 = lastPoint.x + (x - lastPoint.x) * t1;
+        const y1 = lastPoint.y + (y - lastPoint.y) * t1;
+        const x2 = lastPoint.x + (x - lastPoint.x) * t2;
+        const y2 = lastPoint.y + (y - lastPoint.y) * t2;
+
+        this.#ctx.beginPath();
+        this.#ctx.moveTo(x1, y1);
+        this.#ctx.lineTo(x2, y2);
+        this.#ctx.stroke();
+      }
+    }
+  }
+
+  #drawNeighbor({ x, y, lastPoint, color, size }) {
+    this.#ctx.globalCompositeOperation = "source-over";
+    this.#ctx.lineCap = "round";
+    this.#ctx.lineJoin = "round";
+    this.#ctx.strokeStyle = color;
+    this.#ctx.lineWidth = Math.max(1, size * 0.3);
+    this.#ctx.globalAlpha = 0.7;
+
+    if (lastPoint) {
+      this.#ctx.beginPath();
+      this.#ctx.moveTo(lastPoint.x, lastPoint.y);
+      this.#ctx.lineTo(x, y);
+      this.#ctx.stroke();
+
+      // Línea vecina
+      this.#ctx.globalAlpha = 0.4;
+      this.#ctx.beginPath();
+      this.#ctx.moveTo(lastPoint.x + 2, lastPoint.y + 2);
+      this.#ctx.lineTo(x + 2, y + 2);
+      this.#ctx.stroke();
+    }
+  }
+
+  #drawFurNeighbor({ x, y, lastPoint, color, size }) {
+    this.#drawFur({ x, y, lastPoint, color, size });
+  }
+
+  // Special brushes
+  #drawRainbowDynamic({ x, y, lastPoint, color, size }) {
+    const hue = (Date.now() / 10) % 360;
+    this.#ctx.strokeStyle = `hsl(${hue}, 70%, 50%)`;
+    this.#ctx.lineWidth = size;
+    this.#ctx.lineCap = "round";
+    this.#ctx.lineJoin = "round";
+
+    if (lastPoint) {
+      this.#ctx.beginPath();
+      this.#ctx.moveTo(lastPoint.x, lastPoint.y);
+      this.#ctx.lineTo(x, y);
+      this.#ctx.stroke();
+    }
+  }
+
+  #drawConfetti({ x, y, color, size }) {
+    for (let i = 0; i < 5; i++) {
+      const offsetX = (Math.random() - 0.5) * size * 2;
+      const offsetY = (Math.random() - 0.5) * size * 2;
+      this.#ctx.fillStyle = `hsl(${Math.random() * 360}, 70%, 50%)`;
+      this.#ctx.fillRect(x + offsetX, y + offsetY, 2, 2);
+    }
+  }
+
+  #drawShootingStar({ x, y, lastPoint, color, size }) {
+    for (let i = 0; i < 5; i++) {
+      const offsetX = (Math.random() - 0.5) * size * 2;
+      const offsetY = (Math.random() - 0.5) * size * 2;
+      this.#ctx.fillStyle = `hsl(${Math.random() * 360}, 70%, 50%)`;
+      this.#ctx.fillRect(x + offsetX, y + offsetY, 2, 2);
+    }
+  }
+
+  #drawGlitch({ x, y, lastPoint, color, size }) {
+    // Línea principal
+    this.#ctx.save();
+    this.#ctx.globalCompositeOperation = "lighter";
+
+    if (lastPoint) {
+      for (let i = 0; i < 3; i++) {
+        const offset = (i - 1) * 2;
+        this.#ctx.strokeStyle = ["#f00", "#0ff", "#fff"][i];
+        this.#ctx.lineWidth = size + (i === 1 ? 2 : 0);
+        this.#ctx.beginPath();
+        this.#ctx.moveTo(lastPoint.x + offset, lastPoint.y + offset);
+        this.#ctx.lineTo(x + offset, y + offset);
+        this.#ctx.stroke();
+      }
+      // Saltos aleatorios
+      for (let i = 0; i < 4; i++) {
+        this.#ctx.strokeStyle = "#fff";
+        this.#ctx.lineWidth = size * 0.7;
+        const t = Math.random();
+        const x1 =
+          lastPoint.x + (x - lastPoint.x) * t + (Math.random() - 0.5) * 8;
+        const y1 =
+          lastPoint.y + (y - lastPoint.y) * t + (Math.random() - 0.5) * 8;
+        const x2 = x1 + (Math.random() - 0.5) * 16;
+        const y2 = y1 + (Math.random() - 0.5) * 16;
+        this.#ctx.beginPath();
+        this.#ctx.moveTo(x1, y1);
+        this.#ctx.lineTo(x2, y2);
+        this.#ctx.stroke();
+      }
+    }
+    this.#ctx.restore();
+  }
+
+  #drawHeartSpray({ x, y, color, size }) {
+    // Spray de corazones
+    for (let i = 0; i < size * 1.2; i++) {
+      const angle = Math.random() * 2 * Math.PI;
+      const radius = Math.random() * size * 1.5;
+      const heartX = x + Math.cos(angle) * radius;
+      const heartY = y + Math.sin(angle) * radius;
+      this.#ctx.save();
+      this.#ctx.translate(heartX, heartY);
+      this.#ctx.rotate(angle);
+      this.#ctx.scale(0.7 + Math.random() * 0.7, 0.7 + Math.random() * 0.7);
+      this.#ctx.beginPath();
+      this.#ctx.moveTo(0, 0);
+      this.#ctx.bezierCurveTo(
+        0,
+        -size * 0.4,
+        -size * 0.5,
+        -size * 0.4,
+        -size * 0.5,
+        0
+      );
+      this.#ctx.bezierCurveTo(
+        -size * 0.5,
+        size * 0.5,
+        0,
+        size * 0.7,
+        0,
+        size * 1.1
+      );
+      this.#ctx.bezierCurveTo(
+        0,
+        size * 0.7,
+        size * 0.5,
+        size * 0.5,
+        size * 0.5,
+        0
+      );
+      this.#ctx.bezierCurveTo(size * 0.5, -size * 0.4, 0, -size * 0.4, 0, 0);
+      this.#ctx.closePath();
+      this.#ctx.fillStyle = `hsl(${Math.random() * 360}, 80%, 60%)`;
+      this.#ctx.globalAlpha = 0.7 + Math.random() * 0.3;
+      this.#ctx.fill();
+      this.#ctx.restore();
+    }
+  }
+
+  #drawBubble({ x, y, color, size }) {
+    // Burbujas translúcidas
+    for (let i = 0; i < size * 1.2; i++) {
+      const angle = Math.random() * 2 * Math.PI;
+      const radius = Math.random() * size * 1.5;
+      const bubbleX = x + Math.cos(angle) * radius;
+      const bubbleY = y + Math.sin(angle) * radius;
+      this.#ctx.beginPath();
+      this.#ctx.arc(
+        bubbleX,
+        bubbleY,
+        Math.max(3, size * 0.5 + Math.random() * size * 0.5),
+        0,
+        Math.PI * 2
+      );
+      this.#ctx.globalAlpha = 0.18 + Math.random() * 0.22;
+      this.#ctx.fillStyle = `rgba(180,220,255,0.5)`;
+      this.#ctx.fill();
+      // Reflejo
+      this.#ctx.globalAlpha = 0.12;
+      this.#ctx.beginPath();
+      this.#ctx.arc(
+        bubbleX - size * 0.2,
+        bubbleY - size * 0.2,
+        Math.max(1, size * 0.18),
+        0,
+        Math.PI * 2
+      );
+      this.#ctx.fillStyle = "#fff";
+      this.#ctx.fill();
+    }
+    this.#ctx.globalAlpha = 1;
+  }
+
+  #drawRibbon({ x, y, lastPoint, color, size }) {
+    // Cinta ondulante
+    if (lastPoint) {
+      const x1 = lastPoint.x;
+      const y1 = lastPoint.y;
+      const x2 = x;
+      const y2 = y;
+      const steps = 16;
+      this.#ctx.save();
+      this.#ctx.beginPath();
+      for (let i = 0; i <= steps; i++) {
+        const t = i / steps;
+        const angle = Math.PI * 2 * t * 2 + Date.now() / 200;
+        const r = Math.sin(angle) * size * 0.7;
+        const ribbonX = x1 + (x2 - x1) * t + Math.cos(angle) * r;
+        const ribbonY = y1 + (y2 - y1) * t + Math.sin(angle) * r;
+        if (i === 0) this.#ctx.moveTo(ribbonX, ribbonY);
+        else this.#ctx.lineTo(ribbonX, ribbonY);
+      }
+      this.#ctx.strokeStyle = color;
+      this.#ctx.lineWidth = size * 0.9;
+      this.#ctx.globalAlpha = 0.7;
+      this.#ctx.stroke();
+      this.#ctx.globalAlpha = 1;
+      this.#ctx.restore();
+    }
+  }
+
+  #drawFireRealistic({ x, y, color, size }) {
+    // Llama realista
+    for (let i = 0; i < 3; i++) {
+      const flameColor = [
+        "rgba(255, 200, 0, 0.18)",
+        "rgba(255, 100, 0, 0.13)",
+        "rgba(255, 255, 255, 0.08)",
+      ][i];
+      const flameSize = size * (1.2 + i * 0.5);
+      this.#ctx.beginPath();
+      this.#ctx.ellipse(
+        x,
+        y,
+        flameSize,
+        flameSize * (1.2 + Math.random() * 0.5),
+        0,
+        0,
+        Math.PI * 2
+      );
+      this.#ctx.fillStyle = flameColor;
+      this.#ctx.fill();
+    }
+    // Chispas
+    for (let i = 0; i < Math.floor(size / 2); i++) {
+      this.#ctx.globalAlpha = 0.7;
+      this.#ctx.fillStyle = "yellow";
+      this.#ctx.beginPath();
+      this.#ctx.arc(
+        x + (Math.random() - 0.5) * size * 2,
+        y - Math.random() * size * 2,
+        Math.random() * 2 + 1,
+        0,
+        Math.PI * 2
+      );
+      this.#ctx.fill();
+    }
+    this.#ctx.globalAlpha = 1;
+  }
+
+  #drawParticles({ x, y, color, size }) {
+    // Partículas de colores
+    for (let i = 0; i < size * 2; i++) {
+      const angle = Math.random() * 2 * Math.PI;
+      const radius = Math.random() * size * 1.2;
+      const particleX = x + Math.cos(angle) * radius;
+      const particleY = y + Math.sin(angle) * radius;
+      this.#ctx.beginPath();
+      this.#ctx.arc(
+        particleX,
+        particleY,
+        Math.max(1, size * 0.18),
+        0,
+        Math.PI * 2
+      );
+      this.#ctx.globalAlpha = 0.5 + Math.random() * 0.5;
+      this.#ctx.fillStyle = `hsl(${Math.random() * 360}, 80%, 60%)`;
+      this.#ctx.fill();
+    }
+    this.#ctx.globalAlpha = 1;
   }
 }
 
@@ -1725,11 +2369,28 @@ export const BRUSH_TYPES = {
 
 export const BRUSH_CONFIGS = [
   // Pinceles básicos
+  { type: "pencil", name: "Lápiz", icon: "Pencil", category: "basic" },
+  { type: "shadow", name: "Sombra", icon: "Brush", category: "basic" },
   { type: "brush", name: "Pincel", icon: "Brush", category: "basic" },
   { type: "eraser", name: "Borrador", icon: "Eraser", category: "basic" },
-  { type: "pencil", name: "Lápiz", icon: "Pencil", category: "basic" },
 
   // Pinceles artísticos
+  { type: "pen", name: "Pluma", icon: "Brush", category: "artistic" },
+  { type: "pen2", name: "Pluma Doble", icon: "Brush", category: "artistic" },
+  { type: "thick", name: "Pincel Grueso", icon: "Brush", category: "artistic" },
+  {
+    type: "sliced",
+    name: "Pincel Cortado",
+    icon: "Brush",
+    category: "artistic",
+  },
+  { type: "multi", name: "Multi-línea", icon: "Brush", category: "artistic" },
+  {
+    type: "multi_opacity",
+    name: "Multi-opacidad",
+    icon: "Brush",
+    category: "artistic",
+  },
   {
     type: "carboncillo",
     name: "Carboncillo",
@@ -1745,30 +2406,130 @@ export const BRUSH_CONFIGS = [
   { type: "tiza", name: "Tiza", icon: "Minus", category: "artistic" },
   { type: "marcador", name: "Marcador", icon: "Brush", category: "artistic" },
   { type: "oleo", name: "Óleo", icon: "Brush", category: "artistic" },
-
-  // Pinceles de efectos
-  { type: "glow", name: "Resplandor", icon: "Sparkles", category: "effects" },
-  { type: "neon", name: "Neón", icon: "Zap", category: "effects" },
-  { type: "fuego", name: "Fuego", icon: "Flame", category: "effects" },
-
-  // Pinceles de patrones
-  { type: "pixel", name: "Pixel", icon: "Grid3X3", category: "patterns" },
+  { type: "pixel", name: "Pixel", icon: "Grid3X3", category: "artistic" },
+  { type: "neon", name: "Neón", icon: "Zap", category: "artistic" },
   {
     type: "puntos",
-    name: "Puntos",
+    name: "Puntillismo",
     icon: "MoreHorizontal",
-    category: "patterns",
+    category: "artistic",
   },
-  { type: "lineas", name: "Líneas", icon: "Minus", category: "patterns" },
+  { type: "lineas", name: "Líneas", icon: "Minus", category: "artistic" },
+  { type: "fuego", name: "Fuego", icon: "Flame", category: "artistic" },
+  { type: "beads", name: "Cuentas", icon: "Circle", category: "artistic" },
+  { type: "wiggle", name: "Ondulado", icon: "Brush", category: "artistic" },
 
-  // Pinceles estampado
+  // Pinceles de estampado
+  {
+    type: "stamp_circle",
+    name: "Estampado Círculo",
+    icon: "Circle",
+    category: "stamp",
+  },
+  {
+    type: "stamp_star",
+    name: "Estampado Estrella",
+    icon: "Sparkles",
+    category: "stamp",
+  },
+
+  // Pinceles de patrón
+  {
+    type: "pattern_dots",
+    name: "Patrón Puntos",
+    icon: "MoreHorizontal",
+    category: "pattern",
+  },
+  {
+    type: "pattern_lines",
+    name: "Patrón Líneas",
+    icon: "Minus",
+    category: "pattern",
+  },
+  {
+    type: "pattern_rainbow",
+    name: "Patrón Arcoíris",
+    icon: "Circle",
+    category: "pattern",
+  },
+  {
+    type: "pattern_image",
+    name: "Patrón Imagen",
+    icon: "Square",
+    category: "pattern",
+  },
+
+  // Pinceles de spray
+  { type: "aerosol", name: "Aerosol", icon: "Circle", category: "spray" },
+  { type: "spray", name: "Spray", icon: "Circle", category: "spray" },
+  {
+    type: "spray_time",
+    name: "Spray Tiempo",
+    icon: "Circle",
+    category: "spray",
+  },
+  {
+    type: "spray_speed",
+    name: "Spray Velocidad",
+    icon: "Circle",
+    category: "spray",
+  },
+
+  // Pinceles de sketch/harmony
+  { type: "sketchy", name: "Boceto", icon: "Brush", category: "sketch" },
+  { type: "neighbor", name: "Vecino", icon: "Brush", category: "sketch" },
+  {
+    type: "fur_neighbor",
+    name: "Vecino Peludo",
+    icon: "Brush",
+    category: "sketch",
+  },
+
+  // Pinceles especiales
+  {
+    type: "rainbow_dynamic",
+    name: "Arcoíris Dinámico",
+    icon: "Circle",
+    category: "special",
+  },
+  { type: "confetti", name: "Confeti", icon: "Circle", category: "special" },
+  {
+    type: "shooting_star",
+    name: "Estrella Fugaz",
+    icon: "Sparkles",
+    category: "special",
+  },
+  { type: "glitch", name: "Glitch", icon: "Grid3X3", category: "special" },
+  {
+    type: "heart_spray",
+    name: "Spray Corazones",
+    icon: "Circle",
+    category: "special",
+  },
+  { type: "lightning", name: "Rayo", icon: "Zap", category: "special" },
+  { type: "bubble", name: "Burbuja", icon: "Circle", category: "special" },
+  { type: "ribbon", name: "Cinta", icon: "Brush", category: "special" },
+  {
+    type: "fire_realistic",
+    name: "Fuego Realista",
+    icon: "Flame",
+    category: "special",
+  },
+  {
+    type: "particles",
+    name: "Partículas",
+    icon: "Circle",
+    category: "special",
+  },
+
+  // Pinceles adicionales del sistema anterior (mantener compatibilidad)
+  { type: "glow", name: "Resplandor", icon: "Sparkles", category: "effects" },
   {
     type: "splatter",
     name: "Salpicadura",
     icon: "Droplets",
     category: "stamp",
   },
-  { type: "spray", name: "Aerosol", icon: "Circle", category: "stamp" },
   { type: "textured", name: "Texturado", icon: "Square", category: "stamp" },
   { type: "sketch", name: "Boceto", icon: "Brush", category: "stamp" },
   { type: "fabric", name: "Tela", icon: "Square", category: "stamp" },
@@ -1780,7 +2541,6 @@ export const BRUSH_CONFIGS = [
   { type: "hearts", name: "Corazones", icon: "Circle", category: "stamp" },
   { type: "flowers", name: "Flores", icon: "Circle", category: "stamp" },
   { type: "bubbles", name: "Burbujas", icon: "Circle", category: "stamp" },
-  { type: "lightning", name: "Rayo", icon: "Zap", category: "stamp" },
   { type: "smoke", name: "Humo", icon: "Circle", category: "stamp" },
   { type: "grass", name: "Pasto", icon: "Brush", category: "stamp" },
   { type: "wood", name: "Madera", icon: "Square", category: "stamp" },
@@ -1833,44 +2593,109 @@ export const BRUSH_CONFIGS = [
 export const BRUSH_CATEGORIES = {
   BASIC: {
     name: "Básicos",
-    brushes: ["brush", "eraser", "pencil"],
+    brushes: ["pencil", "shadow", "brush", "eraser"],
   },
   ARTISTIC: {
     name: "Artísticos",
-    brushes: ["carboncillo", "acuarela", "tiza", "marcador", "oleo"],
+    brushes: [
+      "pen",
+      "pen2",
+      "thick",
+      "sliced",
+      "multi",
+      "multi_opacity",
+      "carboncillo",
+      "acuarela",
+      "tiza",
+      "marcador",
+      "oleo",
+      "pixel",
+      "neon",
+      "puntos",
+      "lineas",
+      "fuego",
+      "beads",
+      "wiggle",
+    ],
+  },
+  STAMP: {
+    name: "Estampado",
+    brushes: ["stamp_circle", "stamp_star"],
+  },
+  PATTERN: {
+    name: "Patrón",
+    brushes: [
+      "pattern_dots",
+      "pattern_lines",
+      "pattern_rainbow",
+      "pattern_image",
+    ],
+  },
+  SPRAY: {
+    name: "Spray",
+    brushes: ["aerosol", "spray", "spray_time", "spray_speed"],
+  },
+  SKETCH: {
+    name: "Sketch/Harmony",
+    brushes: ["sketchy", "neighbor", "fur_neighbor"],
+  },
+  SPECIAL: {
+    name: "Especiales",
+    brushes: [
+      "rainbow_dynamic",
+      "confetti",
+      "shooting_star",
+      "glitch",
+      "heart_spray",
+      "lightning",
+      "bubble",
+      "ribbon",
+      "fire_realistic",
+      "particles",
+    ],
   },
   EFFECTS: {
     name: "Efectos",
     brushes: ["glow", "neon", "fuego", "lightning", "magic"],
   },
-  PATTERNS: {
-    name: "Patrones",
-    brushes: ["pixel", "puntos", "lineas", "geometric", "mosaic"],
-  },
-  STAMP: {
-    name: "Estampado",
-    brushes: ["stars", "hearts", "flowers", "bubbles", "mandala"],
-  },
-  NATURE: {
-    name: "Naturaleza",
-    brushes: ["leaves", "rain", "snow", "grass", "water", "cloud"],
-  },
-  TEXTURE: {
-    name: "Texturas",
+  STAMP_EXTENDED: {
+    name: "Estampado Extendido",
     brushes: [
       "splatter",
-      "spray",
       "textured",
+      "sketch",
       "fabric",
+      "fur",
+      "leaves",
+      "rain",
+      "snow",
+      "stars",
+      "hearts",
+      "flowers",
+      "bubbles",
+      "smoke",
+      "grass",
       "wood",
       "metal",
-      "stone",
+      "glass",
+      "water",
       "sand",
-    ],
-  },
-  STYLES: {
-    name: "Estilos Artísticos",
-    brushes: [
+      "stone",
+      "cloud",
+      "galaxy",
+      "plasma",
+      "electric",
+      "crystal",
+      "rainbow",
+      "gradient",
+      "mosaic",
+      "kaleidoscope",
+      "mandala",
+      "celtic",
+      "tribal",
+      "geometric",
+      "organic",
+      "fractal",
       "impressionist",
       "pointillist",
       "abstract",

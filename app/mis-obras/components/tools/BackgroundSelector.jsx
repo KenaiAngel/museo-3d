@@ -15,6 +15,7 @@ export default function BackgroundSelector({
         type="button"
         className="flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-blue-600 text-white text-base font-bold shadow-lg hover:bg-blue-700 transition border-2 border-blue-700 focus:ring-2 focus:ring-blue-400 focus:outline-none"
         title="Selecciona una imagen para el fondo del mural"
+        style={{ cursor: "pointer" }}
         {...bgDropzone.getRootProps()}
       >
         <input {...bgDropzone.getInputProps()} />
@@ -38,7 +39,7 @@ export default function BackgroundSelector({
         <button
           type="button"
           className="flex items-center justify-center w-10 h-10 rounded-full border-2 border-green-400 bg-white dark:bg-neutral-800 shadow-sm hover:bg-green-50 dark:hover:bg-green-900 transition"
-          style={{ padding: 0 }}
+          style={{ padding: 0, cursor: "pointer" }}
           onClick={() => setShowBgColorPicker((v) => !v)}
           aria-label="Aplicar color de fondo"
         >

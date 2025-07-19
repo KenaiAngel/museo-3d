@@ -1,9 +1,7 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../../../lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../../lib/auth.js";
 import { SentryLogger } from "../../../lib/sentryLogger.js";
-
-const prisma = new PrismaClient();
 
 // GET /api/usuarios - Obtener usuarios (solo admin) o verificar disponibilidad de nombre
 export async function GET(req) {

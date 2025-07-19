@@ -19,8 +19,27 @@ export default function MuralCard({
   onARClick,
 }) {
   const router = useRouter();
-  const { data: session } = useSession();
-  const isAdmin = session?.user?.role === "ADMIN";
+
+  // Manejo seguro de useSession
+  let session = null;
+  let status = "loading";
+  let isAdmin = false;
+  let isLoading = true;
+
+  try {
+    const sessionData = useSession();
+    session = sessionData.data;
+    status = sessionData.status;
+    isAdmin = session?.user?.role === "ADMIN";
+    isLoading = status === "loading";
+  } catch (error) {
+    console.warn("Error al obtener sesión:", error);
+    // Usar valores por defecto si hay error
+    session = null;
+    status = "unauthenticated";
+    isAdmin = false;
+    isLoading = false;
+  }
   const autores = parseAutores(mural.autor);
   const colaboradores = parseColaboradores(mural.colaboradores);
   const [showAutoresTooltip, setShowAutoresTooltip] = useState(false);
@@ -349,7 +368,7 @@ export default function MuralCard({
           {localLikes}
         </span>
         {/* Toggle de crear modelo 3D vuelve aquí */}
-        {isAdmin && (
+        {!isLoading && isAdmin && (
           <div className="relative inline-block ml-auto">
             <button
               ref={buttonRef}

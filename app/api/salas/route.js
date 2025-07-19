@@ -1,8 +1,6 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../../../lib/prisma";
 import { sendEmail } from "@/lib/sendEmail";
 import { SentryLogger } from "../../../lib/sentryLogger";
-
-const prisma = new PrismaClient();
 
 // GET /api/salas - Obtener todas las salas
 export async function GET(req) {

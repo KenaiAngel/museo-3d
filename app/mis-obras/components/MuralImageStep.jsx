@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Box, Typography, Button } from "@mui/material";
 import Upload from "lucide-react/dist/esm/icons/upload";
 import Image from "next/image";
@@ -14,6 +14,16 @@ export default function MuralImageStep({ value, onChange, muralData = {} }) {
   const [localImage, setLocalImage] = useState(null); // base64 o File
   const [canvasImage, setCanvasImage] = useState(null);
   const canvasRef = useRef();
+
+  // Cargar imagen del canvas desde localStorage si existe
+  useEffect(() => {
+    const savedCanvasImage = localStorage.getItem("canvasImage");
+    if (savedCanvasImage) {
+      setCanvasImage(savedCanvasImage);
+      onChange?.(savedCanvasImage);
+      // No limpiar localStorage aquí, dejar que el stepper lo maneje
+    }
+  }, [onChange]);
 
   // Subida de imagen (solo local, no Cloudinary)
   const handleFileChange = (e) => {

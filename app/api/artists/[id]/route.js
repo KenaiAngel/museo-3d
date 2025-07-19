@@ -1,8 +1,6 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../../../../lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../../../lib/auth.js";
-
-const prisma = new PrismaClient();
 
 // GET /api/artists/[id] - Obtener artista por ID
 export async function GET(req, context) {

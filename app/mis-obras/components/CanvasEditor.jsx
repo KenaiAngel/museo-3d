@@ -407,7 +407,9 @@ export default function CanvasEditor({
   });
 
   const paletteColors = Array.from(
-    new Set([brushColor, ...recentColors, ...prevColors, ...colors])
+    new Set(
+      [brushColor, ...recentColors, ...prevColors, ...colors].filter(Boolean)
+    )
   ).slice(0, 12);
 
   const handleSetBrushColor = (color) => {
@@ -491,6 +493,7 @@ export default function CanvasEditor({
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
+            style={{ cursor: "pointer" }}
           >
             <X className="h-5 w-5" />
           </button>
@@ -535,6 +538,7 @@ export default function CanvasEditor({
                       }`}
                     onClick={() => setCurrentTool("eraser")}
                     aria-label="Borrador"
+                    style={{ cursor: "pointer" }}
                   >
                     <Eraser className="h-6 w-6" />
                   </button>
@@ -596,6 +600,7 @@ export default function CanvasEditor({
                   className="px-2 py-1 rounded bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs font-bold"
                   onClick={() => setCanvasZoom((z) => Math.max(0.5, z - 0.1))}
                   title="Zoom -"
+                  style={{ cursor: "pointer" }}
                 >
                   -
                 </button>
@@ -607,6 +612,7 @@ export default function CanvasEditor({
                   className="px-2 py-1 rounded bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs font-bold"
                   onClick={() => setCanvasZoom((z) => Math.min(2, z + 0.1))}
                   title="Zoom +"
+                  style={{ cursor: "pointer" }}
                 >
                   +
                 </button>
@@ -1113,6 +1119,7 @@ export default function CanvasEditor({
             <button
               onClick={handleSave}
               className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium flex items-center gap-2"
+              style={{ cursor: "pointer" }}
             >
               <Save className="h-4 w-4" />
               {editingMural ? "Actualizar Obra" : "Guardar Obra"}
@@ -1120,6 +1127,7 @@ export default function CanvasEditor({
             <button
               onClick={onClose}
               className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
+              style={{ cursor: "pointer" }}
             >
               Cancelar
             </button>
